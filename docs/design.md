@@ -136,6 +136,39 @@ Agree each slice before building it, then build one at a time.
 6. Sell route optimisation (max gold, fastest, balanced), shown in the NPC list and, when it's open, on the map.
 7. Map pins, current position, spawn layer, route export for the overlay.
 
+## Slice 2 plan: places, NPCs and search (proposed 2026-11-12, to agree with the user)
+
+**What the 7.1 data gives us**
+- **NPC positions:** `Tibia71-spawn.xml` has 265 NPCs with their 7.1 positions (`npcname=`, ported from TVP 7.4; see the port report).
+- **Towns:** the map's town list (OTBM TOWNS) has 47 entries with a temple position. That's the real towns (Rookgaard, Thais, Carlin, Kazordoon, Ab'Dendriel, Edron, Darashia, Venore, Fibula, Senja, Folda, Vega, …) plus internal names (Mists, Drefia, Minoroom, Home, …). Ankrahmun is listed but not on the 7.1 map. Use only entries whose temple tile exists.
+- **Depots:** lockers (items.xml "locker": 1732–1735, 2589, …) found on the map, grouped per town.
+- **Houses:** 677 in `Tibia71-house.xml` (searchable later).
+- **Trade and travel:** the `.npc` behaviour scripts (TVP 7.6 as stand-ins until Ryndean's 7.1 files arrive).
+  - `"sell","x" -> Type=, Price=` = the NPC buys from you.
+  - Plain `"x" -> Type=, Price=` = the NPC sells to you.
+  - `Teleport(x,y,z)` with `Price=` = passages.
+
+**Converter → `npcs.json`, `places.json`**
+- **Per NPC:**
+  - name and position
+  - outfit (from `npc/*.xml` look type and colours)
+  - buys (item, price)
+  - sells (item, price)
+  - travel (destination, price, target position)
+- Item names come from items.xml. Their icons are added to the sprite atlas.
+- **Places:** towns (with temple) and depots.
+
+**Viewer**
+- **NPCs on the map**, clickable. How they look is an open question below.
+- **NPC window** (client style): name and position; "Buys", "Sells" and "Travel" lists with item icons and prices. A travel destination jumps the map there.
+- **Search field** in the panel: towns, depots, NPCs, coordinates. A result flies the map there (animated pan and zoom). An NPC result also selects it and switches to its floor with "This floor only", so it's visible under roofs. That replaces the old idea of cutting roofs per building.
+
+**Open questions for the user**
+- How NPCs look on the map.
+- Town names on the map.
+- The internal place names.
+- Searching by item.
+
 ## Decisions made while building
 
 ### Slice 1: map viewer (built 2026-11-12, waiting for the user to try it)
