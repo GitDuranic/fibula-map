@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
 import ItemWindow from './ItemWindow.jsx';
-import RoutePanel from './RoutePanel.jsx';
+import RoutePanel, { speedOf } from './RoutePanel.jsx';
 import { createRouter } from './engine/router.js';
 import { drawText, textWidth } from './engine/text.js';
 import './tibia-map.css';
@@ -94,6 +94,18 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [route, setRoute] = useState({ open: false, from: null, to: null, result: null, busy: false });
   const routePath = useRef(null); // the route's tiles, for drawing: [[x, y, z, how]]
   const router = useRef(null); // the route finder (a web worker, made on first use)
+  // The character for run times: level, haste ('none' | 'haste' | 'strong'), boots of haste. Remembered in this
+  // browser (a convenience; it works without storage too).
+  const [char, setCharState] = useState(() => {
+    try { return { level: 50, haste: 'none', boh: false, ...JSON.parse(window.localStorage.getItem('tm-char') || '{}') }; }
+    catch { return { level: 50, haste: 'none', boh: false }; }
+  });
+  const charRef = useRef(char);
+  const setChar = (c) => {
+    charRef.current = c;
+    setCharState(c);
+    try { window.localStorage.setItem('tm-char', JSON.stringify(c)); } catch { /* storage blocked: fine */ }
+  };
   const [menu, setMenu] = useState(null); // the right-click menu: { x, y (CSS px in the map), tile: [x,y,z] }
   const flight = useRef(null); // a fly-to in progress: { fx, fy, tx, ty, t0, dur }
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
@@ -327,15 +339,19 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
 
   // ---------- loading ----------
   useEffect(() => {
+    // "ready" belongs to this World only: React may run this twice (StrictMode in development, or a new dataUrl),
+    // and a ready flag left over from the first one must not make the panel use the second one half-loaded.
     const world = new World(dataUrl, () => redraw());
     worldRef.current = world;
+    setReady(false);
     world.load().then(() => {
+      if (worldRef.current !== world) return; // replaced meanwhile
       const v = view.current;
       if (!world.floors.includes(v.z)) v.z = 7;
       if (DEBUG_WALK) world.loadWalk().then(() => redraw());
       setReady(true);
       viewChanged();
-    }, (e) => setError(e.message));
+    }, (e) => { if (worldRef.current === world) setError(e.message); });
     return () => { worldRef.current = null; cancelAnimationFrame(frame.current); frame.current = 0; };
   }, [dataUrl, redraw, viewChanged]);
 
@@ -427,7 +443,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
 
   const setFloor = useCallback((z) => {
     const world = worldRef.current;
-    if (!world || !world.floors.includes(z)) return;
+    if (!world?.floors?.includes(z)) return; // also before the map has loaded
     view.current.z = z;
     view.current.cut = view.current.zoom >= MAIN_FROM ? z : 0; // zoomed in: this floor only
     viewChanged();
@@ -480,7 +496,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         const seq = ++routeSeq.current;
         r.busy = true; r.result = null;
         router.current ||= createRouter(dataUrl);
-        const speed = 2 * (70 + 49) + 80; // level 50 for now (character settings come in slice 3c)
+        const speed = speedOf(charRef.current); // the time shown is worked out again when the settings change
         router.current.route(r.from.pos, r.to.pos, speed).then((res) => {
           if (seq !== routeSeq.current) return; // a newer request
           routePath.current = res.path || null;
@@ -669,7 +685,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     pick(results[active] || worldRef.current?.search(query)[0]);
   };
 
-  const world = worldRef.current;
+  const world = ready ? worldRef.current : null; // only once loaded: a half-loaded map has no floors, places, ... yet
   const skin = { '--tm-stone': `url(${dataUrl}/stone.png)`, '--tm-gui': `url(${dataUrl}/gui.png)` };
   if (error) return <div className="tm tm-loading" style={{ height }}>Could not load the map: {error}</div>;
 
@@ -709,9 +725,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           <div className="tm-nav">
             <button type="button" className="tm-rose" onClick={onRose} title="Move the view (or use the arrow keys)" aria-label="Move the view" />
             <button type="button" className="tm-gbtn tm-gbtn-zoomout" onClick={() => zoomBy(-1)} disabled={ui.zoom === ZOOMS[0]} title="Zoom out (-)" aria-label="Zoom out" />
-            <button type="button" className="tm-gbtn tm-gbtn-up" onClick={() => setFloor(ui.z - 1)} disabled={!world?.floors.includes(ui.z - 1)} title="Floor up (Page Up)" aria-label="Floor up" />
+            <button type="button" className="tm-gbtn tm-gbtn-up" onClick={() => setFloor(ui.z - 1)} disabled={!world?.floors?.includes(ui.z - 1)} title="Floor up (Page Up)" aria-label="Floor up" />
             <button type="button" className="tm-gbtn tm-gbtn-zoomin" onClick={() => zoomBy(1)} disabled={ui.zoom === ZOOMS[ZOOMS.length - 1]} title="Zoom in (+)" aria-label="Zoom in" />
-            <button type="button" className="tm-gbtn tm-gbtn-down" onClick={() => setFloor(ui.z + 1)} disabled={!world?.floors.includes(ui.z + 1)} title="Floor down (Page Down)" aria-label="Floor down" />
+            <button type="button" className="tm-gbtn tm-gbtn-down" onClick={() => setFloor(ui.z + 1)} disabled={!world?.floors?.includes(ui.z + 1)} title="Floor down (Page Down)" aria-label="Floor down" />
           </div>
           <div className="tm-info">
             <div>Floor {ui.z}{ui.z === 7 ? ' (ground)' : ui.z < 7 ? ` (+${7 - ui.z})` : ` (-${ui.z - 7})`}</div>
@@ -748,7 +764,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         </form>
         {route.open && world && (
           <RoutePanel
-            world={world} route={route}
+            world={world} route={route} char={char} onChar={setChar}
             onFrom={(pt) => updateRoute({ from: pt })} onTo={(pt) => updateRoute({ to: pt })}
             onSwap={() => updateRoute({ from: route.to, to: route.from })}
             onShow={() => showRoute(route.result?.path)}

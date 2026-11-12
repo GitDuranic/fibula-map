@@ -203,6 +203,35 @@ Agree each slice before building it, then build one at a time.
 
 ## Decisions made while building
 
+### Slice 3c: run times (built 2026-11-13)
+- **Speed** (TVP source, checked): base = 70 + (level − 1).
+  - Haste adds floor(base · 30 / 100); strong haste adds floor(base · 70 / 100).
+  - Boots of haste add 20 (movement.cpp changeSpeed → +40 in the shown speed).
+  - Speed = 2 · (base + extra) + 80, e.g. level 50 = 318.
+- **Step time** (creature.cpp onCreatureMove, checked): the ground of the tile stepped **onto**, 50 · ceil(1000 · ground / speed / 50) ms in the server's integer maths; diagonal ×3. Grass (150) at speed 318: 500 ms, 1500 ms diagonal.
+  - Note: the server takes the ground speed from items.otb/xml, the converter from the dat's GROUND value. These are assumed to be the same; to verify.
+- **Floor changes** are one move to the new floor: one step time on the landing tile, never ×3, because the floor changes.
+  - Stairs, ramps and holes, and ladders, grates and rope spots (used from the tile or a neighbour), all work this way.
+  - A loose stone pile is two steps: dig, step into the hole, land below.
+  - This replaces the rough fixed times from 3b.
+- **Each tile on the path keeps its ground speed** (`[x,y,z, how, ground, ground2]`), so `routeTime(path, speed)` works out the time again straight away when the settings change, without searching again. The search itself uses the speed at the time it's started.
+- **Haste** (TVP spells; the user's choice: always on): Haste 60 s, 60 mana (magic level 4, every vocation); Strong haste 42.5 s, 100 mana (magic level 8, sorcerers and druids). Casts = ceil(time / duration), shown with the mana.
+- **Route panel:** level (1–999), haste (none / Haste / Strong haste), "Boots of haste", speed shown. The time is in bold; the haste line shows casts and mana.
+  - The settings are remembered in this browser (localStorage, `tm-char`). Without storage it still works, just not remembered.
+- Tested (Thais → Carlin, 1077 steps):
+
+  | Character | Speed | Time | Haste |
+  |---|---|---|---|
+  | Level 50 | 318 | 7:39 | – |
+  | + haste | 388 | 6:19 | 7 casts, 420 mana |
+  | + boots of haste | 428 | 5:44 | 6 casts, 360 mana |
+  | Level 100 | 558 | 4:31 | 5 casts |
+  | Level 100, strong haste, BoH | 694 | 3:52 | 6 casts, 600 mana |
+
+- **Fixed: the map could crash while loading** (very likely the user's "everything is grey").
+  - Cause: React runs the loading effect twice in development, and a dataUrl change does the same. The first World set "ready", then a second, half-loaded World took its place. Any re-render (moving the mouse) then read its missing floor list, and the whole component disappeared.
+  - Fix: "ready" is reset when a World starts loading and only set by the World still in use; the panel only gets the world once it's ready.
+
 ### Slice 3b: route (built 2026-11-12)
 - **Route finder** (`src/map/engine/router.js`): A* in a **web worker**.
   - The worker is built from a function's source (Blob URL), not `new URL(..., import.meta.url)`, so it works the same with Vite and on Ryndean's webpack site, with no extra package.
