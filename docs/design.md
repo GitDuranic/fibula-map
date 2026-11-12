@@ -192,7 +192,14 @@ Agree each slice before building it, then build one at a time.
 - **3b. Route.** A* path search in a web worker, over the tiles and links. Start and destination are set on the map or from search. The route is drawn as a line on the map (dimmed on other floors) with markers where the floor changes. The panel shows the distance in tiles and the floor changes.
 - **3c. Run time.** Character settings: level, haste / strong haste, boots of haste. The time per step uses the ground speed and diagonals; floor changes get their own cost. The panel shows the total time.
 
-**Open questions for the user:** doors, tools, how to set start and destination, haste.
+**Answered by the user (2026-11-12)**
+- **Doors: ignore them.** Every door counts as open (normal, locked, quest, level and house doors). This is simplest, but a route may go where a normal player can't.
+- **Rope and shovel: always.** Routes may use rope spots and dig loose stone piles, with no checkboxes.
+- **Start and destination, all three ways:**
+  - a right-click menu on the map ("Route from here" / "Route to here", client style)
+  - From / To fields in the side panel that use the search
+  - "Route here" buttons (NPC window, search results)
+- **Haste: always on, plus casts.** Haste is assumed to be recast the moment it runs out. The run time shows how many casts the route needs, and the mana.
 
 ## Decisions made while building
 
