@@ -79,7 +79,9 @@ function drawItem(def, it, t, dx, dy, drawSprite, hook) {
   for (let l = 0; l < def.l; l++) {
     for (let h = 0; h < def.h; h++) {
       for (let w = 0; w < def.w; w++) {
-        const slot = def.s[spriteIndex(def, w, h, l, px, py, pz, 0)];
+        // Some grounds in this dat have a second pattern-Z set that is empty (e.g. grass-stone edge 272):
+        // fall back to the first set instead of drawing nothing (a black square).
+        const slot = def.s[spriteIndex(def, w, h, l, px, py, pz, 0)] || (pz ? def.s[spriteIndex(def, w, h, l, px, py, 0, 0)] : 0);
         if (slot) drawSprite(slot, dx - w * TILE, dy - h * TILE);
       }
     }
