@@ -174,6 +174,26 @@ Agree each slice before building it, then build one at a time.
 - **2b.** Search (places, depots, NPCs, items, coordinates) with fly-to. An NPC result switches to its floor with "This floor only".
 - **2c.** Town names over the zoomed-out map.
 
+## Slice 3 plan: walking route and run times (proposed 2026-11-12, to agree with the user)
+
+**What the data gives us** (TVP; the 7.1 map uses TVP item ids)
+- **Walkable** means a ground item and nothing on the tile that blocks movement (items.otb "block solid", the client's NOT_WALKABLE).
+- **Ground speed** per tile comes from the ground item (the dat's GROUND value: grass, road, swamp, …). It's needed for run times.
+- **Floor changes:**
+  - **Stepping on:** stairs, ramps and holes (items.xml `floorchange`: down 41 items, north/south/east/west 24).
+  - **Using:** ladders 1386, 3678 (up) and sewer grate 430 (down), from `actions/other/teleport.lua`.
+  - **Rope:** rope spots 384, 418 (`ropeSpots` in global.lua).
+  - **Shovel:** loose stone piles 468, 481, 483 become holes (`holes`).
+- **Doors** (global.lua): closed doors open on use; there are also locked doors (key), quest doors, level doors and house doors.
+- **Speed** (TVP source, see "Run times" above): step time = ceil50(1000 · ground speed / speed); a diagonal costs ×3, so a fastest route only goes diagonal when that saves time.
+
+**Sub-slices**
+- **3a. Walk data.** The converter writes, per tile, walkable yes/no plus its ground speed, and a list of floor-change links (from, to, kind: stairs / hole / ladder / grate / rope / shovel / door type). A hidden debug view (`?debug=walk`) shows walkable tiles and links, to check them against the game.
+- **3b. Route.** A* path search in a web worker, over the tiles and links. Start and destination are set on the map or from search. The route is drawn as a line on the map (dimmed on other floors) with markers where the floor changes. The panel shows the distance in tiles and the floor changes.
+- **3c. Run time.** Character settings: level, haste / strong haste, boots of haste. The time per step uses the ground speed and diagonals; floor changes get their own cost. The panel shows the total time.
+
+**Open questions for the user:** doors, tools, how to set start and destination, haste.
+
 ## Decisions made while building
 
 ### Slice 2c: town names (built 2026-11-12)
