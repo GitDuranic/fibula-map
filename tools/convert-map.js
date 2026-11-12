@@ -41,7 +41,10 @@ const ASSETS = args.assets || 'C:/git/tibia assets';
 const DATA = args.data || path.join(ASSETS, 'TVP-main/TVP-main/data');
 const MAP = args.map || 'C:/git/tibia assets/tibia71-tvp-converted/Tibia71.otbm'; // 7.1 map in TVP item ids
 const SPAWN = args.spawn || 'C:/git/tibia assets/tibia71-tvp-converted/Tibia71-spawn.xml'; // 7.1 NPC positions
-const OUT = args.out || 'public/map-data';
+// The data is built in a separate folder and swapped in at the end, so a running map never sees it half-built
+// (the old way deleted the folder first, and a page opened during a convert showed nothing but grey).
+const FINAL_OUT = args.out || 'public/map-data';
+const OUT = `${FINAL_OUT}.building`;
 const CHUNK = 32; // tiles per data chunk side
 
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -434,4 +437,10 @@ for (const [set, floorsList, z] of sets) {
 log(`Overview images: ${(overviewBytes / 1e6).toFixed(1)} MB`);
 
 fs.writeFileSync(path.join(OUT, 'map.json'), JSON.stringify({ chunk: CHUNK, bounds, chunks: chunkIndex, overview: { px: OV_PX, levels: OV_LEVELS, sets: overviewIndex } }));
-log(`Done -> ${OUT}`);
+// Swap the new data in: old folder aside, new one in place, then remove the old one.
+const OLD = `${FINAL_OUT}.old`;
+fs.rmSync(OLD, { recursive: true, force: true });
+if (fs.existsSync(FINAL_OUT)) fs.renameSync(FINAL_OUT, OLD);
+fs.renameSync(OUT, FINAL_OUT);
+fs.rmSync(OLD, { recursive: true, force: true });
+log(`Done -> ${FINAL_OUT}`);

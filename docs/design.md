@@ -302,6 +302,7 @@ Agree each slice before building it, then build one at a time.
 - **URL:** `#x,y,z,zoom`, updated 250 ms after the view stops. Pasting a link into the same tab also jumps there. Start position: Thais (32369, 32221, 7) at zoom 32.
 - The view centre stays inside the map's bounds.
 - **Black squares on grass-stone edges (fixed 2026-11-12, reported by the user at 32427..32430, 32141..32144, 7).** 61 map items in this dat (grass and edge grounds such as 170–181, 244–279) have `patternZ = 2`. The engine picks the set by `z % 2`, as the client does, so floor 7 uses the second set. That set is a different look (rougher stone) and is completely empty for some items, e.g. 272, which drew nothing. **Fix:** an empty sprite in the chosen set falls back to the first set.
+- **The converter no longer empties the live data folder (2026-11-12, user: "everything is grey").** It used to delete `public/map-data` first and rebuild it over ~3 min, so a page opened or reloaded meanwhile found no data: grey, or tiles remembered as missing until a reload. It now builds into `public/map-data.building` and swaps it in at the end (old folder → `.old` → removed); both side folders are ignored by git and Vite.
 - Dev gotcha: Vite only serves public files that existed when it started. After a convert that adds new files, restart the dev server.
 - **Not done in slice 1:**
   - water and other animations (phase 0 only)
