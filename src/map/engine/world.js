@@ -110,23 +110,36 @@ export class World {
     return !!(t && t.items.length);
   }
 
-  // One layer of a building: the connected area (4-neighbours) of floor zz that is drawn at frame position (x, y)
-  // of floor z, e.g. a roof. Null if there is nothing, or the area is too big to be a building (mountain ranges).
-  layerArea(x, y, z, zz, maxTiles = 3000) {
-    if (!this.hasAt(x, y, z, zz)) return null;
+  // The frame positions connected to (x, y) for which test(x, y) holds: neighbours within 1 + gap tiles
+  // (gap > 0 bridges small gaps between wall pieces). Null if more than maxTiles.
+  area(x, y, test, gap, maxTiles) {
     const tiles = new Set([`${x},${y}`]), queue = [[x, y]];
-    const box = { x1: x, y1: y, x2: x, y2: y };
+    const box = { x1: x, y1: y, x2: x, y2: y }, r = 1 + gap;
     while (queue.length) {
       const [px, py] = queue.pop();
-      for (const [nx, ny] of [[px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]]) {
-        const k = `${nx},${ny}`;
-        if (tiles.has(k) || !this.hasAt(nx, ny, z, zz)) continue;
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        const nx = px + dx, ny = py + dy, k = `${nx},${ny}`;
+        if (tiles.has(k) || !test(nx, ny)) continue;
         if (tiles.size >= maxTiles) return null;
         tiles.add(k); queue.push([nx, ny]);
         box.x1 = Math.min(box.x1, nx); box.y1 = Math.min(box.y1, ny); box.x2 = Math.max(box.x2, nx); box.y2 = Math.max(box.y2, ny);
       }
     }
-    return { tiles, box, key: `${zz}@${box.x1},${box.y1},${box.x2},${box.y2}` };
+    return { tiles, box };
+  }
+
+  // Where to take layer zz (and everything above it) off, for frame position (x, y) of floor z:
+  // 1. the whole building: everything at or above zz connected to (x, y), bridging 1-tile gaps between wall
+  //    pieces (e.g. Darashia's open-walled buildings), if that stays small (a single building);
+  // 2. otherwise (touching houses that would make a whole city block): just layer zz's own connected area.
+  // Null if there is nothing, or even the layer is too big to be a building (mountain ranges).
+  peelArea(x, y, z, zz) {
+    if (!this.hasAt(x, y, z, zz)) return null;
+    const above = (px, py) => { for (let f = 0; f <= zz; f++) if (this.hasAt(px, py, z, f)) return true; return false; };
+    const a = this.area(x, y, above, 1, 400) || this.area(x, y, (px, py) => this.hasAt(px, py, z, zz), 0, 3000);
+    if (!a) return null;
+    const { box } = a;
+    return { ...a, key: `${zz}@${box.x1},${box.y1},${box.x2},${box.y2}` };
   }
 
   // ---------- drawing ----------

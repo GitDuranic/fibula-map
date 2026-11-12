@@ -172,14 +172,32 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const i = ZOOMS.indexOf(v.zoom), j = Math.max(0, Math.min(ZOOMS.length - 1, i + steps));
     let peeled = false;
     if (world && v.z <= 7 && steps > 0 && v.zoom >= PEEL_FROM) {
-      // Take off the topmost layer still showing under the cursor, over that layer's own connected area.
+      // Take off the topmost layer still showing under the cursor, over its building (see World.peelArea).
       // It remembers the zoom it came off at: zooming back out past that puts it back.
-      const tx = Math.floor(wx), ty = Math.floor(wy), pk = `${tx},${ty}`;
-      for (let zz = 0; zz < v.z; zz++) {
-        if (!world.hasAt(tx, ty, v.z, zz) || opened.current.some((o) => zz < o.cut && o.tiles.has(pk))) continue;
-        const area = world.layerArea(tx, ty, v.z, zz);
-        if (area) { opened.current = [...opened.current, { ...area, cut: zz + 1, zoom: ZOOMS[j] }]; peeled = true; }
-        break;
+      // The topmost layer still showing at (x, y), or -1.
+      const topAt = (x, y) => {
+        const pk = `${x},${y}`;
+        for (let zz = 0; zz < v.z; zz++) {
+          if (world.hasAt(x, y, v.z, zz) && !opened.current.some((o) => zz < o.cut && o.tiles.has(pk))) return zz;
+        }
+        return -1;
+      };
+      // Under the cursor, or else the nearest tile within 3 that has a layer showing: the cursor is often on an
+      // open courtyard or a gap between wall pieces (Darashia's open-topped buildings).
+      const cx0 = Math.floor(wx), cy0 = Math.floor(wy);
+      let seed = null;
+      for (let r = 0; r <= 3 && !seed; r++) {
+        let best = null;
+        for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; // this ring only
+          const zz = topAt(cx0 + dx, cy0 + dy);
+          if (zz >= 0 && (!best || zz < best.zz)) best = { x: cx0 + dx, y: cy0 + dy, zz };
+        }
+        seed = best;
+      }
+      if (seed) {
+        const area = world.peelArea(seed.x, seed.y, v.z, seed.zz);
+        if (area) { opened.current = [...opened.current, { ...area, cut: seed.zz + 1, zoom: ZOOMS[j] }]; peeled = true; }
       }
     } else if (steps < 0 && opened.current.length) {
       const keep = opened.current.filter((o) => o.zoom < v.zoom); // layers taken off at this zoom come back

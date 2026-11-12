@@ -31,6 +31,10 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
     - At max zoom, a step over a building still takes a layer off.
     - The zoom buttons and `+`/`-` act on the centre of the screen. Pinch only zooms, for now.
     - Known effect: buildings whose roofs touch come off together (e.g. the Thais temple and the house next to it).
+    - **Refined after user test at Darashia (32989,32414,7), "doesn't take away the roof fully":**
+      - **Which area** (World.peelArea): first the whole building, i.e. everything at or above the layer connected to the cursor, bridging 1-tile gaps, if that's at most 400 tiles. Otherwise (a city block of touching houses) just that layer's own connected area.
+      - **Which tile:** if nothing is above the tile under the cursor (open courtyard, gap between walls), the nearest tile within 3 that has a layer showing is used.
+      - **Still imperfect:** Darashia's open-topped buildings are loose wall pieces with gaps of 3+ tiles (each floor is also drawn one tile further up-left), so connected-area rules miss parts of them. Asked the user how it should work.
   - Still planned: around the route and a selected NPC, roofs are cut away even when zoomed out.
 - **Viewer: our own canvas code, no map library (2026-11-12).** Leaflet was considered. It can look like Tibia, but the per-building roof swap and pixel-exact zoom steps (sharp at DPR 2.5) fight its design, and it would be an extra npm package for Ryndean. The pan/zoom/markers code is small enough to write ourselves.
 - **Code sharing:** the planner's `tools/lib` (dat, spr, otbm, png) and render engine are **copied** into tibia-map, not linked, so the planner's sync to Ryndean's site isn't affected.
