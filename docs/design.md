@@ -7,7 +7,7 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
 ## Decisions
 
 ### Scope and hosting
-- **Version: 7.6 only.** It follows the TVP data (map, NPCs, monsters). No version selector.
+- **Version: 7.1 only** (changed from 7.6 on 2026-11-12). No version selector. Our data (TVP) is 7.6, so where the 7.1 map, NPCs, prices and monsters come from is still open (see open questions).
 - **Project: `C:\git\tibia-map`**, its own repo next to the house planner, with the same git identity (GitDuranic). Nothing is pushed until the user asks.
 - **It goes on Ryndean's site too**, so it has the same limits as the house planner:
   - It is a React component and gets its settings as props. No Vite-only APIs such as `import.meta.env`.
@@ -19,8 +19,11 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
 - **Rookgaard works**: it is on the map, and routes on the island work.
 
 ### Map
-- **Real sprites.** The `map.otbm` + `.spr` are pre-rendered into an image tile pyramid. At the closest zoom you see real game sprites; zoomed far out it fades to the minimap colours. Pre-rendered tiles keep loading fast.
+- **Real sprites, drawn in the browser (2026-11-12).** Pre-rendering the whole map as 32 px sprite images was estimated at ~1 GB+ per floor, which is too big to host and too slow to load. Instead, the way the house planner works: the converter writes **compact map data** (item ids per tile, in chunks) plus a **sprite sheet** of the items used on the map. The browser draws the visible chunks with the planner's render engine and caches them. Only the **far zoom levels** are pre-rendered images, in the **minimap colours**. This keeps the download small, is sharp at every zoom step, and makes it easy to cut roofs away per building at runtime.
 - Pan, zoom, and floor up/down feel like Google Maps (drag, scroll wheel, pinch).
+- **Roofs depend on zoom (2026-11-12):** zoomed out, the map shows the surface from above with roofs, like a satellite view. Zoomed in past a threshold, it shows one floor at a time, without roofs: the inside of buildings, like tibiamaps.io. Around the route and a selected NPC, the roofs are cut away even when zoomed out, so you can see where to go. The viewer draws either "from above" (that floor plus the floors above it, with the client's 1-tile shift per floor) or "this floor only", per area. Only the minimap images are pre-rendered in both variants.
+- **Viewer: our own canvas code, no map library (2026-11-12).** Leaflet was considered. It can look like Tibia, but the per-building roof swap and pixel-exact zoom steps (sharp at DPR 2.5) fight its design, and it would be an extra npm package for Ryndean. The pan/zoom/markers code is small enough to write ourselves.
+- **Code sharing:** the planner's `tools/lib` (dat, spr, otbm, png) and render engine are **copied** into tibia-map, not linked, so the planner's sync to Ryndean's site isn't affected.
 - A position readout shows x, y, z under the cursor. You can type a position to jump there.
 - **Shareable links**: the URL holds the position, zoom, floor and the route.
 
@@ -68,15 +71,17 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
 - Sharpness matters (the user's display has DPR 2.5). Sprites are drawn at whole screen pixels per game pixel where possible.
 
 ## Data sources
-- `C:\git\tibia assets\TVP-main\TVP-main\data\world\map.otbm`: the map
-- `…\data\world\map-spawn.xml`, `map-house.xml`: spawns, houses
-- `…\data\npc\*.xml` + `…\data\npc\behavior\*.npc` (376 scripts): trade lists, prices, passages (`Teleport(x,y,z)`)
-- `…\data\monster\`: loot per monster
+- `C:\git\tibia assets\tibia71-tvp-converted\Tibia71.otbm`: **the 7.1 map** (in TVP item ids), plus `Tibia71-house.xml`, `Tibia71-spawn.xml` (spawns) and `Tibia71-npc-port-report.txt`
+- `C:\git\tibia assets\TVP-main\TVP-main\data\world\map.otbm`: the 7.6 map (not used any more)
+- `…\data\spawns.dat`: NPC positions (7.6; the 7.1 positions come with Ryndean's data / the port report)
+- `…\data\npc\*.xml` + `…\data\npc\behavior\*.npc` (376 scripts): trade lists, prices, passages (`Teleport(x,y,z)`). These are 7.6 stand-ins until Ryndean's 7.1 NPC files arrive.
+- `…\data\monster\monsters\*.xml`: loot per monster (7.6 stand-in until the 7.1 files arrive)
 - `…\data\items\items.otb` / `items.xml`: ground speed, names, speed items
-- `C:\git\tibia assets\Tibia.dat/.spr`: sprites (the 7.6 client)
+- `C:\git\tibia assets\Tibia.dat/.spr/.pic`: sprites. These are 7.6-format files whose item data was changed to match 7.1 for the 7.1 items (from Ryndean), so the sprites and graphics are fine for 7.1.
 - TibiaWiki (cached like the house planner's): places, quests, which quest unlocks which passage
 
 ## Open questions
+- **7.1 data (answered 2026-11-12):** Ryndean has 7.1 NPC and monster data and will hand it over; we don't have it yet. Until then we build against the TVP files in the same formats as stand-ins (`npc/behavior/*.npc`, `monster/monsters/*.xml`, `spawns.dat`), and the converters must take a data folder as input so the 7.1 set can be dropped in. **7.1 map received (2026-11-12):** `C:git	ibia assets	ibia71-tvp-converted` holds `Tibia71.otbm` (a real 7.1 map converted to TVP item ids, saved with Remere's), `Tibia71-house.xml`, `Tibia71-spawn.xml` and an NPC port report. NPC positions were moved over from a TVP 7.4 fork: 259 kept, 6 nudged (worth checking), 70 dropped (no such area in 7.1, e.g. Ankrahmun/Port Hope, or no standable tile), Dalbrect excluded on request. The converter uses this map by default (`--map`); items.otb still comes from TVP. Result: 5.5M tiles, 1650 items, all with sprites, 26 MB of chunks.
 - **Ryndean's overlay**: what is it, and how could it know the player's live position? Plan for now: the map can export a route as a list of `x,y,z` positions, so an overlay can draw it in the real game later. To ask Ryndean.
 - Which passages are locked behind a quest in 7.6? Make a list from the `.npc` conditions plus TibiaWiki.
 - Where does the "balanced" sell option sit between gold and time (e.g. gold per minute)?
@@ -95,4 +100,24 @@ Agree each slice before building it, then build one at a time.
 7. Map pins, current position, spawn layer, route export for the overlay.
 
 ## Decisions made while building
-_(nothing yet)_
+
+### Slice 1: map viewer (built 2026-11-12, waiting for the user to try it)
+- **Converter** `tools/convert-map.js` (`npm run convert`, ~1 min). Readers for dat/spr/otbm/png are copied from the planner. Output goes to `public/map-data/` (about 30 MB). It is generated, so it isn't committed (`.gitignore`), but rerun it after a fresh checkout.
+- **Chunks:** 32×32 tiles per JSON file, tiles in row order (`0` = none, a number = a tile with one item, an array = the items). That's 26 MB raw for 7.1, ~11 MB gzipped (7.6 measurements).
+- **Minimap images:** 256×256 tiles per PNG, in the client's 6×6×6 automap palette, in `floor` and `above` versions. "Above" covers floors 7..0 with the client's 1-tile up-left shift per floor.
+- **Zoom steps** (screen pixels per tile): 0.25, 0.5, 1, 2, 4, 8 = minimap only; 16, 32 = sprites with roofs; 64, 96, 128, 160 = sprites, this floor only (inside buildings). From 32 up, a game pixel is a whole number of screen pixels, so it's sharp. The minimap is drawn under the sprites as a quick placeholder while chunks load.
+- **Floors underground** (8–15) are always drawn alone.
+- **Controls:**
+  - drag to pan, with a short glide after a flick
+  - mouse wheel: one zoom step per notch, around the cursor
+  - pinch follows the fingers and snaps to the nearest step
+  - arrows pan, `+`/`-` zoom, Page Up/Page Down change floor
+  - the client's compass rose pans half a screen; the client's zoom and floor buttons (from `Tibia.pic`, as in the planner)
+- **Panel:** a 176-client-pixel stone side panel (under the map on phones), scaled with CSS `zoom` to whole screen pixels per client pixel. It shows the floor ("Floor 8 (-1)"), the position under the cursor, and a "Go to position" field (any separators, z optional). Going to a position zooms in to at least 64.
+- **Text is plain Verdana 11px for now.** The client's bitmap font, as in the planner, may come later.
+- **URL:** `#x,y,z,zoom`, updated 250 ms after the view stops. Pasting a link into the same tab also jumps there. Start position: Thais (32369, 32221, 7) at zoom 32.
+- The view centre stays inside the map's bounds.
+- **Not done in slice 1:**
+  - water and other animations (phase 0 only)
+  - roofs cut away per building
+  - the client's bitmap font

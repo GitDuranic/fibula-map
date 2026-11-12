@@ -1,0 +1,65 @@
+/* Tibia Map - client-styled side panel around a modern map. All classes are prefixed tm-.
+   Colours are sampled from the real 7.x client (same as the house planner): stone texture,
+   1px bevels (#747474 light / #313131 dark), inset fields with #101111 / #5a5a5a borders. */
+.tm {
+  --tm-light: #747474;
+  --tm-dark: #313131;
+  --tm-slot-dark: #101111;
+  --tm-slot-light: #5a5a5a;
+  --tm-text: #bfbfbf;
+  --tm-shade-deep: linear-gradient(rgba(0, 0, 0, .55), rgba(0, 0, 0, .55));
+  display: flex; width: 100%; min-height: 240px; position: relative;
+  background-color: #474747; background-image: var(--tm-stone);
+  font: 11px Verdana, sans-serif; color: var(--tm-text);
+  user-select: none; -webkit-user-select: none;
+}
+.tm *, .tm *::before, .tm *::after { box-sizing: border-box; }
+
+.tm-map {
+  position: relative; flex: 1; min-width: 0; margin: 4px; background: #000; outline: none;
+  border: 1px solid; border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark);
+}
+.tm-map:focus-visible { border-color: #bfbfbf; }
+.tm-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; image-rendering: pixelated; }
+.tm-canvas:active { cursor: grabbing; }
+.tm-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tm-text); }
+
+/* side panel, sized in client pixels and scaled with CSS zoom to whole screen pixels */
+.tm-side { flex: none; width: 176px; padding: 4px 4px 4px 0; display: flex; flex-direction: column; gap: 4px; }
+.tm-panel {
+  padding: 5px; display: flex; gap: 6px;
+  border: 1px solid; border-color: var(--tm-light) var(--tm-dark) var(--tm-dark) var(--tm-light);
+}
+.tm-info { display: flex; flex-direction: column; gap: 3px; justify-content: flex-end; min-width: 0; }
+.tm-pos { white-space: nowrap; }
+
+/* the client's minimap controls (Tibia.pic): rose, zoom out | floor up, zoom in | floor down */
+.tm-nav { display: grid; grid-template-columns: 20px 20px; column-gap: 3px; row-gap: 1px; flex: none; }
+.tm-gbtn, .tm-rose { padding: 0; border: 0; cursor: pointer; flex: none; background-image: var(--tm-gui); background-repeat: no-repeat; background-color: transparent; image-rendering: pixelated; }
+.tm-rose { grid-column: span 2; margin-bottom: 2px; width: 43px; height: 43px; background-position: -131px -137px; }
+.tm-gbtn { width: 20px; height: 20px; }
+.tm-gbtn-zoomin { background-position: -1px -98px; }
+.tm-gbtn-zoomin:active:not(:disabled) { background-position: -1px -119px; }
+.tm-gbtn-zoomout { background-position: -22px -98px; }
+.tm-gbtn-zoomout:active:not(:disabled) { background-position: -22px -119px; }
+.tm-gbtn-up { background-position: -43px -98px; }
+.tm-gbtn-up:active:not(:disabled) { background-position: -43px -119px; }
+.tm-gbtn-down { background-position: -64px -98px; }
+.tm-gbtn-down:active:not(:disabled) { background-position: -64px -119px; }
+.tm-gbtn:disabled { cursor: default; filter: brightness(0.55); }
+
+.tm-goto { flex-direction: column; gap: 3px; }
+.tm-input {
+  width: 100%; height: 18px; padding: 0 3px; font: inherit; color: var(--tm-text);
+  background: var(--tm-shade-deep), var(--tm-stone); background-color: #2b2b2b;
+  border: 1px solid; border-color: var(--tm-slot-dark) var(--tm-slot-light) var(--tm-slot-light) var(--tm-slot-dark);
+  outline: none;
+}
+.tm-input::placeholder { color: #707070; }
+.tm button:focus-visible, .tm-input:focus-visible { outline: 1px dotted #bfbfbf; outline-offset: -3px; }
+
+/* phones: panel under the map */
+@media (max-width: 600px) {
+  .tm { flex-direction: column; }
+  .tm-side { width: auto; flex-direction: row; padding: 0 4px 4px; }
+}
