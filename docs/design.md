@@ -201,6 +201,25 @@ Agree each slice before building it, then build one at a time.
   - "Route here" buttons (NPC window, search results)
 - **Haste: always on, plus casts.** Haste is assumed to be recast the moment it runs out. The run time shows how many casts the route needs, and the mana.
 
+## Slice 4 plan: boats, carpets and teleports (proposed 2026-11-13, to agree with the user)
+
+**What the data gives us**
+- **NPC passages:** 16 NPCs with boats or carpets (already parsed in 2a): price, destination tile. Passages to places not on the 7.1 map are already left out.
+- **A quest discount:** almost every boat and carpet line has a second, **cheaper price with `QuestValue(250)>2`** (e.g. Captain Seagull → Thais 130 gp, 120 with the quest). The parser currently ignores those lines, so routes use the normal price.
+- **The Oracle** (Rookgaard) sends you one way to Thais, Carlin, Venore or Edron (`Teleport` per choice, level 8 needed).
+- **Magic forcefields** (item 1387 with a teleport destination): 64 on the 7.1 map. Some have destination 0,0,0 (scripted or broken) and are left out.
+
+**Sub-slices**
+- **4a. Data.**
+  - The converter adds links: `teleport` (forcefields, stepped onto like stairs), `npc` (a passage: from the tiles near the NPC, with price and NPC name) and `oracle` (one way from Rookgaard).
+  - The debug view shows them.
+- **4b. Route.**
+  - The router uses them, with a time per passage (talking to the NPC) and the gold.
+  - The panel lists the route in legs ("Walk to Captain Bluebear, Thais → boat to Carlin, 110 gp → walk …") with total time and gold.
+  - On the map a passage is drawn as a jump (an arc) between the two harbours.
+
+**Open questions for the user:** quest discount, what "best route" means, time per passage, the Oracle.
+
 ## Decisions made while building
 
 ### Slice 3c: run times (built 2026-11-13)
