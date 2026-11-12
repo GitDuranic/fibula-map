@@ -70,6 +70,9 @@ export class World {
     this.npcs = npcs;
     this.npcSheet = npcSheet;
     this.npcAt = new Map(npcs.map((n) => [n.p.join(','), n]));
+    // Places: { n name, k 'town' | 'place' | 'depot', p [x,y,z] } (towns at their temple).
+    this.places = await loadJson(`${this.base}/places.json`);
+    this.buildSearch();
     this.map = map;
     this.CHUNK = map.chunk;
     this.bounds = map.bounds;
@@ -210,6 +213,67 @@ export class World {
       ctx.drawImage(sheet, (i % this.sheetCells) * TILE, Math.floor(i / this.sheetCells) * TILE, TILE, TILE, x, y, TILE, TILE);
     };
     drawTile(this.defs, { x: 0, y: 0, z: 0, items: [{ id, count }] }, dx, dy, drawSprite);
+  }
+
+  // ---------- search ----------
+
+  // One list of everything that can be searched: places, depots, NPCs and the items NPCs trade.
+  buildSearch() {
+    const entries = [];
+    const label = { town: 'Town', place: 'Place', depot: 'Depot' };
+    for (const p of this.places) entries.push({ kind: label[p.k], name: p.n, place: p });
+    for (const n of this.npcs) entries.push({ kind: 'NPC', name: n.n, npc: n });
+    const items = new Map();
+    for (const n of this.npcs) {
+      for (const [id, , fluid] of [...n.sells, ...n.buys]) {
+        const key = `${id}:${fluid ?? ''}`;
+        if (!items.has(key)) items.set(key, { kind: 'Item', name: this.itemName(id, fluid), item: { id, fluid: fluid ?? null } });
+      }
+    }
+    entries.push(...items.values());
+    for (const e of entries) e.lower = e.name.toLowerCase();
+    this.searchEntries = entries;
+  }
+
+  // Search results for text q, best first (at most `limit`): names starting with it, then a word starting with
+  // it, then containing it; shorter names first. Coordinates ("32369, 32221, 7") give a position.
+  search(q, limit = 12) {
+    q = q.trim().toLowerCase();
+    if (!q) return [];
+    const n = q.match(/\d+/g)?.map(Number);
+    if (n && n.length >= 2 && /^[\d\s,.;:/-]+$/.test(q)) {
+      const z = n.length > 2 && n[2] <= 15 ? n[2] : 7;
+      return [{ kind: 'Position', name: `${n[0]}, ${n[1]}, ${z}`, pos: { x: n[0], y: n[1], z } }];
+    }
+    const rank = (e) => (e.lower.startsWith(q) ? 0 : e.lower.includes(` ${q}`) || e.lower.includes(`'${q}`) ? 1 : e.lower.includes(q) ? 2 : -1);
+    return this.searchEntries
+      .map((e) => ({ e, r: rank(e) }))
+      .filter((x) => x.r >= 0)
+      .sort((a, b) => a.r - b.r || a.e.name.length - b.e.name.length || a.e.name.localeCompare(b.e.name))
+      .slice(0, limit)
+      .map((x) => x.e);
+  }
+
+  // The NPCs selling and buying an item: { sells: [{ npc, price }] cheapest first, buys: [...] best price first }.
+  traders(item) {
+    const match = (o) => o[0] === item.id && (o[2] ?? null) === item.fluid;
+    const sells = [], buys = [];
+    for (const n of this.npcs) {
+      for (const o of n.sells) if (match(o)) sells.push({ npc: n, price: o[1] });
+      for (const o of n.buys) if (match(o)) buys.push({ npc: n, price: o[1] });
+    }
+    return { sells: sells.sort((a, b) => a.price - b.price), buys: buys.sort((a, b) => b.price - a.price) };
+  }
+
+  // The nearest real town to a position (for "Al Dee, Rookgaard").
+  townOf(p) {
+    let best = null;
+    for (const t of this.places) {
+      if (t.k !== 'town') continue;
+      const d = Math.hypot(t.p[0] - p[0], t.p[1] - p[1]);
+      if (!best || d < best.d) best = { t, d };
+    }
+    return best?.t.n || '';
   }
 
   // An item's name as an NPC offers it, e.g. "vial of oil" for a vial with fluid type 7.

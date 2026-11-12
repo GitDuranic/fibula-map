@@ -2,7 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 
 // An item as a 32x32 icon in a client-style slot. count: stack size or fluid type.
-function ItemIcon({ world, id, count }) {
+export function ItemIcon({ world, id, count }) {
   const ref = useRef(null);
   useEffect(() => {
     const ctx = ref.current?.getContext('2d');

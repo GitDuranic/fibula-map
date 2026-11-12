@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
+import ItemWindow from './ItemWindow.jsx';
 import { drawText, textWidth } from './engine/text.js';
 import './tibia-map.css';
 
@@ -66,13 +67,6 @@ function visibleNpcs(world, v, left, top, right, bottom) {
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
-// Parses "32369, 32221, 7" (any separators); z is optional.
-function parsePosition(text, z) {
-  const n = text.match(/\d+/g)?.map(Number);
-  if (!n || n.length < 2) return null;
-  return { x: n[0], y: n[1], z: n.length > 2 && n[2] <= 15 ? n[2] : z };
-}
-
 export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncUrl = true }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
@@ -88,7 +82,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [error, setError] = useState(null);
   const [hover, setHover] = useState(null);
   const [ui, setUi] = useState({ z: view.current.z, zoom: view.current.zoom, cut: 0 });
-  const [gotoText, setGotoText] = useState('');
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [active, setActive] = useState(0); // highlighted search result
+  const [item, setItem] = useState(null); // the item whose window is open: { id, fluid }
+  const flight = useRef(null); // a fly-to in progress: { fx, fy, tx, ty, t0, dur }
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   const uiScale = Math.max(1, Math.round(dpr)); // whole screen pixels per client pixel in the side panel
 
@@ -100,6 +98,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height, v = view.current, a = anim.current;
     let more = false;
+
+    // Fly-to (search results, travel): ease the centre to the target.
+    const fl = flight.current;
+    if (fl) {
+      const t = Math.min(1, (performance.now() - fl.t0) / fl.dur), e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      v.x = fl.fx + (fl.tx - fl.fx) * e; v.y = fl.fy + (fl.ty - fl.fy) * e;
+      if (t < 1) more = true; else flight.current = null;
+    }
 
     // Zoom animation: ease the shown scale towards the target, keeping the anchor point still.
     if (a.s !== v.zoom) {
@@ -275,6 +281,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const wx = v.x + (sx - canvas.width / 2) / s, wy = v.y + (sy - canvas.height / 2) / s;
     anim.current.anchor = { sx, sy, wx, wy };
     const before = v.zoom;
+    flight.current = null;
     v.zoom = ZOOMS[j];
     mainLevel(before, wx, wy);
     viewChanged();
@@ -331,24 +338,33 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
 
   const panBy = useCallback((dx, dy) => { // in device pixels
     const v = view.current, s = anim.current.s;
+    flight.current = null;
     v.x -= dx / s; v.y -= dy / s;
     anim.current.anchor = null;
     viewChanged();
   }, [viewChanged]);
 
-  const goTo = useCallback((p) => {
+  // Flies the map to tile (x, y) on floor z at a zoom (default: at least MAIN_FROM). Zoomed in on the surface it
+  // shows that floor only, so the place isn't hidden under a roof; `cut` overrides that.
+  const hashTimerFly = useRef(0);
+  const goTo = useCallback((p, { zoom, cut } = {}) => {
     const v = view.current;
-    v.x = p.x + 0.5; v.y = p.y + 0.5;
     if (worldRef.current?.floors.includes(p.z)) v.z = p.z;
-    if (v.zoom < MAIN_FROM) { v.zoom = MAIN_FROM; anim.current.s = MAIN_FROM; }
-    v.cut = v.z <= 7 ? v.z : 0; // that floor only, so the place isn't hidden under a roof
+    v.zoom = zoom ?? Math.max(v.zoom, MAIN_FROM);
+    v.cut = cut ?? (v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0);
     anim.current.anchor = null;
+    const dist = Math.hypot(p.x + 0.5 - v.x, p.y + 0.5 - v.y);
+    const dur = Math.min(1000, 250 + dist * 2);
+    flight.current = { fx: v.x, fy: v.y, tx: p.x + 0.5, ty: p.y + 0.5, t0: performance.now(), dur };
     viewChanged();
+    clearTimeout(hashTimerFly.current);
+    hashTimerFly.current = setTimeout(viewChanged, dur + 50); // the URL once it has arrived
   }, [viewChanged]);
 
   const selectNpc = useCallback((n) => {
     selected.current = n;
     setNpc(n);
+    if (n) setItem(null);
     redraw();
   }, [redraw]);
 
@@ -369,6 +385,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const onPointerDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     cancelAnimationFrame(glide.current);
+    flight.current = null;
     e.currentTarget.setPointerCapture(e.pointerId);
     pointers.current.set(e.pointerId, toCanvas(e));
     if (pointers.current.size === 1) drag.current = { last: toCanvas(e), start: toCanvas(e), moved: false, t: performance.now(), vx: 0, vy: 0 };
@@ -487,10 +504,35 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     panBy(-ux * c.width / 2, -uy * c.height / 2);
   };
 
-  const onGoto = (e) => {
+  // ---------- search ----------
+  const onQuery = (text) => {
+    setQuery(text);
+    setResults(worldRef.current ? worldRef.current.search(text) : []);
+    setActive(0);
+  };
+  // Opens a search result: flies there (and opens the NPC), or opens the item window.
+  const pick = (r) => {
+    if (!r) return;
+    setResults([]);
+    setQuery(r.name);
+    if (r.kind === 'Position') goTo(r.pos);
+    else if (r.kind === 'NPC') { goTo({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
+    else if (r.kind === 'Depot') goTo({ x: r.place.p[0], y: r.place.p[1], z: r.place.p[2] });
+    else if (r.kind === 'Item') { selectNpc(null); setItem(r.item); }
+    else {
+      // A town or place: an overview with the roofs on, from its temple (the surface, unless it's underground).
+      const [x, y, z] = r.place.p;
+      goTo({ x, y, z: z > 7 ? z : 7 }, { zoom: 16, cut: 0 });
+    }
+  };
+  const onSearchKey = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(results.length - 1, a + 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(0, a - 1)); }
+    else if (e.key === 'Escape') setResults([]);
+  };
+  const onSearch = (e) => {
     e.preventDefault();
-    const p = parsePosition(gotoText, view.current.z);
-    if (p) goTo(p);
+    pick(results[active] || worldRef.current?.search(query)[0]);
   };
 
   const world = worldRef.current;
@@ -524,15 +566,36 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             <div className="tm-pos">{hover ? `${hover.x}, ${hover.y}, ${hover.z}` : ' '}</div>
           </div>
         </div>
-        <form className="tm-panel tm-goto" onSubmit={onGoto}>
-          <label htmlFor="tm-goto-input">Go to position</label>
+        <form className="tm-panel tm-goto" onSubmit={onSearch} role="search">
+          <label htmlFor="tm-search">Search</label>
           <input
-            id="tm-goto-input" className="tm-input" value={gotoText} placeholder="32369, 32221, 7"
-            onChange={(e) => setGotoText(e.target.value)} spellCheck={false} autoComplete="off"
+            id="tm-search" className="tm-input" value={query} placeholder="Town, NPC, item or x, y, z"
+            onChange={(e) => onQuery(e.target.value)} onKeyDown={onSearchKey} onBlur={() => setTimeout(() => setResults([]), 150)}
+            onFocus={() => query && onQuery(query)} spellCheck={false} autoComplete="off"
           />
+          {results.length > 0 && (
+            <div className="tm-results" role="listbox">
+              {results.map((r, i) => (
+                <button
+                  type="button" key={`${r.kind}:${r.name}:${i}`} role="option" aria-selected={i === active}
+                  className={i === active ? 'tm-result tm-active' : 'tm-result'}
+                  onMouseDown={(e) => { e.preventDefault(); pick(r); }} onMouseEnter={() => setActive(i)}
+                >
+                  <span className="tm-offer-name">{r.name}</span>
+                  <span className="tm-result-kind">{r.kind}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </form>
         {npc && world && (
           <NpcWindow world={world} npc={npc} onClose={() => selectNpc(null)} onTravel={(t) => goTo({ x: t[2], y: t[3], z: t[4] })} />
+        )}
+        {item && world && (
+          <ItemWindow
+            world={world} item={item} onClose={() => setItem(null)}
+            onNpc={(n) => { goTo({ x: n.p[0], y: n.p[1], z: n.p[2] }); selectNpc(n); }}
+          />
         )}
       </div>
     </div>

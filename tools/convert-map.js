@@ -9,6 +9,7 @@
 // Outputs (in <out>/):
 //   items.json            draw info and name for every item on the map or traded by an NPC (keyed by client id),
 //                         plus fluid names by fluid type
+//   places.json           [{ n name, k 'town' | 'depot', p [x,y,z] }] towns from the map's town list (temple), depots
 //   npcs.json, npcs.png   NPCs: [{ n name, p [x,y,z], img [x,y,w,h] in npcs.png (outfit standing, coloured),
 //                         d displacement, sells/buys [[client id, price(, fluid type)]], travel [[name, price, x,y,z]] }]
 //                         (7.1 positions from --spawn; names/outfits/trade/travel from the TVP NPC files for now)
@@ -49,10 +50,15 @@ const dat = parseDat(path.join(ASSETS, 'Tibia.dat'));
 const spr = openSpr(path.join(ASSETS, 'Tibia.spr'));
 const otb = parseOtb(path.join(DATA, 'items/items.otb'));
 const toClient = (sid) => otb.map.get(sid) || 0;
+const itemInfo = loadItemInfo(DATA);
+// Depot lockers (items.xml name "locker"): where the depots are.
+const lockerSids = new Set([...itemInfo.server].filter(([, it]) => it.name === 'locker').map(([sid]) => sid));
 
 // ---------- map ----------
 // floors[z] = Map(chunkKey "cx,cy" -> Map(tileIndex -> items[]))
-const OTBM = { TILE_AREA: 4, TILE: 5, ITEM: 6, HOUSETILE: 14 };
+const OTBM = { TILE_AREA: 4, TILE: 5, ITEM: 6, TOWN: 13, HOUSETILE: 14 };
+const towns = []; // { name, temple: [x, y, z] } from the map's town list
+const lockers = []; // [x, y, z]
 const floors = Array.from({ length: 16 }, () => new Map());
 const usedItems = new Set();
 const missing = new Map();
@@ -60,8 +66,9 @@ const bounds = { x1: Infinity, y1: Infinity, x2: -Infinity, y2: -Infinity };
 let tileCount = 0;
 log('Reading map');
 {
-  let area = null, tile = null;
+  let area = null, tile = null, pos = null;
   const addItem = (sid, count) => {
+    if (lockerSids.has(sid)) lockers.push(pos);
     const cid = toClient(sid);
     if (!cid || !dat.items.has(cid)) { missing.set(sid, (missing.get(sid) || 0) + 1); return; }
     usedItems.add(cid);
@@ -75,6 +82,7 @@ log('Reading map');
         const x = area.x + r.u8(), y = area.y + r.u8(), z = area.z;
         if (node.type === OTBM.HOUSETILE) r.u32();
         tile = [];
+        pos = [x, y, z];
         while (r.left > 0) {
           const attr = r.u8();
           if (attr === 3) r.u32();
@@ -104,6 +112,7 @@ log('Reading map');
         addItem(sid, count);
         return false; // skip container contents
       }
+      case OTBM.TOWN: { r.u32(); const name = r.str(); towns.push({ name, temple: [r.u16(), r.u16(), r.u8()] }); return false; }
       default: return true;
     }
   });
@@ -141,7 +150,6 @@ const tileAt = (x, y, z) => floors[z]?.get(`${Math.floor(x / CHUNK)},${Math.floo
 // ---------- NPCs ----------
 // 7.1 positions from the spawn file; names, outfits, trade and travel from the TVP (7.6) NPC files for now.
 log('Reading NPCs');
-const itemInfo = loadItemInfo(DATA);
 const FLUIDS = [''];
 for (let t = 1; t <= 12; t++) FLUIDS.push(itemInfo.server.get(t)?.name || 'water');
 const npcList = loadNpcs({ spawnFile: SPAWN, npcDir: path.join(DATA, 'npc'), log });
@@ -179,6 +187,39 @@ const npcsOut = npcList.map((n, i) => {
     sells: n.sells.map(offerOut).filter(Boolean), buys: n.buys.map(offerOut).filter(Boolean), travel,
   };
 });
+// ---------- places: towns (the map's town list, also internal names like Mists or Minoroom) and depots ----------
+// The real towns of 7.1 (the rest of the town list are internal names: hunting areas, quest spots, ...).
+const REAL_TOWNS = new Set(['Rookgaard', 'Thais', 'Carlin', 'Kazordoon', "Ab'Dendriel", 'Edron', 'Darashia', 'Venore', 'Fibula', 'Senja', 'Folda', 'Vega', 'Isle of Solitude']);
+const placesOut = [];
+const townsHere = towns.filter((t) => tileAt(...t.temple)); // e.g. Ankrahmun is listed but not on the 7.1 map
+for (const t of townsHere) placesOut.push({ n: t.name, k: REAL_TOWNS.has(t.name) ? 'town' : 'place', p: t.temple });
+// Depots: lockers within 16 tiles of each other, on any floor, are one depot (depots span floors, e.g. Thais 5-8).
+// It is placed on its floor closest to the ground floor (where you walk in), at the middle of the lockers there.
+const groups = [];
+for (const l of lockers) {
+  const near = groups.filter((g) => g.some((m) => Math.abs(m[0] - l[0]) <= 16 && Math.abs(m[1] - l[1]) <= 16));
+  const merged = [l, ...near.flat()];
+  for (const g of near) groups.splice(groups.indexOf(g), 1);
+  groups.push(merged);
+}
+const nearestTown = (p) => townsHere.filter((t) => REAL_TOWNS.has(t.name)).reduce((b, t) => {
+  const d = Math.hypot(t.temple[0] - p[0], t.temple[1] - p[1]);
+  return !b || d < b.d ? { t, d } : b;
+}, null)?.t.name || '';
+const depotNames = new Map();
+for (const g of groups) {
+  const z = g.map((l) => l[2]).sort((a, b) => Math.abs(a - 7) - Math.abs(b - 7) || g.filter((l) => l[2] === b).length - g.filter((l) => l[2] === a).length)[0];
+  const on = g.filter((l) => l[2] === z);
+  const mx = on.reduce((a, l) => a + l[0], 0) / on.length, my = on.reduce((a, l) => a + l[1], 0) / on.length;
+  const at = on.reduce((b, l) => (Math.hypot(l[0] - mx, l[1] - my) < Math.hypot(b[0] - mx, b[1] - my) ? l : b));
+  const town = nearestTown(at), i = (depotNames.get(town) || 0) + 1;
+  depotNames.set(town, i);
+  placesOut.push({ n: i > 1 ? `${town} depot ${i}` : `${town} depot`, k: 'depot', p: at });
+}
+const depots = groups;
+fs.writeFileSync(path.join(OUT, 'places.json'), JSON.stringify(placesOut));
+log(`Places: ${townsHere.length} towns (of ${towns.length} in the town list), ${depots.length} depots (${lockers.length} lockers)`);
+
 writePng(path.join(OUT, 'npcs.png'), npcSheetW, npcSheetH, npcSheet);
 fs.writeFileSync(path.join(OUT, 'npcs.json'), JSON.stringify(npcsOut));
 log(`${npcsOut.length} NPCs, ${npcsOut.filter((n) => n.sells.length || n.buys.length).length} traders, ${npcsOut.filter((n) => n.travel.length).length} with travel`);

@@ -103,3 +103,18 @@
   border: 1px solid; border-color: var(--tm-light) var(--tm-dark) var(--tm-dark) var(--tm-light);
 }
 .tm-travel:active { border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); }
+
+/* search results (under the search field) */
+.tm-goto { position: relative; }
+.tm-results {
+  display: flex; flex-direction: column; max-height: 240px; overflow-y: auto; margin-top: 1px;
+  background: var(--tm-shade-deep), var(--tm-stone); background-color: #2b2b2b;
+  border: 1px solid; border-color: var(--tm-slot-dark) var(--tm-slot-light) var(--tm-slot-light) var(--tm-slot-dark);
+}
+.tm-result {
+  display: flex; align-items: center; gap: 4px; padding: 2px 4px; font: inherit; color: var(--tm-text);
+  background: none; border: 0; text-align: left; cursor: pointer;
+}
+.tm-result.tm-active { background: rgba(255, 255, 255, .12); color: #fff; }
+.tm-result-kind { flex: none; color: #8a8a8a; }
+.tm-town { color: #8a8a8a; }

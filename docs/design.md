@@ -176,6 +176,23 @@ Agree each slice before building it, then build one at a time.
 
 ## Decisions made while building
 
+### Slice 2b: search (built 2026-11-12)
+- **Converter → `places.json`** (`{ n, k: town | place | depot, p }`):
+  - **Towns** from the map's town list (OTBM TOWNS), at their temple, only where the temple tile exists: 43 of 47 (Ankrahmun and others aren't on the 7.1 map).
+  - REAL_TOWNS (Rookgaard, Thais, Carlin, Kazordoon, Ab'Dendriel, Edron, Darashia, Venore, Fibula, Senja, Folda, Vega, Isle of Solitude) are `town`. The other 30 internal names are `place` (the user wanted them included).
+  - **Depots:** found by their lockers (items.xml "locker", 218 on the map). Lockers within 16 tiles of each other on any floor are one depot, since depots span floors (Thais 5–8, Ab'Dendriel 3–8). It's placed on its floor closest to 7 (where you walk in), on the locker nearest the middle there. Named after the nearest **real** town; at first "HellsGate" claimed the Ab'Dendriel depot. Result: 8 depots (Ab'Dendriel, Carlin, Kazordoon, Thais, Edron, Venore ×2, Darashia).
+- **Search field** in the side panel replaces "Go to position". It searches places, depots, NPCs, the items NPCs trade, and coordinates.
+  - **Ranking:** names starting with the text, then a word starting with it, then containing it; shorter names first; at most 12 results.
+  - **Keys:** arrow keys and Enter, or a click; Esc closes the list. Enter with nothing highlighted takes the first result.
+- **Picking a result flies the map there** (eased pan, 250–1000 ms by distance). Dragging or zooming stops the flight.
+  - **Town / place:** an overview with roofs (zoom 16) from the temple, on the surface unless it's underground.
+  - **Depot:** its floor, this floor only, zoom 64 or closer.
+  - **NPC:** its floor, this floor only, and its window opens.
+  - **Position:** that tile.
+  - **Item:** opens the **item window**: icon, "Sold by" (cheapest first) and "Bought by" (best price first), each NPC with its nearest real town; clicking one flies there and opens the NPC.
+- Travel buttons in the NPC window fly too.
+- Tested: "plate" → plate armor (sold by Kroox, Kazordoon 1200 gp; bought by Willard, Yanni, Turvy, Sam, Shanar 400 gp …); Willard flies to Edron floor 6 with his window; venore / thais dep / al d / coordinates / mists.
+
 ### Slice 2a: NPCs on the map (built 2026-11-12)
 - **User (2026-11-12): use the 7.6 files for whatever we don't have in 7.1 yet.** Positions are 7.1 (`Tibia71-spawn.xml`). Names, outfits, trade and travel come from the TVP 7.6 NPC files.
 - **Converter** (`tools/lib/npcs.js`, `--spawn`): 265 NPCs, 108 traders, 16 with travel.
