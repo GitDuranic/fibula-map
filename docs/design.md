@@ -203,6 +203,28 @@ Agree each slice before building it, then build one at a time.
 
 ## Decisions made while building
 
+### Slice 3b: route (built 2026-11-12)
+- **Route finder** (`src/map/engine/router.js`): A* in a **web worker**.
+  - The worker is built from a function's source (Blob URL), not `new URL(..., import.meta.url)`, so it works the same with Vite and on Ryndean's webpack site, with no extra package.
+  - It loads walk.bin, links.json and map.json itself (~7 MB raw, mostly zeros), on the first route.
+- **Moves:**
+  - **Walking:** 8 neighbours that can be walked on. Step time on the tile stepped onto is ceil50(1000 · ground speed / speed); a diagonal costs ×3.
+  - **Step links** (stairs, ramps, holes): stepping onto one moves you to its destination.
+  - **Use links** are used from the tile itself or one of its 8 neighbours, with fixed extra times: ladder and grate 600 ms, rope 1000 ms, dig 1600 ms. These are rough figures, to check in 3c.
+  - **Estimate:** Chebyshev distance × the step time on the fastest ground (90), so it never over-estimates.
+  - At most 4 million tiles are searched.
+- **Start / destination on a tile you can't stand on** (a depot locker, an NPC behind its counter) moves to the nearest walkable tile within 3 on that floor.
+- Tested in Node: Thais temple → Thais depot 68 steps; Thais → Carlin 1079 steps (4 floor changes, ~0.6 s to find); into the Thais sewers by a grate. Thais → Edron and Thais → Rookgaard are "not connected by walking" (boats come in slice 4).
+- **Ways to set it (all three, as the user chose):**
+  - **Right-click** on the map: a client-style menu at the mouse with "Route from here", "Route to here", and "Clear route" when there is one. It uses the tile under the mouse on the floor you're on.
+  - A **Route** button by the search opens the **route panel**, with From / To fields using the same search (towns, places, depots, NPCs, positions; no items), plus **Swap** and **Show** (fit the whole route).
+  - **"Route here"** in the NPC window sets that NPC as the destination.
+- **On the map:**
+  - The route is a yellow line with a dark edge on this floor, faint yellow dashes on other floors. Surface floors are shifted like the client draws them.
+  - Dots: green start, red end; orange/blue where you go up/down (a big dot where you change floor, a small one where you arrive).
+  - When a route is found, the map flies to show all of it (the closest zoom where it fits, up to 64), on the floor it starts on.
+- **Panel:** steps, floor changes, and a first time estimate "(level 50, no haste)". The real character settings come in 3c.
+
 ### Slice 3a: walk data (built 2026-11-12)
 - **Converter** (`tools/lib/walk.js`) writes `walk.bin` and `links.json`.
   - `walk.bin` has one byte per tile, in map.json chunk order: 0 = can't walk, otherwise ground speed ÷ 2. It's 7.2 MB raw, mostly zeros, so it compresses well.

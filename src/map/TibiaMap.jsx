@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
 import ItemWindow from './ItemWindow.jsx';
+import RoutePanel from './RoutePanel.jsx';
+import { createRouter } from './engine/router.js';
 import { drawText, textWidth } from './engine/text.js';
 import './tibia-map.css';
 
@@ -88,6 +90,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [results, setResults] = useState([]);
   const [active, setActive] = useState(0); // highlighted search result
   const [item, setItem] = useState(null); // the item whose window is open: { id, fluid }
+  // The route: { open, from, to: { label, pos: [x,y,z] }, result: { path, time, steps } | { error }, busy }.
+  const [route, setRoute] = useState({ open: false, from: null, to: null, result: null, busy: false });
+  const routePath = useRef(null); // the route's tiles, for drawing: [[x, y, z, how]]
+  const router = useRef(null); // the route finder (a web worker, made on first use)
+  const [menu, setMenu] = useState(null); // the right-click menu: { x, y (CSS px in the map), tile: [x,y,z] }
   const flight = useRef(null); // a fly-to in progress: { fx, fy, tx, ty, t0, dur }
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   const uiScale = Math.max(1, Math.round(dpr)); // whole screen pixels per client pixel in the side panel
@@ -206,6 +213,54 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         ctx.restore();
       }
     }
+    // The route: a line through the tiles, bright on this floor, faint dashes on other floors; markers where the
+    // floor changes, green at the start, red at the end. Line widths in client pixels.
+    const rp = routePath.current;
+    if (rp && rp.length > 1) {
+      const fr = ([x, y, z]) => (v.z <= 7 && z <= 7 ? [x - (v.z - z), y - (v.z - z)] : [x, y]);
+      const at = (pt) => { const f = fr(pt); return [ox + (f[0] + 0.5) * s, oy + (f[1] + 0.5) * s]; };
+      const runs = [];
+      let run = [rp[0]];
+      for (let i = 1; i < rp.length; i++) {
+        if (rp[i][3] === 'walk' || rp[i][3] === 'diagonal') run.push(rp[i]);
+        else { runs.push(run); run = [rp[i]]; }
+      }
+      runs.push(run);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const pass of [0, 1]) {
+        for (const r of runs) {
+          const here = r[0][2] === v.z;
+          if (r.length < 2 || here !== (pass === 1)) continue;
+          ctx.beginPath();
+          r.forEach((pt, i) => { const [x, y] = at(pt); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+          if (here) {
+            ctx.setLineDash([]);
+            ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 5 * k; ctx.stroke();
+            ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3 * k; ctx.stroke();
+          } else {
+            ctx.setLineDash([4 * k, 4 * k]);
+            ctx.strokeStyle = 'rgba(255,215,0,0.55)'; ctx.lineWidth = 2 * k; ctx.stroke();
+          }
+        }
+      }
+      ctx.setLineDash([]);
+      const dot = (pt, color, r) => {
+        const [x, y] = at(pt);
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = '#000'; ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, r - k, 0, Math.PI * 2);
+        ctx.fillStyle = color; ctx.fill();
+      };
+      for (let i = 1; i < rp.length; i++) {
+        if (rp[i][3] === 'walk' || rp[i][3] === 'diagonal') continue;
+        const up = rp[i][2] < rp[i - 1][2];
+        dot(rp[i - 1], up ? '#ffa000' : '#3080ff', 5 * k); // where you change floor (orange up, blue down)
+        dot(rp[i], up ? '#ffa000' : '#3080ff', 3 * k); // where you arrive
+      }
+      dot(rp[0], '#30c030', 6 * k);
+      dot(rp[rp.length - 1], '#e03030', 6 * k);
+    }
+
     // Town names over the zoomed-out map (gone once the sprites show), centred on the temple, white in the
     // client's outlined font at whole screen pixels per font pixel (two client pixels each, so they stand out).
     if (v.zoom < SPRITES_FROM) {
@@ -403,6 +458,43 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     hashTimerFly.current = setTimeout(viewChanged, dur + 50); // the URL once it has arrived
   }, [viewChanged]);
 
+  // ---------- route ----------
+  // Shows the whole route: centred, at the closest zoom where it fits, on the floor it starts on.
+  const showRoute = useCallback((path) => {
+    const c = canvasRef.current;
+    if (!path?.length || !c) return;
+    const xs = path.map((pt) => pt[0]), ys = path.map((pt) => pt[1]);
+    const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys), y2 = Math.max(...ys);
+    const fit = [...ZOOMS].reverse().find((z) => z <= MAIN_FROM && (x2 - x1 + 6) * z <= c.width * 0.9 && (y2 - y1 + 6) * z <= c.height * 0.9) ?? ZOOMS[0];
+    const z0 = path[0][2];
+    goTo({ x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2), z: z0 }, { zoom: fit, cut: fit >= MAIN_FROM && z0 <= 7 ? z0 : 0 });
+  }, [goTo]);
+
+  // Sets the start and/or destination (each { label, pos } or null) and finds the route once both are set.
+  const routeSeq = useRef(0);
+  const updateRoute = useCallback((change) => {
+    setRoute((old) => {
+      const r = { ...old, ...change, open: true };
+      routePath.current = null;
+      if (r.from && r.to) {
+        const seq = ++routeSeq.current;
+        r.busy = true; r.result = null;
+        router.current ||= createRouter(dataUrl);
+        const speed = 2 * (70 + 49) + 80; // level 50 for now (character settings come in slice 3c)
+        router.current.route(r.from.pos, r.to.pos, speed).then((res) => {
+          if (seq !== routeSeq.current) return; // a newer request
+          routePath.current = res.path || null;
+          setRoute((cur) => ({ ...cur, busy: false, result: res }));
+          if (res.path) showRoute(res.path); else redraw();
+        });
+      } else { r.busy = false; r.result = null; }
+      redraw();
+      return r;
+    });
+  }, [dataUrl, redraw, showRoute]);
+  useEffect(() => () => router.current?.terminate(), []);
+  const clearRoute = () => { routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, busy: false }); redraw(); };
+
   const selectNpc = useCallback((n) => {
     selected.current = n;
     setNpc(n);
@@ -588,8 +680,29 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           ref={canvasRef} className="tm-canvas"
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
           onPointerLeave={() => setHover(null)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            const r = wrapRef.current.getBoundingClientRect(), t = tileAt(toCanvas(e));
+            setMenu({ x: e.clientX - r.left, y: e.clientY - r.top, tile: [t.x, t.y, t.z] });
+          }}
         />
         {!ready && <div className="tm-loading">Loading map...</div>}
+        {menu && (
+          <>
+            <div className="tm-menu-catcher" onPointerDown={() => setMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMenu(null); }} />
+            <div className="tm-menu-at" style={{ left: menu.x, top: menu.y }}>
+            <div className="tm-menu" style={{ zoom: uiScale / dpr }}>
+              {[
+                ['Route from here', () => updateRoute({ from: { label: menu.tile.join(', '), pos: menu.tile } })],
+                ['Route to here', () => updateRoute({ to: { label: menu.tile.join(', '), pos: menu.tile } })],
+                ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
+              ].map(([label, act]) => (
+                <button type="button" key={label} className="tm-menu-item" onClick={() => { setMenu(null); act(); }}>{label}</button>
+              ))}
+            </div>
+            </div>
+          </>
+        )}
       </div>
       <div className="tm-side" style={{ zoom: uiScale / dpr }}>
         <div className="tm-panel">
@@ -609,7 +722,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           </div>
         </div>
         <form className="tm-panel tm-goto" onSubmit={onSearch} role="search">
-          <label htmlFor="tm-search">Search</label>
+          <div className="tm-search-head">
+            <label htmlFor="tm-search">Search</label>
+            <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
+          </div>
           <input
             id="tm-search" className="tm-input" value={query} placeholder="Town, NPC, item or x, y, z"
             onChange={(e) => onQuery(e.target.value)} onKeyDown={onSearchKey} onBlur={() => setTimeout(() => setResults([]), 150)}
@@ -630,8 +746,20 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             </div>
           )}
         </form>
+        {route.open && world && (
+          <RoutePanel
+            world={world} route={route}
+            onFrom={(pt) => updateRoute({ from: pt })} onTo={(pt) => updateRoute({ to: pt })}
+            onSwap={() => updateRoute({ from: route.to, to: route.from })}
+            onShow={() => showRoute(route.result?.path)}
+            onClose={clearRoute}
+          />
+        )}
         {npc && world && (
-          <NpcWindow world={world} npc={npc} onClose={() => selectNpc(null)} onTravel={(t) => goTo({ x: t[2], y: t[3], z: t[4] })} />
+          <NpcWindow
+            world={world} npc={npc} onClose={() => selectNpc(null)} onTravel={(t) => goTo({ x: t[2], y: t[3], z: t[4] })}
+            onRoute={() => updateRoute({ to: { label: npc.n, pos: npc.p } })}
+          />
         )}
         {item && world && (
           <ItemWindow

@@ -137,3 +137,37 @@
 .tm ::-webkit-scrollbar-button:single-button:vertical:decrement { background-position: -234px -122px; }
 .tm ::-webkit-scrollbar-button:single-button:vertical:increment { background-position: -246px -122px; }
 .tm ::-webkit-scrollbar-corner { background: var(--tm-stone); }
+
+/* buttons: stone face, light top-left, dark bottom-right; inverted while pressed (as in the planner) */
+.tm-btn {
+  height: 18px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  font: inherit; color: var(--tm-text); background: var(--tm-stone); background-color: #474747;
+  border: 1px solid; border-color: var(--tm-light) var(--tm-dark) var(--tm-dark) var(--tm-light);
+}
+.tm-btn:active:not(:disabled) { border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); padding: 1px 5px 0 7px; }
+.tm-btn:disabled { cursor: default; color: #7a7a7a; }
+.tm-search-head { display: flex; align-items: center; justify-content: space-between; }
+.tm-route-here { margin-bottom: 6px; }
+
+/* route panel */
+.tm-route { flex-direction: column; gap: 0; padding: 0; flex: none; }
+.tm-route-body { padding: 4px; display: flex; flex-direction: column; gap: 4px; }
+.tm-route-field { display: flex; align-items: center; gap: 4px; }
+.tm-route-label { width: 28px; flex: none; }
+.tm-route-input { position: relative; flex: 1; min-width: 0; }
+.tm-results-float { position: absolute; left: 0; right: 0; top: 100%; z-index: 5; }
+.tm-route-actions { display: flex; gap: 4px; justify-content: flex-end; }
+.tm-route-result { min-height: 26px; color: #e0e0e0; }
+.tm-error { color: #ff6060; }
+
+/* right-click menu (client style), at the mouse */
+.tm-menu-catcher { position: absolute; inset: 0; z-index: 9; }
+.tm-menu {
+  display: flex; flex-direction: column; padding: 2px; min-width: 120px;
+  background: var(--tm-stone); background-color: #474747;
+  border: 1px solid; border-color: var(--tm-light) var(--tm-dark) var(--tm-dark) var(--tm-light);
+  box-shadow: 0 0 0 1px #000;
+}
+.tm-menu-item { padding: 2px 8px; text-align: left; font: inherit; color: var(--tm-text); background: none; border: 0; cursor: pointer; }
+.tm-menu-item:hover { background: rgba(255, 255, 255, .15); color: #fff; }
+.tm-menu-at { position: absolute; z-index: 10; }

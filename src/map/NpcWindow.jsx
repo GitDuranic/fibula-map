@@ -31,7 +31,7 @@ function Offers({ world, title, offers }) {
   );
 }
 
-export default function NpcWindow({ world, npc, onClose, onTravel }) {
+export default function NpcWindow({ world, npc, onClose, onTravel, onRoute }) {
   const [x, y, z] = npc.p;
   const nothing = !npc.sells.length && !npc.buys.length && !npc.travel.length;
   return (
@@ -42,6 +42,7 @@ export default function NpcWindow({ world, npc, onClose, onTravel }) {
       </div>
       <div className="tm-window-body">
         <div className="tm-npc-pos">{x}, {y}, {z}</div>
+        <button type="button" className="tm-btn tm-route-here" onClick={onRoute} title="Find the way to this NPC">Route here</button>
         {npc.sells.length > 0 && <Offers world={world} title="Sells" offers={npc.sells} />}
         {npc.buys.length > 0 && <Offers world={world} title="Buys" offers={npc.buys} />}
         {npc.travel.length > 0 && (
