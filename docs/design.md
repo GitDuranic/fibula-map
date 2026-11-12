@@ -21,7 +21,17 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
 ### Map
 - **Real sprites, drawn in the browser (2026-11-12).** Pre-rendering the whole map as 32 px sprite images was estimated at ~1 GB+ per floor, which is too big to host and too slow to load. Instead, the way the house planner works: the converter writes **compact map data** (item ids per tile, in chunks) plus a **sprite sheet** of the items used on the map. The browser draws the visible chunks with the planner's render engine and caches them. Only the **far zoom levels** are pre-rendered images, drawn with the same sprites (see "Overview images" below; originally minimap colours, changed 2026-11-12). This keeps the download small, is sharp at every zoom step, and makes it easy to cut roofs away per building at runtime.
 - Pan, zoom, and floor up/down feel like Google Maps (drag, scroll wheel, pinch).
-- **Roofs depend on zoom (2026-11-12):** zoomed out, the map shows the surface from above with roofs, like a satellite view. Zoomed in past a threshold, it shows one floor at a time, without roofs: the inside of buildings, like tibiamaps.io. Around the route and a selected NPC, the roofs are cut away even when zoomed out, so you can see where to go. The viewer draws either "from above" (that floor plus the floors above it, with the client's 1-tile shift per floor) or "this floor only", per area. The far-zoom overview images exist only "from above" (surface) and per underground floor.
+- **Roofs and zoom.** The map is always drawn "from above": the floor plus the floors above it, with the client's 1-tile shift per floor. The far-zoom overview images exist only from above (surface) and per underground floor.
+  - **First version (2026-11-12):** zoom 64 and closer switched the whole map to "this floor only". The user didn't like the whole map losing its roofs at once.
+  - **Now: zoom through the layers under the mouse (2026-11-12, the user's idea, "let's try it").**
+    - Over the street, zooming only zooms; every building keeps its roof.
+    - Over a building, from zoom 32 inward, each zoom step in also takes off the topmost layer still showing under the cursor (roof, then upper floors, down to the floor you're on). That's the connected area of that layer only (4-neighbours, at most 3000 tiles, so mountain ranges are left alone).
+    - Each layer remembers the zoom it came off at. Zooming back out past that zoom puts it back, wherever the mouse is, so zooming out undoes zooming in.
+    - Zooming out to the overview (below 32) or changing floor closes everything.
+    - At max zoom, a step over a building still takes a layer off.
+    - The zoom buttons and `+`/`-` act on the centre of the screen. Pinch only zooms, for now.
+    - Known effect: buildings whose roofs touch come off together (e.g. the Thais temple and the house next to it).
+  - Still planned: around the route and a selected NPC, roofs are cut away even when zoomed out.
 - **Viewer: our own canvas code, no map library (2026-11-12).** Leaflet was considered. It can look like Tibia, but the per-building roof swap and pixel-exact zoom steps (sharp at DPR 2.5) fight its design, and it would be an extra npm package for Ryndean. The pan/zoom/markers code is small enough to write ourselves.
 - **Code sharing:** the planner's `tools/lib` (dat, spr, otbm, png) and render engine are **copied** into tibia-map, not linked, so the planner's sync to Ryndean's site isn't affected.
 - A position readout shows x, y, z under the cursor. You can type a position to jump there.
@@ -110,7 +120,7 @@ Agree each slice before building it, then build one at a time.
   - Total 51.5 MB for 7.1. A screen loads only a few images. The converter now takes ~3 min.
   - It needs `sharp` as a **dev dependency, used only by the converter**, so there's nothing for Ryndean to add.
   - The minimap-colour output is gone.
-- **Zoom steps** (screen pixels per tile): 0.25, 0.5, 1, 2, 4, 8 = overview images only; 16, 32 = sprites with roofs; 64, 96, 128, 160 = sprites, this floor only (inside buildings). From 32 up, a game pixel is a whole number of screen pixels, so it's sharp. The overview images are drawn under the live sprites as a quick placeholder while chunks load.
+- **Zoom steps** (screen pixels per tile): 0.25, 0.5, 1, 2, 4, 8 = overview images only; 16 and up = live sprites (roofs come off per building as you zoom over it, see above). From 32 up, a game pixel is a whole number of screen pixels, so it's sharp. The overview images are drawn under the live sprites as a quick placeholder while chunks load.
 - **Floors underground** (8–15) are always drawn alone.
 - **Controls:**
   - drag to pan, with a short glide after a flick

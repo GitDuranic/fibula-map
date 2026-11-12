@@ -90,17 +90,58 @@ export class World {
     return c[(y - Math.floor(y / C) * C) * C + (x - Math.floor(x / C) * C)];
   }
 
+  // ---------- buildings (layers above a floor) ----------
+
+  // The highest floor (lowest number) above z with something drawn over frame position (x, y) of floor z, or -1.
+  // Floor zz's tile for frame position p is p + (z - zz): the client draws higher floors one tile up-left each.
+  coverAt(x, y, z) {
+    if (z > 7) return -1; // underground: nothing above is drawn
+    let top = -1;
+    for (let zz = z - 1; zz >= 0; zz--) {
+      const t = this.tile(x + z - zz, y + z - zz, zz);
+      if (t && t.items.length) top = zz;
+    }
+    return top;
+  }
+
+  // Is there something on floor zz drawn at frame position (x, y) of floor z?
+  hasAt(x, y, z, zz) {
+    const t = this.tile(x + z - zz, y + z - zz, zz);
+    return !!(t && t.items.length);
+  }
+
+  // One layer of a building: the connected area (4-neighbours) of floor zz that is drawn at frame position (x, y)
+  // of floor z, e.g. a roof. Null if there is nothing, or the area is too big to be a building (mountain ranges).
+  layerArea(x, y, z, zz, maxTiles = 3000) {
+    if (!this.hasAt(x, y, z, zz)) return null;
+    const tiles = new Set([`${x},${y}`]), queue = [[x, y]];
+    const box = { x1: x, y1: y, x2: x, y2: y };
+    while (queue.length) {
+      const [px, py] = queue.pop();
+      for (const [nx, ny] of [[px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]]) {
+        const k = `${nx},${ny}`;
+        if (tiles.has(k) || !this.hasAt(nx, ny, z, zz)) continue;
+        if (tiles.size >= maxTiles) return null;
+        tiles.add(k); queue.push([nx, ny]);
+        box.x1 = Math.min(box.x1, nx); box.y1 = Math.min(box.y1, ny); box.x2 = Math.max(box.x2, nx); box.y2 = Math.max(box.y2, ny);
+      }
+    }
+    return { tiles, box, key: `${zz}@${box.x1},${box.y1},${box.x2},${box.y2}` };
+  }
+
   // ---------- drawing ----------
 
   // A canvas with chunk (cx, cy) of floor z drawn at `ts` pixels per tile, or null if its data is not there yet.
   // `mode`: 'above' | 'floor' (see floorsFor). Floors above z are drawn one tile up-left per floor, like the client.
   // `budget.n`: how many new canvases may still be drawn this frame (keeps panning smooth); returns null when spent.
-  chunkCanvas(z, cx, cy, mode, ts, budget) {
-    const key = `${mode}:${z}:${cx}:${cy}:${ts}`;
-    const hit = this.canvases.get(key);
-    if (hit) { this.canvases.delete(key); this.canvases.set(key, hit); return hit.canvas; } // most recent last
+  // `opened`: buildings with layers taken off: [{ tiles, box, key, cut }] — floors above `cut` are not drawn there.
+  chunkCanvas(z, cx, cy, mode, ts, budget, opened = []) {
     const C = this.CHUNK, floors = floorsFor(z, mode);
     const x0 = cx * C, y0 = cy * C;
+    const here = opened.filter((b) => b.box.x2 >= x0 && b.box.x1 < x0 + C + OVERHANG && b.box.y2 >= y0 && b.box.y1 < y0 + C + OVERHANG);
+    const key = `${mode}:${z}:${cx}:${cy}:${ts}${here.map((b) => `|${b.key}:${b.cut}`).join('')}`;
+    const hit = this.canvases.get(key);
+    if (hit) { this.canvases.delete(key); this.canvases.set(key, hit); return hit.canvas; } // most recent last
     // Make sure every chunk this one needs is loaded.
     let ready = true, any = false;
     for (const zz of floors) {
@@ -130,7 +171,12 @@ export class World {
       for (let sy = 0; sy < C + OVERHANG; sy++) {
         for (let sx = 0; sx < C + OVERHANG; sx++) {
           const t = this.tile(x0 + sx + d, y0 + sy + d, zz);
-          if (t && t.items.length) drawTile(this.defs, t, sx * TILE, sy * TILE, drawSprite);
+          if (!t || !t.items.length) continue;
+          if (zz < z && here.length) { // a layer taken off an opened building?
+            const pk = `${x0 + sx},${y0 + sy}`;
+            if (here.some((b) => zz < b.cut && b.tiles.has(pk))) continue;
+          }
+          drawTile(this.defs, t, sx * TILE, sy * TILE, drawSprite);
         }
       }
     }

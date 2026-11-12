@@ -7,7 +7,7 @@ import './tibia-map.css';
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
 const ZOOMS = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 96, 128, 160];
 const SPRITES_FROM = 16; // below this: only the pre-drawn overview images (live drawing is too slow that far out)
-const INSIDE_FROM = 64; // from this zoom: this floor only (inside buildings); further out: roofs, seen from above
+const PEEL_FROM = 32; // from this zoom, zooming over a building also takes its layers off (roof, upper floors)
 const START = { x: 32369, y: 32221, z: 7, zoom: 32 }; // Thais
 
 const nearestZoom = (s) => ZOOMS.reduce((b, z) => (Math.abs(Math.log(z / s)) < Math.abs(Math.log(b / s)) ? z : b), ZOOMS[0]);
@@ -32,6 +32,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const view = useRef({ ...START, ...(syncUrl && readHash()) }); // x, y = centre in tiles (fractional); z; zoom = target step
   const anim = useRef({ s: view.current.zoom, anchor: null }); // shown scale (animates to view.zoom)
   const frame = useRef(0);
+  const opened = useRef([]); // buildings with layers taken off (see zoomBy)
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
   const [hover, setHover] = useState(null);
@@ -70,7 +71,6 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
 
     // Overview images (the map pre-drawn with sprites): the only layer when zoomed out, and a quick
     // first layer under the live sprites while their chunks load.
-    const inside = v.zoom >= INSIDE_FROM;
     const ov = world.map.overview;
     const level = ov.levels.find((l) => l >= v.zoom) ?? ov.levels[ov.levels.length - 1];
     const set = v.z <= 7 ? 'surface' : String(v.z);
@@ -86,13 +86,13 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
 
     // Game sprites.
     if (v.zoom >= SPRITES_FROM) {
-      const C = world.CHUNK, ts = v.zoom >= 32 ? 32 : 16, mode = inside ? 'floor' : 'above';
+      const C = world.CHUNK, ts = v.zoom >= 32 ? 32 : 16;
       const budget = { n: 6 };
       ctx.imageSmoothingEnabled = s < ts;
       // Chunks drawn last can overhang into earlier ones only up-left, so draw top-left to bottom-right.
       for (let cy = Math.floor(top / C); cy <= Math.floor(bottom / C); cy++) {
         for (let cx = Math.floor(left / C); cx <= Math.floor(right / C); cx++) {
-          const c = world.chunkCanvas(v.z, cx, cy, mode, ts, budget);
+          const c = world.chunkCanvas(v.z, cx, cy, 'above', ts, budget, opened.current);
           if (c) ctx.drawImage(c, ox + cx * C * s, oy + cy * C * s, C * s, C * s);
         }
       }
@@ -139,6 +139,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       const h = readHash(), v = view.current;
       if (!h || (Math.floor(v.x) === Math.floor(h.x) && Math.floor(v.y) === Math.floor(h.y) && v.z === h.z && v.zoom === h.zoom)) return;
       Object.assign(v, h);
+      opened.current = [];
       anim.current = { s: h.zoom, anchor: null };
       viewChanged();
     };
@@ -161,14 +162,34 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   }, [redraw, ready]);
 
   // ---------- view changes ----------
+  // Zooming over a building also takes its layers off (in) or puts them back (out), one per step;
+  // over the street it only zooms. sx, sy: the screen point zoomed around (default: the centre).
   const zoomBy = useCallback((steps, sx, sy) => {
-    const v = view.current, canvas = canvasRef.current;
-    const i = ZOOMS.indexOf(v.zoom), j = Math.max(0, Math.min(ZOOMS.length - 1, i + steps));
-    if (i === j) return;
+    const v = view.current, canvas = canvasRef.current, world = worldRef.current;
     sx ??= canvas.width / 2; sy ??= canvas.height / 2;
     const s = anim.current.s;
-    anim.current.anchor = { sx, sy, wx: v.x + (sx - canvas.width / 2) / s, wy: v.y + (sy - canvas.height / 2) / s };
+    const wx = v.x + (sx - canvas.width / 2) / s, wy = v.y + (sy - canvas.height / 2) / s;
+    const i = ZOOMS.indexOf(v.zoom), j = Math.max(0, Math.min(ZOOMS.length - 1, i + steps));
+    let peeled = false;
+    if (world && v.z <= 7 && steps > 0 && v.zoom >= PEEL_FROM) {
+      // Take off the topmost layer still showing under the cursor, over that layer's own connected area.
+      // It remembers the zoom it came off at: zooming back out past that puts it back.
+      const tx = Math.floor(wx), ty = Math.floor(wy), pk = `${tx},${ty}`;
+      for (let zz = 0; zz < v.z; zz++) {
+        if (!world.hasAt(tx, ty, v.z, zz) || opened.current.some((o) => zz < o.cut && o.tiles.has(pk))) continue;
+        const area = world.layerArea(tx, ty, v.z, zz);
+        if (area) { opened.current = [...opened.current, { ...area, cut: zz + 1, zoom: ZOOMS[j] }]; peeled = true; }
+        break;
+      }
+    } else if (steps < 0 && opened.current.length) {
+      const keep = opened.current.filter((o) => o.zoom < v.zoom); // layers taken off at this zoom come back
+      peeled = keep.length !== opened.current.length;
+      opened.current = keep;
+    }
+    if (i === j) { if (peeled) viewChanged(); return; }
+    anim.current.anchor = { sx, sy, wx, wy };
     v.zoom = ZOOMS[j];
+    if (v.zoom < PEEL_FROM) opened.current = []; // zoomed out to the overview: every building closes again
     viewChanged();
   }, [viewChanged]);
 
@@ -176,6 +197,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const world = worldRef.current;
     if (!world || !world.floors.includes(z)) return;
     view.current.z = z;
+    opened.current = [];
     viewChanged();
   }, [viewChanged]);
 
