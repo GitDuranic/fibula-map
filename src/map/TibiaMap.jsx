@@ -172,8 +172,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const i = ZOOMS.indexOf(v.zoom), j = Math.max(0, Math.min(ZOOMS.length - 1, i + steps));
     let peeled = false;
     if (world && v.z <= 7 && steps > 0 && v.zoom >= PEEL_FROM) {
-      // Take the building under the cursor down to this floor (see World.buildingArea). It remembers the zoom
-      // it was opened at: zooming back out past that puts it back.
+      // Take one layer off the building under the cursor (see World.buildingArea). It remembers the zoom it
+      // came off at: zooming back out past that puts it back.
       // The topmost layer still showing at (x, y), or -1.
       const topAt = (x, y) => {
         const pk = `${x},${y}`;
@@ -195,10 +195,20 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         }
         seed = best;
       }
-      if (seed) {
-        // The whole building at once: everything above this floor comes off (user's choice, see the design doc).
-        const area = world.buildingArea(seed.x, seed.y, v.z);
-        if (area) { opened.current = [...opened.current, { ...area, cut: v.z, zoom: ZOOMS[j] }]; peeled = true; }
+      const area = seed && world.buildingArea(seed.x, seed.y, v.z);
+      if (area) {
+        // One layer per step, over the whole building: the topmost layer showing on this building near the cursor
+        // (within 3 tiles) and everything above it come off, so a flat roof goes first and the room under it shows
+        // before the next step. Near, not just at the seed: at a building's lower-right edge only the upper floor's
+        // walls show (each floor is drawn a tile further up-left), which would skip the roof.
+        let top = seed.zz;
+        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+          if (!area.tiles.has(`${cx0 + dx},${cy0 + dy}`)) continue;
+          const zz = topAt(cx0 + dx, cy0 + dy);
+          if (zz >= 0 && zz < top) top = zz;
+        }
+        opened.current = [...opened.current, { ...area, cut: top + 1, zoom: ZOOMS[j] }];
+        peeled = true;
       }
     } else if (steps < 0 && opened.current.length) {
       const keep = opened.current.filter((o) => o.zoom < v.zoom); // layers taken off at this zoom come back
