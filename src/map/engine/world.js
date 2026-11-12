@@ -38,10 +38,30 @@ export class World {
   }
 
   async load() {
-    const [items, map, npcs, npcSheet] = await Promise.all([
+    const [items, map, npcs, npcSheet, fonts, fontImg] = await Promise.all([
       loadJson(`${this.base}/items.json`), loadJson(`${this.base}/map.json`),
       loadJson(`${this.base}/npcs.json`), loadImage(`${this.base}/npcs.png`),
+      loadJson(`${this.base}/fonts.json`), loadImage(`${this.base}/font-outlined.png`),
     ]);
+    // The client's outlined font, tintable: only the white glyph pixels take the colour, the outline stays black.
+    const tints = new Map();
+    this.font = {
+      ...fonts.outlined,
+      tint: (color) => {
+        if (tints.has(color)) return tints.get(color);
+        const c = document.createElement('canvas');
+        c.width = fontImg.width; c.height = fontImg.height;
+        const cx = c.getContext('2d');
+        cx.drawImage(fontImg, 0, 0);
+        cx.globalCompositeOperation = 'multiply';
+        cx.fillStyle = color;
+        cx.fillRect(0, 0, c.width, c.height);
+        cx.globalCompositeOperation = 'destination-in';
+        cx.drawImage(fontImg, 0, 0);
+        tints.set(color, c);
+        return c;
+      },
+    };
     this.defs = items.items;
     this.fluids = items.fluids || [];
     this.sheetCells = items.sheetCells;
@@ -168,13 +188,6 @@ export class World {
           const t = this.tile(x0 + sx + d, y0 + sy + d, zz);
           if (!t || !t.items.length) continue;
           drawTile(this.defs, t, sx * TILE, sy * TILE, drawSprite);
-          // An NPC standing here, drawn after its tile like the client draws creatures (things on the tiles
-          // south and east of it, drawn later, overlap it as in the game).
-          const npc = this.npcAt.get(`${t.x},${t.y},${t.z}`);
-          if (npc?.img) {
-            const [ax, ay, w, h] = npc.img;
-            ctx.drawImage(this.npcSheet, ax, ay, w, h, (sx * TILE + TILE - w - npc.d[0]) * k, (sy * TILE + TILE - h - npc.d[1]) * k, w * k, h * k);
-          }
         }
       }
     }

@@ -14,6 +14,7 @@
 //                         (7.1 positions from --spawn; names/outfits/trade/travel from the TVP NPC files for now)
 //   sprites-N.png         sprite atlases (64x64 cells of 32px)
 //   gui.png, stone.png    client interface graphics from Tibia.pic (skin + tileable stone texture)
+//   font-outlined.png, fonts.json   the client's outlined font (creature names) and its glyph widths
 //   map.json              bounds, chunk size, which chunks exist per floor
 //   chunks/<z>/<cx>_<cy>.json   one 32x32 tile chunk, tiles in row order: 0 (none), an item, or [item, item, ...]
 //                         item = client id, or [client id, count] for stack counts / fluid types
@@ -219,8 +220,19 @@ log(`${nextSlot - 1} sprites in ${sheetCount} sheet(s)`);
 
 // ---------- interface graphics from Tibia.pic ----------
 {
-  const g = readPic(path.join(ASSETS, 'Tibia.pic')).images[3];
+  const pic = readPic(path.join(ASSETS, 'Tibia.pic'));
+  const g = pic.images[3];
   writePng(path.join(OUT, 'gui.png'), g.width, g.height, g.data);
+  // The client's outlined font (creature names): 16x16 cells, characters 32-255, with each glyph's width.
+  const f = pic.images[4], cellW = 16, cellH = 16, cols = f.width / cellW, widths = [];
+  for (let c = 32; c < 256; c++) {
+    const i = c - 32, cx = (i % cols) * cellW, cy = Math.floor(i / cols) * cellH;
+    let maxX = -1;
+    for (let y = 0; y < cellH; y++) for (let x = 0; x < cellW; x++) if (f.data[((cy + y) * f.width + cx + x) * 4 + 3]) maxX = Math.max(maxX, x);
+    widths.push(maxX + 1);
+  }
+  writePng(path.join(OUT, 'font-outlined.png'), f.width, f.height, f.data);
+  fs.writeFileSync(path.join(OUT, 'fonts.json'), JSON.stringify({ outlined: { cellW, cellH, cols, widths } }));
   // The client's stone background texture (top-left 96x96 of the skin) as a separate tileable image.
   const S = 96, img = new Uint8Array(S * S * 4);
   for (let y = 0; y < S; y++) img.set(g.data.subarray((y * g.width) * 4, (y * g.width + S) * 4), y * S * 4);

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
+import { drawText, textWidth } from './engine/text.js';
 import './tibia-map.css';
 
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
@@ -28,7 +29,42 @@ function npcFrame(n, z, cut) {
   return [x - (z - nz), y - (z - nz)];
 }
 
-const MARKERS_BELOW = 32; // zoomed out further than this, NPCs show as markers instead of their outfits
+// NPCs are drawn over everything (roofs too) from NPCS_FROM, with their names from NAMES_FROM. Zoomed out, their
+// outfit keeps at least OUTFIT_MIN of its client size (in client pixels), so they stay findable like map pins.
+const NPCS_FROM = 4, NAMES_FROM = 16, OUTFIT_MIN = 0.75;
+
+// Zooming in to MAIN_FROM switches to the area's main level, "this floor only": the ground floor, or the level of
+// the streets where they are higher up (Venore: +1). Ctrl + wheel goes up or down from there; zooming back out
+// brings the roofs back.
+const MAIN_FROM = 64;
+const MAIN_LEVELS = [
+  { name: 'Venore', x1: 32915, y1: 32015, x2: 33060, y2: 32140, z: 6 }, // streets on +1 (floor-6 ground, see the doc)
+];
+const mainLevelAt = (x, y) => MAIN_LEVELS.find((a) => x >= a.x1 && x <= a.x2 && y >= a.y1 && y <= a.y2)?.z ?? 7;
+
+// Where NPC n is drawn on the canvas: its outfit picture (x, y, w, h, scale) and its tile's centre.
+// ox, oy: canvas position of tile (0, 0); s: screen pixels per tile; k: screen pixels per client pixel.
+function npcRect(n, f, ox, oy, s, k) {
+  const sc = Math.max(s / 32, OUTFIT_MIN * k);
+  const [w, h] = n.img ? [n.img[2], n.img[3]] : [32, 32];
+  const cx = ox + (f[0] + 0.5) * s, cy = oy + (f[1] + 0.5) * s;
+  // The outfit's own tile (its bottom-right 32x32 cell, shifted by the displacement) centred on the NPC's tile.
+  return { x: Math.round(cx + (16 - w - n.d[0]) * sc), y: Math.round(cy + (16 - h - n.d[1]) * sc), w: Math.round(w * sc), h: Math.round(h * sc), sc, cx, cy };
+}
+
+// The NPCs to draw for view v (tile area left..bottom), back to front: [{ n, f: frame position }].
+function visibleNpcs(world, v, left, top, right, bottom) {
+  if (v.zoom < NPCS_FROM) return [];
+  const out = [];
+  for (const n of world.npcs) {
+    const f = npcFrame(n, v.z, v.cut);
+    if (f && f[0] >= left - 3 && f[0] <= right + 3 && f[1] >= top - 3 && f[1] <= bottom + 3) out.push({ n, f });
+  }
+  return out.sort((a, b) => a.f[1] - b.f[1] || a.f[0] - b.f[0]);
+}
+
+// The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
+const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
 // Parses "32369, 32221, 7" (any separators); z is optional.
 function parsePosition(text, z) {
@@ -42,7 +78,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const canvasRef = useRef(null);
   const worldRef = useRef(null);
   // x, y = centre in tiles (fractional); z; zoom = target step; cut = top layer drawn (floors above it are left out, 0 = all)
-  const view = useRef({ ...START, cut: 0, ...(syncUrl && readHash()) });
+  const view = useRef(withCut({ ...START, ...(syncUrl && readHash()) }));
   const anim = useRef({ s: view.current.zoom, anchor: null }); // shown scale (animates to view.zoom)
   const frame = useRef(0);
   const viewBox = useRef(null); // the tile area on screen, from the last draw
@@ -115,56 +151,58 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       if (budget.n < 0) more = true;
     }
 
-    // NPCs: markers when zoomed out (their outfits are drawn with the tiles when zoomed in); a frame around the
-    // selected one. Sizes in client pixels (k screen pixels each), like the side panel.
+    // NPCs over everything (roofs too): outfit, then the name above it in the client's outlined font, green like
+    // a creature at full health (white when selected). Back to front, so the ones further south are on top.
     const k = Math.max(1, Math.round(window.devicePixelRatio || 1)), sel = selected.current;
-    const onScreen = (fx, fy) => fx >= left - 1 && fx <= right + 1 && fy >= top - 1 && fy <= bottom + 1;
-    if (v.zoom < MARKERS_BELOW) {
-      const r = 3 * k;
-      for (const n of world.npcs) {
-        const f = npcFrame(n, v.z, v.cut);
-        if (!f || !onScreen(f[0], f[1])) continue;
-        const cx = Math.round(ox + (f[0] + 0.5) * s), cy = Math.round(oy + (f[1] + 0.5) * s);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(cx - r - k, cy - r - k, 2 * r + 2 * k, 2 * r + 2 * k);
-        ctx.fillStyle = n === sel ? '#fff' : '#f0c000';
-        ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
-      }
-    }
     const sf = sel && npcFrame(sel, v.z, v.cut);
-    if (sf && v.zoom >= MARKERS_BELOW) {
+    if (sf && v.zoom >= 32) {
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = k;
       ctx.strokeRect(ox + sf[0] * s + k / 2, oy + sf[1] * s + k / 2, s - k, s - k);
     }
+    const shown = visibleNpcs(world, v, left, top, right, bottom);
+    for (const { n, f } of shown) {
+      if (!n.img) continue;
+      const r = npcRect(n, f, ox, oy, s, k);
+      ctx.imageSmoothingEnabled = r.sc < 1;
+      ctx.drawImage(world.npcSheet, n.img[0], n.img[1], n.img[2], n.img[3], r.x, r.y, r.w, r.h);
+    }
+    if (v.zoom >= NAMES_FROM) {
+      const fs = Math.max(k, Math.round(s / 32));
+      ctx.imageSmoothingEnabled = false;
+      for (const { n, f } of shown) {
+        const r = npcRect(n, f, ox, oy, s, k);
+        const w = textWidth(world.font, n.n) * fs;
+        ctx.save();
+        ctx.translate(Math.round(r.cx - w / 2), Math.round(Math.min(r.y, r.cy - 16 * r.sc) - 14 * fs));
+        ctx.scale(fs, fs);
+        drawText(ctx, world.font, n.n, 0, 0, n === sel ? '#ffffff' : '#00c000');
+        ctx.restore();
+      }
+    }
     if (more) frame.current = requestAnimationFrame(draw);
   }, []);
 
-  // The NPC drawn at canvas point p (its outfit when zoomed in, its marker when zoomed out), or null.
+  // The NPC drawn at canvas point p (its outfit, its tile or its name), or null. The front-most one wins.
   const npcAtPoint = (p) => {
-    const world = worldRef.current, c = canvasRef.current, v = view.current, s = anim.current.s;
-    if (!world?.npcs || !c) return null;
+    const world = worldRef.current, c = canvasRef.current, v = view.current, s = anim.current.s, b = viewBox.current;
+    if (!world?.npcs || !c || !b) return null;
     const ox = Math.round(c.width / 2 - v.x * s), oy = Math.round(c.height / 2 - v.y * s);
-    const k = Math.max(1, Math.round(window.devicePixelRatio || 1));
-    let best = null;
-    for (const n of world.npcs) {
-      const f = npcFrame(n, v.z, v.cut);
-      if (!f) continue;
+    const k = Math.max(1, Math.round(window.devicePixelRatio || 1)), fs = Math.max(k, Math.round(s / 32));
+    let hit = null;
+    for (const { n, f } of visibleNpcs(world, v, b.left, b.top, b.right, b.bottom)) {
+      const r = npcRect(n, f, ox, oy, s, k);
+      const inPic = p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
       const tx = ox + f[0] * s, ty = oy + f[1] * s;
-      if (v.zoom < MARKERS_BELOW) {
-        const d = Math.hypot(p.x - (tx + s / 2), p.y - (ty + s / 2));
-        if (d <= 6 * k && (!best || d < best.d)) best = { n, d };
-      } else {
-        // The outfit's picture, or at least its own tile.
-        const [w, h] = n.img ? [n.img[2], n.img[3]] : [32, 32], sc = s / 32;
-        const x1 = tx + (32 - w - n.d[0]) * sc, y1 = ty + (32 - h - n.d[1]) * sc;
-        const inPic = p.x >= x1 && p.x < x1 + w * sc && p.y >= y1 && p.y < y1 + h * sc;
-        const inTile = p.x >= tx && p.x < tx + s && p.y >= ty && p.y < ty + s;
-        // Front-most (furthest south, then east) wins, as it is drawn on top.
-        if ((inPic || inTile) && (!best || f[1] > best.f[1] || (f[1] === best.f[1] && f[0] > best.f[0]))) best = { n, f };
+      const inTile = p.x >= tx && p.x < tx + s && p.y >= ty && p.y < ty + s;
+      let inName = false;
+      if (v.zoom >= NAMES_FROM) {
+        const w = textWidth(world.font, n.n) * fs, ny = Math.min(r.y, r.cy - 16 * r.sc) - 14 * fs;
+        inName = p.x >= r.cx - w / 2 && p.x < r.cx + w / 2 && p.y >= ny && p.y < ny + 14 * fs;
       }
+      if (inPic || inTile || inName) hit = n; // later = drawn on top
     }
-    return best?.n || null;
+    return hit;
   };
 
   const redraw = useCallback(() => {
@@ -204,7 +242,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const onHash = () => {
       const h = readHash(), v = view.current;
       if (!h || (Math.floor(v.x) === Math.floor(h.x) && Math.floor(v.y) === Math.floor(h.y) && v.z === h.z && v.zoom === h.zoom)) return;
-      Object.assign(v, h, { cut: 0 });
+      Object.assign(v, withCut(h));
       anim.current = { s: h.zoom, anchor: null };
       viewChanged();
     };
@@ -234,10 +272,21 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (i === j) return;
     sx ??= canvas.width / 2; sy ??= canvas.height / 2;
     const s = anim.current.s;
-    anim.current.anchor = { sx, sy, wx: v.x + (sx - canvas.width / 2) / s, wy: v.y + (sy - canvas.height / 2) / s };
+    const wx = v.x + (sx - canvas.width / 2) / s, wy = v.y + (sy - canvas.height / 2) / s;
+    anim.current.anchor = { sx, sy, wx, wy };
+    const before = v.zoom;
     v.zoom = ZOOMS[j];
+    mainLevel(before, wx, wy);
     viewChanged();
   }, [viewChanged]);
+
+  // Crossing MAIN_FROM: zooming in goes to the main level of the place zoomed into ("this floor only");
+  // zooming out brings the roofs back. Underground (after Ctrl + wheel) the floor stays as it is.
+  const mainLevel = (before, x, y) => {
+    const v = view.current;
+    if (before < MAIN_FROM && v.zoom >= MAIN_FROM && v.z <= 7) { v.z = mainLevelAt(x, y); v.cut = v.z; }
+    else if (before >= MAIN_FROM && v.zoom < MAIN_FROM && v.z <= 7) v.cut = 0;
+  };
 
   // Depth (Ctrl + wheel, Ctrl + +/-): going in takes the top layer off the whole view (roofs first, then upper
   // floors); once only this floor is left, it goes a floor down, into the underground. Going out does the
@@ -276,7 +325,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const world = worldRef.current;
     if (!world || !world.floors.includes(z)) return;
     view.current.z = z;
-    view.current.cut = 0;
+    view.current.cut = view.current.zoom >= MAIN_FROM ? z : 0; // zoomed in: this floor only
     viewChanged();
   }, [viewChanged]);
 
@@ -291,7 +340,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const v = view.current;
     v.x = p.x + 0.5; v.y = p.y + 0.5;
     if (worldRef.current?.floors.includes(p.z)) v.z = p.z;
-    if (v.zoom < 64) { v.zoom = 64; anim.current.s = 64; }
+    if (v.zoom < MAIN_FROM) { v.zoom = MAIN_FROM; anim.current.s = MAIN_FROM; }
+    v.cut = v.z <= 7 ? v.z : 0; // that floor only, so the place isn't hidden under a roof
     anim.current.anchor = null;
     viewChanged();
   }, [viewChanged]);
@@ -324,7 +374,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (pointers.current.size === 1) drag.current = { last: toCanvas(e), start: toCanvas(e), moved: false, t: performance.now(), vx: 0, vy: 0 };
     else if (pointers.current.size === 2) {
       const [p, q] = [...pointers.current.values()];
-      drag.current = { pinch: Math.hypot(p.x - q.x, p.y - q.y), s0: anim.current.s };
+      drag.current = { pinch: Math.hypot(p.x - q.x, p.y - q.y), s0: anim.current.s, zoom0: view.current.zoom };
     }
   };
 
@@ -367,7 +417,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       const v = view.current, c = canvasRef.current, mid = d.mid || { x: c.width / 2, y: c.height / 2 };
       const s = anim.current.s;
       anim.current.anchor = { sx: mid.x, sy: mid.y, wx: v.x + (mid.x - c.width / 2) / s, wy: v.y + (mid.y - c.height / 2) / s };
+      const before = d.zoom0 ?? v.zoom;
       v.zoom = nearestZoom(s);
+      mainLevel(before, anim.current.anchor.wx, anim.current.anchor.wy);
       drag.current = null;
       viewChanged();
       return;

@@ -194,10 +194,25 @@ Agree each slice before building it, then build one at a time.
   - **Sells** and **Buys**: item icon in a slot, name, price per piece, sorted by name
   - **Travel**: buttons with price ("free" for 0) that jump the map to the arrival spot
 - Tested: Al Dee (sells 26, buys 24); Captain Bluebear → Edron jumps to the Edron ship.
+- **Changed after user feedback (2026-11-12): main level and NPCs over the roofs.**
+  - **Main level** (user: "when you zoom in close enough it should go to the main level, … main level is the most important level; around Venore it should go to +1, as that is where the normal roads are"):
+    - Zooming in to 64 (MAIN_FROM) switches to the main level of the place zoomed into, "This floor only". From there Ctrl + wheel goes up or down. Zooming back out below 64 brings the roofs back.
+    - The main level is floor 7, except in MAIN_LEVELS: Venore x 32915–33060, y 32015–32140 → floor 6. The box comes from where floor 6 has many ground tiles (the raised streets around the temple at 32957,32076).
+    - The same applies to links opened at zoom 64+, Go to and travel jumps (that floor only), the floor buttons (zoomed in: this floor only), and pinch.
+    - Underground (after Ctrl + wheel) the floor stays as it is.
+    - This brings back the earlier "inside at 64" switch, now with the main level and Ctrl + wheel to move from it.
+  - **NPCs** (user: "the yellow markers are a little small, maybe just show the NPC outfit and name over the roofs"):
+    - The markers are gone. NPCs are drawn over everything (roofs too) from zoom 4, back to front, with their names from zoom 16.
+    - **Names:** the client's outlined font (`font-outlined.png` + `fonts.json` from Tibia.pic, text.js from the planner), centred above the outfit, green #00c000 like a creature at full health, white when selected.
+    - **Outfit size:** zoomed out, outfits keep at least 0.75 of their client size (24 client px per 32), so they stay findable like map pins. Name scale: whole screen pixels per font pixel, at least the panel's.
+    - They're no longer drawn inside the chunk canvases, so walls in front of them don't cover them any more.
+    - **Clicking:** the outfit, its tile or its name opens the NPC; the front-most wins.
+    - The white frame around the selected NPC's tile shows from zoom 32.
+  - Tested: Thais at 32 (names over roofs), 32 → 64 (this floor only), Venore 32 → 64 (floor 6), Thais at 8.
 - **Known:**
-  - NPCs under a roof are still drawn and clickable only once the roof is off (Ctrl + wheel).
   - The close button is a plain "×" for now.
   - One NPC in the sheet has no picture (empty outfit).
+  - Names can overlap where NPCs stand close together.
 
 ### Slice 1: map viewer (built 2026-11-12, waiting for the user to try it)
 - **Converter** `tools/convert-map.js` (`npm run convert`, ~1 min). Readers for dat/spr/otbm/png are copied from the planner. Output goes to `public/map-data/` (about 80 MB). It is generated, so it isn't committed (`.gitignore`), but rerun it after a fresh checkout.
