@@ -186,6 +186,27 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         ctx.restore();
       }
     }
+    // Town names over the zoomed-out map (gone once the sprites show), centred on the temple, white in the
+    // client's outlined font at whole screen pixels per font pixel (two client pixels each, so they stand out).
+    if (v.zoom < SPRITES_FROM) {
+      const fs = 2 * k, drawn = [];
+      ctx.imageSmoothingEnabled = false;
+      for (const t of world.places) {
+        if (t.k !== 'town') continue;
+        const [tx, ty] = t.p;
+        if (tx < left - 64 || tx > right + 64 || ty < top - 64 || ty > bottom + 64) continue;
+        const w = textWidth(world.font, t.n) * fs, h = 12 * fs;
+        const lx = Math.round(ox + (tx + 0.5) * s - w / 2), ly = Math.round(oy + (ty + 0.5) * s - 8 * fs);
+        // Skip a name that would overlap one already drawn (far out); it shows again when zoomed in.
+        if (drawn.some((d) => lx < d.x + d.w && d.x < lx + w && ly < d.y + d.h && d.y < ly + h)) continue;
+        drawn.push({ x: lx, y: ly, w, h });
+        ctx.save();
+        ctx.translate(lx, ly);
+        ctx.scale(fs, fs);
+        drawText(ctx, world.font, t.n, 0, 0, '#ffffff');
+        ctx.restore();
+      }
+    }
     if (more) frame.current = requestAnimationFrame(draw);
   }, []);
 

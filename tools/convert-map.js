@@ -188,8 +188,9 @@ const npcsOut = npcList.map((n, i) => {
   };
 });
 // ---------- places: towns (the map's town list, also internal names like Mists or Minoroom) and depots ----------
-// The real towns of 7.1 (the rest of the town list are internal names: hunting areas, quest spots, ...).
-const REAL_TOWNS = new Set(['Rookgaard', 'Thais', 'Carlin', 'Kazordoon', "Ab'Dendriel", 'Edron', 'Darashia', 'Venore', 'Fibula', 'Senja', 'Folda', 'Vega', 'Isle of Solitude']);
+// The real towns of 7.1 (the rest of the town list are internal names: hunting areas, quest spots, the GM
+// island "Isle of Solitude", ...).
+const REAL_TOWNS = new Set(['Rookgaard', 'Thais', 'Carlin', 'Kazordoon', "Ab'Dendriel", 'Edron', 'Darashia', 'Venore', 'Fibula', 'Senja', 'Folda', 'Vega']);
 const placesOut = [];
 const townsHere = towns.filter((t) => tileAt(...t.temple)); // e.g. Ankrahmun is listed but not on the 7.1 map
 for (const t of townsHere) placesOut.push({ n: t.name, k: REAL_TOWNS.has(t.name) ? 'town' : 'place', p: t.temple });

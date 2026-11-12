@@ -176,6 +176,14 @@ Agree each slice before building it, then build one at a time.
 
 ## Decisions made while building
 
+### Slice 2c: town names (built 2026-11-12)
+- **Town names over the zoomed-out map**, below zoom 16; gone once the sprites show.
+  - Centred on the temple, white, in the client's outlined font at 2 client pixels per font pixel (whole screen pixels), drawn over everything.
+  - Only real towns are labelled; the internal places stay search-only.
+  - **"Isle of Solitude" is now a place, not a town:** it's the GM island, not a player town. REAL_TOWNS is now 12 towns.
+  - A name that would overlap one already drawn is skipped (e.g. Vega next to Senja on the world view) and shows again when zoomed in.
+- Tested: the world view at 0.5 (11 names, no overlap) and Thais at 4.
+
 ### Slice 2b: search (built 2026-11-12)
 - **Converter → `places.json`** (`{ n, k: town | place | depot, p }`):
   - **Towns** from the map's town list (OTBM TOWNS), at their temple, only where the temple tile exists: 43 of 47 (Ankrahmun and others aren't on the 7.1 map).
