@@ -163,11 +163,16 @@ Agree each slice before building it, then build one at a time.
 - **NPC window** (client style): name and position; "Buys", "Sells" and "Travel" lists with item icons and prices. A travel destination jumps the map there.
 - **Search field** in the panel: towns, depots, NPCs, coordinates. A result flies the map there (animated pan and zoom). An NPC result also selects it and switches to its floor with "This floor only", so it's visible under roofs. That replaces the old idea of cutting roofs per building.
 
-**Open questions for the user**
-- How NPCs look on the map.
-- Town names on the map.
-- The internal place names.
-- Searching by item.
+**Answered by the user (2026-11-12)**
+- **NPC look: real outfits plus a marker.** Zoomed in, the NPC stands on its tile in its real outfit and colours, like in the game. Zoomed out, a small marker. Both are clickable.
+- **Town names: yes, zoomed out only.** Drawn in the client's font over the overview levels, gone once the sprites show.
+- **Internal place names: include them.** Mists, Drefia, Necropolis, Minoroom, Home, … are also searchable places, under their internal names.
+- **Item search: yes, now.** Typing an item lists the NPCs that buy or sell it, with prices. Picking one flies there.
+
+**Sub-slices** (one at a time)
+- **2a.** Converter `npcs.json` and `places.json`; NPC outfits on the map and markers zoomed out; clicking opens the NPC window (buys, sells, travel).
+- **2b.** Search (places, depots, NPCs, items, coordinates) with fly-to. An NPC result switches to its floor with "This floor only".
+- **2c.** Town names over the zoomed-out map.
 
 ## Decisions made while building
 
