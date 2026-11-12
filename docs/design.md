@@ -191,6 +191,7 @@ Agree each slice before building it, then build one at a time.
   - **Position:** that tile.
   - **Item:** opens the **item window**: icon, "Sold by" (cheapest first) and "Bought by" (best price first), each NPC with its nearest real town; clicking one flies there and opens the NPC.
 - Travel buttons in the NPC window fly too.
+- **Scrollbars like the house planner (user, 2026-11-12: "the scrollbar is not nice").** The NPC/item window and the search results use the client's 12 px scrollbar: stone track, bevelled thumb, arrow buttons from gui.png (-234/-246, -122). It's the same CSS as the planner with `tm-` names; Firefox gets a thin dark bar.
 - Tested: "plate" → plate armor (sold by Kroox, Kazordoon 1200 gp; bought by Willard, Yanni, Turvy, Sam, Shanar 400 gp …); Willard flies to Edron floor 6 with his window; venore / thais dep / al d / coordinates / mists.
 
 ### Slice 2a: NPCs on the map (built 2026-11-12)

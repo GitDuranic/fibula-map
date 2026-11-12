@@ -118,3 +118,22 @@
 .tm-result.tm-active { background: rgba(255, 255, 255, .12); color: #fff; }
 .tm-result-kind { flex: none; color: #8a8a8a; }
 .tm-town { color: #8a8a8a; }
+
+/* client-style scrollbars, as in the house planner (Chromium/Safari); Firefox falls back to a thin dark bar */
+.tm-window-body, .tm-results { scrollbar-width: thin; scrollbar-color: #5a5a5a #2b2b2b; }
+@supports selector(::-webkit-scrollbar) {
+  .tm-window-body, .tm-results { scrollbar-width: auto; scrollbar-color: auto; }
+}
+.tm ::-webkit-scrollbar { width: 12px; height: 12px; }
+.tm ::-webkit-scrollbar-track {
+  background: linear-gradient(rgba(0, 0, 0, .22), rgba(0, 0, 0, .22)), var(--tm-stone);
+  border-left: 1px solid var(--tm-light);
+}
+.tm ::-webkit-scrollbar-thumb {
+  background: var(--tm-stone); background-color: #474747;
+  border: 1px solid; border-color: var(--tm-light) var(--tm-dark) var(--tm-dark) var(--tm-light);
+}
+.tm ::-webkit-scrollbar-button:single-button { display: block; width: 12px; height: 12px; background-image: var(--tm-gui); }
+.tm ::-webkit-scrollbar-button:single-button:vertical:decrement { background-position: -234px -122px; }
+.tm ::-webkit-scrollbar-button:single-button:vertical:increment { background-position: -246px -122px; }
+.tm ::-webkit-scrollbar-corner { background: var(--tm-stone); }
