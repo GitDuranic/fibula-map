@@ -55,7 +55,8 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
       - **Ctrl + `+`/`-`** on the keyboard does the same while the map has focus, instead of the browser's page zoom.
       - **Panel:** "All layers", "Layers from floor N", or "This floor only" (also underground).
       - Tested in Thais: from floor 2 down to 6, then this floor only, then floors 8 to 12, and back up to 7.
-    - Not done yet: a way to change depth on phones; layers don't apply to the far-zoom overview images (below 16).
+    - **Phones: no depth control (decided 2026-11-12).** The user expects little phone use; on phones the floor buttons are enough.
+    - Layers don't apply to the far-zoom overview images (below 16).
   - Still planned: around the route and a selected NPC, roofs are cut away even when zoomed out.
 - **Viewer: our own canvas code, no map library (2026-11-12).** Leaflet was considered. It can look like Tibia, but the per-building roof swap and pixel-exact zoom steps (sharp at DPR 2.5) fight its design, and it would be an extra npm package for Ryndean. The pan/zoom/markers code is small enough to write ourselves.
 - **Code sharing:** the planner's `tools/lib` (dat, spr, otbm, png) and render engine are **copied** into tibia-map, not linked, so the planner's sync to Ryndean's site isn't affected.
