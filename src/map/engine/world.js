@@ -90,79 +90,22 @@ export class World {
     return c[(y - Math.floor(y / C) * C) * C + (x - Math.floor(x / C) * C)];
   }
 
-  // ---------- buildings (layers above a floor) ----------
+  // ---------- layers ----------
 
-  // The highest floor (lowest number) above z with something drawn over frame position (x, y) of floor z, or -1.
-  // Floor zz's tile for frame position p is p + (z - zz): the client draws higher floors one tile up-left each.
-  coverAt(x, y, z) {
-    if (z > 7) return -1; // underground: nothing above is drawn
-    let top = -1;
-    for (let zz = z - 1; zz >= 0; zz--) {
-      const t = this.tile(x + z - zz, y + z - zz, zz);
-      if (t && t.items.length) top = zz;
+  // The floors above z (lowest number first) with any map data in frame-z tile range [x1, x2] x [y1, y2]:
+  // the layers that can be taken off there (roofs, upper floors). Floor zz is drawn (z - zz) tiles up-left.
+  layersIn(z, x1, y1, x2, y2) {
+    const C = this.CHUNK, found = [];
+    if (z > 7) return found; // underground: nothing above is drawn
+    for (let zz = 0; zz < z; zz++) {
+      const d = z - zz;
+      let any = false;
+      for (let cy = Math.floor((y1 + d) / C); cy <= Math.floor((y2 + d) / C) && !any; cy++)
+        for (let cx = Math.floor((x1 + d) / C); cx <= Math.floor((x2 + d) / C) && !any; cx++)
+          if (this.exists.has(`${zz}:${cx}:${cy}`)) any = true;
+      if (any) found.push(zz);
     }
-    return top;
-  }
-
-  // Is there something on floor zz drawn at frame position (x, y) of floor z?
-  hasAt(x, y, z, zz) {
-    const t = this.tile(x + z - zz, y + z - zz, zz);
-    return !!(t && t.items.length);
-  }
-
-  // The frame positions connected to (x, y) for which test(x, y) holds: neighbours within 1 + gap tiles
-  // (gap > 0 bridges small gaps between wall pieces). Null if more than maxTiles.
-  area(x, y, test, gap, maxTiles) {
-    const tiles = new Set([`${x},${y}`]), queue = [[x, y]];
-    const box = { x1: x, y1: y, x2: x, y2: y }, r = 1 + gap;
-    while (queue.length) {
-      const [px, py] = queue.pop();
-      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-        const nx = px + dx, ny = py + dy, k = `${nx},${ny}`;
-        if (tiles.has(k) || !test(nx, ny)) continue;
-        if (tiles.size >= maxTiles) return null;
-        tiles.add(k); queue.push([nx, ny]);
-        box.x1 = Math.min(box.x1, nx); box.y1 = Math.min(box.y1, ny); box.x2 = Math.max(box.x2, nx); box.y2 = Math.max(box.y2, ny);
-      }
-    }
-    return { tiles, box };
-  }
-
-  // The building over frame position (x, y) of floor z, to take all its layers off at once:
-  // 1. everything above z connected to (x, y), bridging 1-tile gaps between wall pieces (e.g. Darashia's
-  //    open-topped buildings), if that stays small (a single building);
-  // 2. otherwise (touching houses that would make a whole city block): each layer's own connected area
-  //    from (x, y), together.
-  // Null if nothing is above (x, y), or every layer is too big to be a building (mountain ranges).
-  buildingArea(x, y, z) {
-    const above = (px, py) => { for (let f = 0; f < z; f++) if (this.hasAt(px, py, z, f)) return true; return false; };
-    if (!above(x, y)) return null;
-    let a = this.area(x, y, above, 1, 400);
-    if (!a) {
-      for (let f = 0; f < z; f++) {
-        if (!this.hasAt(x, y, z, f)) continue;
-        const l = this.area(x, y, (px, py) => this.hasAt(px, py, z, f), 0, 3000);
-        if (!l) continue;
-        if (!a) a = { tiles: new Set(l.tiles), box: { ...l.box } };
-        else {
-          for (const t of l.tiles) a.tiles.add(t);
-          a.box = { x1: Math.min(a.box.x1, l.box.x1), y1: Math.min(a.box.y1, l.box.y1), x2: Math.max(a.box.x2, l.box.x2), y2: Math.max(a.box.y2, l.box.y2) };
-        }
-      }
-    }
-    if (!a) return null;
-    // Also take the edges: roof overhangs and wall pieces 1 tile outside the area (else thin roof strips stay).
-    const box = { ...a.box }, tiles = new Set(a.tiles);
-    for (const t of a.tiles) {
-      const [px, py] = t.split(',').map(Number);
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const nx = px + dx, ny = py + dy, k = `${nx},${ny}`;
-        if (tiles.has(k) || !above(nx, ny)) continue;
-        tiles.add(k);
-        box.x1 = Math.min(box.x1, nx); box.y1 = Math.min(box.y1, ny); box.x2 = Math.max(box.x2, nx); box.y2 = Math.max(box.y2, ny);
-      }
-    }
-    return { tiles, box, key: `${box.x1},${box.y1},${box.x2},${box.y2}` };
+    return found;
   }
 
   // ---------- drawing ----------
@@ -170,12 +113,11 @@ export class World {
   // A canvas with chunk (cx, cy) of floor z drawn at `ts` pixels per tile, or null if its data is not there yet.
   // `mode`: 'above' | 'floor' (see floorsFor). Floors above z are drawn one tile up-left per floor, like the client.
   // `budget.n`: how many new canvases may still be drawn this frame (keeps panning smooth); returns null when spent.
-  // `opened`: buildings with layers taken off: [{ tiles, box, key, cut }] — floors above `cut` are not drawn there.
-  chunkCanvas(z, cx, cy, mode, ts, budget, opened = []) {
-    const C = this.CHUNK, floors = floorsFor(z, mode);
+  // `cut`: the top layer drawn — floors above it (zz < cut: roofs, upper floors) are left out. 0 = everything.
+  chunkCanvas(z, cx, cy, mode, ts, budget, cut = 0) {
+    const C = this.CHUNK, floors = floorsFor(z, mode).filter((zz) => zz >= cut);
     const x0 = cx * C, y0 = cy * C;
-    const here = opened.filter((b) => b.box.x2 >= x0 && b.box.x1 < x0 + C + OVERHANG && b.box.y2 >= y0 && b.box.y1 < y0 + C + OVERHANG);
-    const key = `${mode}:${z}:${cx}:${cy}:${ts}${here.map((b) => `|${b.key}:${b.cut}`).join('')}`;
+    const key = `${mode}:${z}:${cx}:${cy}:${ts}:${cut}`;
     const hit = this.canvases.get(key);
     if (hit) { this.canvases.delete(key); this.canvases.set(key, hit); return hit.canvas; } // most recent last
     // Make sure every chunk this one needs is loaded.
@@ -208,10 +150,6 @@ export class World {
         for (let sx = 0; sx < C + OVERHANG; sx++) {
           const t = this.tile(x0 + sx + d, y0 + sy + d, zz);
           if (!t || !t.items.length) continue;
-          if (zz < z && here.length) { // a layer taken off an opened building?
-            const pk = `${x0 + sx},${y0 + sy}`;
-            if (here.some((b) => zz < b.cut && b.tiles.has(pk))) continue;
-          }
           drawTile(this.defs, t, sx * TILE, sy * TILE, drawSprite);
         }
       }
