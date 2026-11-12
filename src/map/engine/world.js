@@ -108,6 +108,15 @@ export class World {
     return found;
   }
 
+  // Does floor z have any map data in tile range [x1, x2] x [y1, y2] (its own frame)?
+  hasData(z, x1, y1, x2, y2) {
+    const C = this.CHUNK;
+    for (let cy = Math.floor(y1 / C); cy <= Math.floor(y2 / C); cy++)
+      for (let cx = Math.floor(x1 / C); cx <= Math.floor(x2 / C); cx++)
+        if (this.exists.has(`${z}:${cx}:${cy}`)) return true;
+    return false;
+  }
+
   // ---------- drawing ----------
 
   // A canvas with chunk (cx, cy) of floor z drawn at `ts` pixels per tile, or null if its data is not there yet.

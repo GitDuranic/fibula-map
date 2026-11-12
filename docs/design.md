@@ -48,7 +48,14 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
     - **Reset:** changing floor or opening a link resets to all layers.
     - The building search (buildingArea, peel-on-zoom) is removed.
     - Known: a laptop trackpad pinch sends Ctrl + wheel in browsers, so pinching on a trackpad changes layers instead of zooming. Touch-screen pinch still zooms.
-    - Not done yet: a way to change layers without a mouse (phones, keyboard); layers don't apply to the far-zoom overview images (below 16).
+    - **Also underground (2026-11-12, user: "go underground with that ctrl -/+").** Ctrl + wheel is now a depth control:
+      - **Going in:** layers come off until only this floor is left, then each step goes a floor down (8..15).
+      - **Going out:** up the underground floors to the ground floor (still without roofs), then the layers come back.
+      - Floors with nothing on screen are skipped.
+      - **Ctrl + `+`/`-`** on the keyboard does the same while the map has focus, instead of the browser's page zoom.
+      - **Panel:** "All layers", "Layers from floor N", or "This floor only" (also underground).
+      - Tested in Thais: from floor 2 down to 6, then this floor only, then floors 8 to 12, and back up to 7.
+    - Not done yet: a way to change depth on phones; layers don't apply to the far-zoom overview images (below 16).
   - Still planned: around the route and a selected NPC, roofs are cut away even when zoomed out.
 - **Viewer: our own canvas code, no map library (2026-11-12).** Leaflet was considered. It can look like Tibia, but the per-building roof swap and pixel-exact zoom steps (sharp at DPR 2.5) fight its design, and it would be an extra npm package for Ryndean. The pan/zoom/markers code is small enough to write ourselves.
 - **Code sharing:** the planner's `tools/lib` (dat, spr, otbm, png) and render engine are **copied** into tibia-map, not linked, so the planner's sync to Ryndean's site isn't affected.

@@ -174,24 +174,36 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     viewChanged();
   }, [viewChanged]);
 
-  // Layers (Ctrl + wheel): take the top layer off the whole view (roofs first, then upper floors) or put the
-  // last one back. Floors with nothing on screen are skipped, so every step changes something.
+  // Depth (Ctrl + wheel, Ctrl + +/-): going in takes the top layer off the whole view (roofs first, then upper
+  // floors); once only this floor is left, it goes a floor down, into the underground. Going out does the
+  // same in reverse: up the underground floors to the ground floor (still without roofs), then the layers come
+  // back. Floors with nothing on screen are skipped, so every step changes something.
   const layerBy = useCallback((dir) => {
     const v = view.current, world = worldRef.current, b = viewBox.current;
-    if (!world || !b || v.z > 7) return;
-    const layers = world.layersIn(v.z, Math.floor(b.left), Math.floor(b.top), Math.floor(b.right), Math.floor(b.bottom));
-    let next;
+    if (!world || !b) return;
+    const [x1, y1, x2, y2] = [b.left, b.top, b.right, b.bottom].map(Math.floor);
+    const layers = v.z <= 7 ? world.layersIn(v.z, x1, y1, x2, y2) : [];
+    const floorWithData = (from, step) => {
+      for (let z = from; z >= 0 && z <= 15; z += step) if (world.floors.includes(z) && world.hasData(z, x1, y1, x2, y2)) return z;
+      return -1;
+    };
     if (dir > 0) {
       const f = layers.find((zz) => zz >= v.cut);
-      if (f === undefined) return; // already down to this floor
-      next = f + 1;
+      if (f !== undefined) v.cut = f + 1; // take the next layer off
+      else {
+        const z = floorWithData(v.z + 1, 1); // only this floor left: go down
+        if (z < 0) return;
+        v.z = z; v.cut = z;
+      }
+    } else if (v.z > 7) {
+      const z = floorWithData(v.z - 1, -1); // underground: go up (to the ground floor at most, without roofs)
+      if (z < 0) return;
+      v.z = z; v.cut = z;
     } else {
-      const hidden = layers.filter((zz) => zz < v.cut);
       if (!v.cut) return;
-      next = hidden.length > 1 ? hidden[hidden.length - 1] : 0;
+      const hidden = layers.filter((zz) => zz < v.cut);
+      v.cut = hidden.length > 1 ? hidden[hidden.length - 1] : 0; // put the last layer back
     }
-    if (next === v.cut) return;
-    v.cut = next;
     viewChanged();
   }, [viewChanged]);
 
@@ -323,6 +335,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const onKeyDown = (e) => {
     if (e.target.tagName === 'INPUT') return;
     const c = canvasRef.current, step = Math.min(c.width, c.height) / 4;
+    if (e.ctrlKey && ['+', '=', '-'].includes(e.key)) { // Ctrl + +/-: depth, like Ctrl + wheel (not the page zoom)
+      e.preventDefault();
+      layerBy(e.key === '-' ? -1 : 1);
+      return;
+    }
     const keys = {
       ArrowLeft: () => panBy(step, 0), ArrowRight: () => panBy(-step, 0),
       ArrowUp: () => panBy(0, step), ArrowDown: () => panBy(0, -step),
@@ -372,8 +389,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           </div>
           <div className="tm-info">
             <div>Floor {ui.z}{ui.z === 7 ? ' (ground)' : ui.z < 7 ? ` (+${7 - ui.z})` : ` (-${ui.z - 7})`}</div>
-            <div title="Ctrl + mouse wheel takes layers (roofs, upper floors) off or puts them back">
-              {ui.cut ? `Layers from floor ${ui.cut}` : 'All layers'}
+            <div title="Ctrl + mouse wheel (or Ctrl + +/-): take layers off and go underground, or come back up">
+              {ui.z > 7 || ui.cut >= ui.z ? 'This floor only' : ui.cut ? `Layers from floor ${ui.cut}` : 'All layers'}
             </div>
             <div className="tm-pos">{hover ? `${hover.x}, ${hover.y}, ${hover.z}` : ' '}</div>
           </div>
