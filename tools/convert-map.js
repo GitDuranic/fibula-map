@@ -1,13 +1,17 @@
 // Converts Tibia client files + server map into web data for the Tibia map viewer.
 //
-// Usage: node tools/convert-map.js [--assets "<dir>"] [--data "<server data dir>"] [--map "<map.otbm>"] [--out public/map-data]
+// Usage: node tools/convert-map.js [--assets "<dir>"] [--data "<server data dir>"] [--map "<map.otbm>"] [--spawn "<spawn.xml>"] [--out public/map-data]
 //
 // Inputs:
 //   <assets>/Tibia.dat, Tibia.spr                    client files (7.6 format, 7.1 item data)
 //   <data>/items/items.otb                           TVP item list (server id -> client id)
 //   <map>                                            the 7.1 map (default: tibia71-tvp-converted/Tibia71.otbm, TVP item ids)
 // Outputs (in <out>/):
-//   items.json            draw info for every item on the map (keyed by client id)
+//   items.json            draw info and name for every item on the map or traded by an NPC (keyed by client id),
+//                         plus fluid names by fluid type
+//   npcs.json, npcs.png   NPCs: [{ n name, p [x,y,z], img [x,y,w,h] in npcs.png (outfit standing, coloured),
+//                         d displacement, sells/buys [[client id, price(, fluid type)]], travel [[name, price, x,y,z]] }]
+//                         (7.1 positions from --spawn; names/outfits/trade/travel from the TVP NPC files for now)
 //   sprites-N.png         sprite atlases (64x64 cells of 32px)
 //   gui.png, stone.png    client interface graphics from Tibia.pic (skin + tileable stone texture)
 //   map.json              bounds, chunk size, which chunks exist per floor
@@ -24,11 +28,14 @@ import { walkNodes, Reader, parseOtb } from './lib/nodefile.js';
 import { writePng } from './lib/png.js';
 import sharp from 'sharp';
 import { drawTile, TILE as TILE32 } from '../src/map/engine/render.js';
+import { loadItemInfo } from './lib/iteminfo.js';
+import { loadNpcs, renderOutfit } from './lib/npcs.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
 const ASSETS = args.assets || 'C:/git/tibia assets';
 const DATA = args.data || path.join(ASSETS, 'TVP-main/TVP-main/data');
 const MAP = args.map || 'C:/git/tibia assets/tibia71-tvp-converted/Tibia71.otbm'; // 7.1 map in TVP item ids
+const SPAWN = args.spawn || 'C:/git/tibia assets/tibia71-tvp-converted/Tibia71-spawn.xml'; // 7.1 NPC positions
 const OUT = args.out || 'public/map-data';
 const CHUNK = 32; // tiles per data chunk side
 
@@ -130,6 +137,52 @@ log(`${Object.values(chunkIndex).reduce((a, l) => a + l.length, 0)} chunks, ${(c
 
 const tileAt = (x, y, z) => floors[z]?.get(`${Math.floor(x / CHUNK)},${Math.floor(y / CHUNK)}`)?.get((y - Math.floor(y / CHUNK) * CHUNK) * CHUNK + (x - Math.floor(x / CHUNK) * CHUNK));
 
+// ---------- NPCs ----------
+// 7.1 positions from the spawn file; names, outfits, trade and travel from the TVP (7.6) NPC files for now.
+log('Reading NPCs');
+const itemInfo = loadItemInfo(DATA);
+const FLUIDS = [''];
+for (let t = 1; t <= 12; t++) FLUIDS.push(itemInfo.server.get(t)?.name || 'water');
+const npcList = loadNpcs({ spawnFile: SPAWN, npcDir: path.join(DATA, 'npc'), log });
+// An offer as [client id, price] or [client id, price, fluid type]; its item gets into the atlas for the icon.
+const offerOut = (o) => {
+  const cid = toClient(o.sid);
+  if (!cid || !dat.items.has(cid)) return null;
+  usedItems.add(cid);
+  return o.data != null ? [cid, o.price, o.data] : [cid, o.price];
+};
+const NPC_CELL = 64, NPC_COLS = 16;
+const npcSheetW = NPC_COLS * NPC_CELL, npcSheetH = Math.ceil(npcList.length / NPC_COLS) * NPC_CELL;
+const npcSheet = new Uint8Array(npcSheetW * npcSheetH * 4);
+const droppedTravel = [];
+const npcsOut = npcList.map((n, i) => {
+  let thing = null, colors = [0, 0, 0, 0];
+  if (n.look?.type) { thing = dat.outfits[n.look.type - 1]; colors = [n.look.head || 0, n.look.body || 0, n.look.legs || 0, n.look.feet || 0]; }
+  else if (n.look?.typeex) thing = dat.items.get(toClient(n.look.typeex));
+  let img = null;
+  if (thing) {
+    const r = renderOutfit(spr, thing, n.dir, colors);
+    const ax = (i % NPC_COLS) * NPC_CELL, ay = Math.floor(i / NPC_COLS) * NPC_CELL;
+    blit(npcSheet, npcSheetW, r.data, r.width, r.height, ax, ay, npcSheetH);
+    img = [ax, ay, r.width, r.height];
+  }
+  const disp = thing?.flags.DISPLACEMENT;
+  // Passages to places that aren't on the 7.1 map (Port Hope, Ankrahmun, ...) are left out.
+  const travel = n.travel.filter((t) => {
+    const ok = !!tileAt(t.to[0], t.to[1], t.to[2]);
+    if (!ok) droppedTravel.push(`${n.name} -> ${t.name}`);
+    return ok;
+  }).map((t) => [t.name, t.price, ...t.to]);
+  return {
+    n: n.name, p: [n.x, n.y, n.z], img, d: disp ? [disp.x, disp.y] : [0, 0],
+    sells: n.sells.map(offerOut).filter(Boolean), buys: n.buys.map(offerOut).filter(Boolean), travel,
+  };
+});
+writePng(path.join(OUT, 'npcs.png'), npcSheetW, npcSheetH, npcSheet);
+fs.writeFileSync(path.join(OUT, 'npcs.json'), JSON.stringify(npcsOut));
+log(`${npcsOut.length} NPCs, ${npcsOut.filter((n) => n.sells.length || n.buys.length).length} traders, ${npcsOut.filter((n) => n.travel.length).length} with travel`);
+if (droppedTravel.length) log(`Passages to places not on this map, left out: ${droppedTravel.join(', ')}`);
+
 // ---------- sprite atlases ----------
 log(`Packing sprites for ${usedItems.size} items`);
 const SHEET_CELLS = 64, PER_SHEET = SHEET_CELLS * SHEET_CELLS;
@@ -147,7 +200,7 @@ for (const id of [...usedItems].sort((a, b) => a - b)) {
   const t = dat.items.get(id);
   const f = {};
   for (const k of FLAG_KEYS) if (t.flags[k] !== undefined) f[k] = t.flags[k];
-  itemsOut[id] = { f, w: t.width, h: t.height, l: t.layers, px: t.patternX, py: t.patternY, pz: t.patternZ, a: t.phases, s: t.sprites.map(slotOf) };
+  itemsOut[id] = { n: itemInfo.byClient(id)?.name || '', f, w: t.width, h: t.height, l: t.layers, px: t.patternX, py: t.patternY, pz: t.patternZ, a: t.phases, s: t.sprites.map(slotOf) };
 }
 const sheetCount = Math.ceil(nextSlot / PER_SHEET);
 for (let sh = 0; sh < sheetCount; sh++) {
@@ -174,7 +227,7 @@ log(`${nextSlot - 1} sprites in ${sheetCount} sheet(s)`);
   writePng(path.join(OUT, 'stone.png'), S, S, img);
 }
 
-fs.writeFileSync(path.join(OUT, 'items.json'), JSON.stringify({ sheetCells: SHEET_CELLS, sheets: sheetCount, items: itemsOut }));
+fs.writeFileSync(path.join(OUT, 'items.json'), JSON.stringify({ sheetCells: SHEET_CELLS, sheets: sheetCount, fluids: FLUIDS, items: itemsOut }));
 
 // ---------- overview images (zoomed out) ----------
 // The map drawn with the real sprites at 8 px per tile (sprites shrunk 4x4 -> 1 px), then halved for

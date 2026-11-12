@@ -38,10 +38,18 @@ export class World {
   }
 
   async load() {
-    const [items, map] = await Promise.all([loadJson(`${this.base}/items.json`), loadJson(`${this.base}/map.json`)]);
+    const [items, map, npcs, npcSheet] = await Promise.all([
+      loadJson(`${this.base}/items.json`), loadJson(`${this.base}/map.json`),
+      loadJson(`${this.base}/npcs.json`), loadImage(`${this.base}/npcs.png`),
+    ]);
     this.defs = items.items;
+    this.fluids = items.fluids || [];
     this.sheetCells = items.sheetCells;
     this.sheets = await Promise.all(Array.from({ length: items.sheets }, (_, i) => loadImage(`${this.base}/sprites-${i}.png`)));
+    // NPCs: { n name, p [x,y,z], img [x,y,w,h] in npcSheet, d displacement, sells, buys, travel } (see the converter).
+    this.npcs = npcs;
+    this.npcSheet = npcSheet;
+    this.npcAt = new Map(npcs.map((n) => [n.p.join(','), n]));
     this.map = map;
     this.CHUNK = map.chunk;
     this.bounds = map.bounds;
@@ -160,6 +168,13 @@ export class World {
           const t = this.tile(x0 + sx + d, y0 + sy + d, zz);
           if (!t || !t.items.length) continue;
           drawTile(this.defs, t, sx * TILE, sy * TILE, drawSprite);
+          // An NPC standing here, drawn after its tile like the client draws creatures (things on the tiles
+          // south and east of it, drawn later, overlap it as in the game).
+          const npc = this.npcAt.get(`${t.x},${t.y},${t.z}`);
+          if (npc?.img) {
+            const [ax, ay, w, h] = npc.img;
+            ctx.drawImage(this.npcSheet, ax, ay, w, h, (sx * TILE + TILE - w - npc.d[0]) * k, (sy * TILE + TILE - h - npc.d[1]) * k, w * k, h * k);
+          }
         }
       }
     }
@@ -171,6 +186,23 @@ export class World {
       this.canvases.delete(k2); this.cachedPixels -= v.pixels;
     }
     return canvas;
+  }
+
+  // Draws an item as a 32x32 icon (bottom-right anchored, like the client's inventory slots).
+  // count: stack size, or the fluid type for fluid containers.
+  drawIcon(ctx, id, count = 1, dx = 0, dy = 0) {
+    const per = this.sheetCells * this.sheetCells;
+    const drawSprite = (slot, x, y) => {
+      const sheet = this.sheets[Math.floor(slot / per)], i = slot % per;
+      ctx.drawImage(sheet, (i % this.sheetCells) * TILE, Math.floor(i / this.sheetCells) * TILE, TILE, TILE, x, y, TILE, TILE);
+    };
+    drawTile(this.defs, { x: 0, y: 0, z: 0, items: [{ id, count }] }, dx, dy, drawSprite);
+  }
+
+  // An item's name as an NPC offers it, e.g. "vial of oil" for a vial with fluid type 7.
+  itemName(id, fluid) {
+    const def = this.defs[id], name = def?.n || `item ${id}`;
+    return fluid != null && (def?.f.FLUID_CONTAINER || def?.f.SPLASH) && this.fluids[fluid] ? `${name} of ${this.fluids[fluid]}` : name;
   }
 
   // An overview image (the map pre-drawn with sprites at `level` px per tile, map.overview.px square),

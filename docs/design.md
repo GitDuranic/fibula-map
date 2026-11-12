@@ -176,6 +176,29 @@ Agree each slice before building it, then build one at a time.
 
 ## Decisions made while building
 
+### Slice 2a: NPCs on the map (built 2026-11-12)
+- **User (2026-11-12): use the 7.6 files for whatever we don't have in 7.1 yet.** Positions are 7.1 (`Tibia71-spawn.xml`). Names, outfits, trade and travel come from the TVP 7.6 NPC files.
+- **Converter** (`tools/lib/npcs.js`, `--spawn`): 265 NPCs, 108 traders, 16 with travel.
+  - **Travel to places not on the 7.1 map is left out** and logged: Port Hope and Ankrahmun, from Captain Seahorse, Captain Fearless, Captain Bluebear and Petros.
+  - **Trade lines:** `"sell",…` = the NPC buys from you; otherwise the NPC sells to you. Price per piece; packs (Amount other than 1 or %1, e.g. sixpacks of worms) are skipped. `Data=` is the fluid type (e.g. "vial of oil").
+  - **Travel:** a keyword with `Price=` and `Topic=N`, whose `Topic=N,"yes"` line has `Teleport(x,y,z)`.
+  - **Outfits** are pre-coloured in the converter, using the client's 133-colour palette and the outfit's colour mask, facing the spawn direction, standing frame. They go into `npcs.png`; a `typeex` look uses the item's sprite.
+  - `items.json` now has item names (`n`) and fluid names; traded items are added to the sprite atlas for their icons.
+- **On the map:**
+  - **Zoom 32 and closer:** NPCs are drawn on their tiles, after the tile's items like the client draws creatures, so walls south and east of them overlap as in the game. They come off with their floor's layer.
+  - **Zoomed out (below 32):** small yellow markers with a black border (white when selected). Floors 0–7 are shifted like the client draws them; underground, only that floor's NPCs.
+  - The selected NPC gets a thin white frame around its tile.
+- **Click** (a press without dragging) on an NPC opens it, on the outfit or its tile, or within 6 client px of a marker. A click elsewhere closes it. The mouse cursor becomes a pointer over NPCs.
+- **NPC window** (side panel, client style, scrolls):
+  - name and position
+  - **Sells** and **Buys**: item icon in a slot, name, price per piece, sorted by name
+  - **Travel**: buttons with price ("free" for 0) that jump the map to the arrival spot
+- Tested: Al Dee (sells 26, buys 24); Captain Bluebear → Edron jumps to the Edron ship.
+- **Known:**
+  - NPCs under a roof are still drawn and clickable only once the roof is off (Ctrl + wheel).
+  - The close button is a plain "×" for now.
+  - One NPC in the sheet has no picture (empty outfit).
+
 ### Slice 1: map viewer (built 2026-11-12, waiting for the user to try it)
 - **Converter** `tools/convert-map.js` (`npm run convert`, ~1 min). Readers for dat/spr/otbm/png are copied from the planner. Output goes to `public/map-data/` (about 80 MB). It is generated, so it isn't committed (`.gitignore`), but rerun it after a fresh checkout.
 - **Chunks:** 32×32 tiles per JSON file, tiles in row order (`0` = none, a number = a tile with one item, an array = the items). That's 26 MB raw for 7.1, ~11 MB gzipped (7.6 measurements).

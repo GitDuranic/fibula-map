@@ -2,6 +2,7 @@
 // Props: dataUrl (where the converted map data lives), height (CSS height of the map), syncUrl (keep the view in the URL hash).
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { World } from './engine/world.js';
+import NpcWindow from './NpcWindow.jsx';
 import './tibia-map.css';
 
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
@@ -16,6 +17,18 @@ function readHash() {
   if (!m) return null;
   return { x: +m[1] + 0.5, y: +m[2] + 0.5, z: +m[3], zoom: m[4] ? nearestZoom(+m[4]) : START.zoom };
 }
+
+// Where NPC n shows in the view of floor z (frame position, see World): on the surface the floors 0-7 are drawn
+// together, each one tile up-left per floor higher; underground only that floor. Null if it isn't shown
+// (another underground floor, or its floor is taken off with the layers).
+function npcFrame(n, z, cut) {
+  const [x, y, nz] = n.p;
+  if (z > 7 || nz > 7) return nz === z ? [x, y] : null;
+  if (nz < cut) return null;
+  return [x - (z - nz), y - (z - nz)];
+}
+
+const MARKERS_BELOW = 32; // zoomed out further than this, NPCs show as markers instead of their outfits
 
 // Parses "32369, 32221, 7" (any separators); z is optional.
 function parsePosition(text, z) {
@@ -33,6 +46,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const anim = useRef({ s: view.current.zoom, anchor: null }); // shown scale (animates to view.zoom)
   const frame = useRef(0);
   const viewBox = useRef(null); // the tile area on screen, from the last draw
+  const selected = useRef(null); // the NPC whose window is open (drawn with a frame)
+  const [npc, setNpc] = useState(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
   const [hover, setHover] = useState(null);
@@ -99,8 +114,58 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       }
       if (budget.n < 0) more = true;
     }
+
+    // NPCs: markers when zoomed out (their outfits are drawn with the tiles when zoomed in); a frame around the
+    // selected one. Sizes in client pixels (k screen pixels each), like the side panel.
+    const k = Math.max(1, Math.round(window.devicePixelRatio || 1)), sel = selected.current;
+    const onScreen = (fx, fy) => fx >= left - 1 && fx <= right + 1 && fy >= top - 1 && fy <= bottom + 1;
+    if (v.zoom < MARKERS_BELOW) {
+      const r = 3 * k;
+      for (const n of world.npcs) {
+        const f = npcFrame(n, v.z, v.cut);
+        if (!f || !onScreen(f[0], f[1])) continue;
+        const cx = Math.round(ox + (f[0] + 0.5) * s), cy = Math.round(oy + (f[1] + 0.5) * s);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(cx - r - k, cy - r - k, 2 * r + 2 * k, 2 * r + 2 * k);
+        ctx.fillStyle = n === sel ? '#fff' : '#f0c000';
+        ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+      }
+    }
+    const sf = sel && npcFrame(sel, v.z, v.cut);
+    if (sf && v.zoom >= MARKERS_BELOW) {
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = k;
+      ctx.strokeRect(ox + sf[0] * s + k / 2, oy + sf[1] * s + k / 2, s - k, s - k);
+    }
     if (more) frame.current = requestAnimationFrame(draw);
   }, []);
+
+  // The NPC drawn at canvas point p (its outfit when zoomed in, its marker when zoomed out), or null.
+  const npcAtPoint = (p) => {
+    const world = worldRef.current, c = canvasRef.current, v = view.current, s = anim.current.s;
+    if (!world?.npcs || !c) return null;
+    const ox = Math.round(c.width / 2 - v.x * s), oy = Math.round(c.height / 2 - v.y * s);
+    const k = Math.max(1, Math.round(window.devicePixelRatio || 1));
+    let best = null;
+    for (const n of world.npcs) {
+      const f = npcFrame(n, v.z, v.cut);
+      if (!f) continue;
+      const tx = ox + f[0] * s, ty = oy + f[1] * s;
+      if (v.zoom < MARKERS_BELOW) {
+        const d = Math.hypot(p.x - (tx + s / 2), p.y - (ty + s / 2));
+        if (d <= 6 * k && (!best || d < best.d)) best = { n, d };
+      } else {
+        // The outfit's picture, or at least its own tile.
+        const [w, h] = n.img ? [n.img[2], n.img[3]] : [32, 32], sc = s / 32;
+        const x1 = tx + (32 - w - n.d[0]) * sc, y1 = ty + (32 - h - n.d[1]) * sc;
+        const inPic = p.x >= x1 && p.x < x1 + w * sc && p.y >= y1 && p.y < y1 + h * sc;
+        const inTile = p.x >= tx && p.x < tx + s && p.y >= ty && p.y < ty + s;
+        // Front-most (furthest south, then east) wins, as it is drawn on top.
+        if ((inPic || inTile) && (!best || f[1] > best.f[1] || (f[1] === best.f[1] && f[0] > best.f[0]))) best = { n, f };
+      }
+    }
+    return best?.n || null;
+  };
 
   const redraw = useCallback(() => {
     if (!frame.current) frame.current = requestAnimationFrame(draw);
@@ -231,6 +296,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     viewChanged();
   }, [viewChanged]);
 
+  const selectNpc = useCallback((n) => {
+    selected.current = n;
+    setNpc(n);
+    redraw();
+  }, [redraw]);
+
   // ---------- pointer: drag to pan (with a little glide), wheel/pinch to zoom ----------
   const pointers = useRef(new Map());
   const drag = useRef(null);
@@ -250,7 +321,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     cancelAnimationFrame(glide.current);
     e.currentTarget.setPointerCapture(e.pointerId);
     pointers.current.set(e.pointerId, toCanvas(e));
-    if (pointers.current.size === 1) drag.current = { last: toCanvas(e), t: performance.now(), vx: 0, vy: 0 };
+    if (pointers.current.size === 1) drag.current = { last: toCanvas(e), start: toCanvas(e), moved: false, t: performance.now(), vx: 0, vy: 0 };
     else if (pointers.current.size === 2) {
       const [p, q] = [...pointers.current.values()];
       drag.current = { pinch: Math.hypot(p.x - q.x, p.y - q.y), s0: anim.current.s };
@@ -259,7 +330,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
 
   const onPointerMove = (e) => {
     const p = toCanvas(e);
-    if (!pointers.current.has(e.pointerId)) { setHover(tileAt(p)); return; }
+    if (!pointers.current.has(e.pointerId)) {
+      setHover(tileAt(p));
+      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) ? 'pointer' : '';
+      return;
+    }
     pointers.current.set(e.pointerId, p);
     const d = drag.current;
     if (!d) return;
@@ -277,6 +352,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     } else if (!d.pinch) {
       const now = performance.now(), dt = Math.max(1, now - d.t);
       const dx = p.x - d.last.x, dy = p.y - d.last.y;
+      if (Math.hypot(p.x - d.start.x, p.y - d.start.y) > 6) d.moved = true;
       d.vx = 0.8 * (dx / dt) + 0.2 * d.vx; d.vy = 0.8 * (dy / dt) + 0.2 * d.vy;
       d.last = p; d.t = now;
       panBy(dx, dy);
@@ -297,6 +373,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       return;
     }
     drag.current = null;
+    if (d && !d.moved) { selectNpc(npcAtPoint(toCanvas(e))); return; } // a click: open the NPC there, or close
     if (d && performance.now() - d.t < 80) {
       // Glide on after a flick, slowing down.
       let { vx, vy } = d, t = performance.now();
@@ -402,6 +479,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             onChange={(e) => setGotoText(e.target.value)} spellCheck={false} autoComplete="off"
           />
         </form>
+        {npc && world && (
+          <NpcWindow world={world} npc={npc} onClose={() => selectNpc(null)} onTravel={(t) => goTo({ x: t[2], y: t[3], z: t[4] })} />
+        )}
       </div>
     </div>
   );

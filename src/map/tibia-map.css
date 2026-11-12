@@ -63,3 +63,43 @@
   .tm { flex-direction: column; }
   .tm-side { width: auto; flex-direction: row; padding: 0 4px 4px; }
 }
+
+/* NPC window (side panel): title bar, scrolling body with Sells / Buys / Travel */
+.tm-side { min-height: 0; }
+.tm-window { flex-direction: column; gap: 0; padding: 0; flex: 1; min-height: 0; }
+.tm-window-title {
+  display: flex; align-items: center; justify-content: space-between; height: 18px; padding: 0 2px 0 5px; flex: none;
+  background: linear-gradient(rgba(0, 0, 0, .22), rgba(0, 0, 0, .22)), var(--tm-stone);
+  border-bottom: 1px solid var(--tm-dark);
+}
+.tm-window-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e0e0e0; }
+.tm-close {
+  width: 14px; height: 14px; padding: 0; font: 11px/12px Verdana, sans-serif; color: var(--tm-text); cursor: pointer;
+  background: var(--tm-stone); background-color: #474747;
+  border: 1px solid; border-color: var(--tm-light) var(--tm-dark) var(--tm-dark) var(--tm-light);
+}
+.tm-close:active { border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); }
+.tm-window-body {
+  flex: 1; min-height: 0; overflow-y: auto; padding: 4px 4px 6px;
+  background: var(--tm-shade-deep), var(--tm-stone);
+  border-top: 1px solid var(--tm-slot-dark);
+}
+.tm-npc-pos { margin-bottom: 4px; color: #9a9a9a; }
+.tm-section { margin-bottom: 6px; }
+.tm-section-title { margin: 2px 0 3px; color: #e0e0e0; border-bottom: 1px solid var(--tm-dark); padding-bottom: 1px; }
+.tm-offer, .tm-travel { display: flex; align-items: center; gap: 4px; min-height: 18px; width: 100%; }
+.tm-offer { height: 36px; }
+.tm-slot {
+  width: 34px; height: 34px; flex: none; padding: 0;
+  border: 1px solid; border-color: var(--tm-slot-dark) var(--tm-slot-light) var(--tm-slot-light) var(--tm-slot-dark);
+  background: rgba(0, 0, 0, .35);
+}
+.tm-icon { display: block; width: 32px; height: 32px; image-rendering: pixelated; }
+.tm-offer-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.tm-offer-price { flex: none; color: #e0d090; }
+.tm-travel {
+  padding: 1px 3px; margin-bottom: 2px; font: inherit; color: var(--tm-text); cursor: pointer; text-align: left;
+  background: var(--tm-stone); background-color: #474747;
+  border: 1px solid; border-color: var(--tm-light) var(--tm-dark) var(--tm-dark) var(--tm-light);
+}
+.tm-travel:active { border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); }
