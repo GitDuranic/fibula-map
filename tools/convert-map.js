@@ -9,6 +9,8 @@
 // Outputs (in <out>/):
 //   items.json            draw info and name for every item on the map or traded by an NPC (keyed by client id),
 //                         plus fluid names by fluid type
+//   walk.bin, links.json  router data: per tile 0 (blocked) or ground speed / 2, in map.json chunk order;
+//                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig)
 //   places.json           [{ n name, k 'town' | 'depot', p [x,y,z] }] towns from the map's town list (temple), depots
 //   npcs.json, npcs.png   NPCs: [{ n name, p [x,y,z], img [x,y,w,h] in npcs.png (outfit standing, coloured),
 //                         d displacement, sells/buys [[client id, price(, fluid type)]], travel [[name, price, x,y,z]] }]
@@ -32,6 +34,7 @@ import sharp from 'sharp';
 import { drawTile, TILE as TILE32 } from '../src/map/engine/render.js';
 import { loadItemInfo } from './lib/iteminfo.js';
 import { loadNpcs, renderOutfit } from './lib/npcs.js';
+import { walkRules, buildWalk, LINK_KINDS } from './lib/walk.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
 const ASSETS = args.assets || 'C:/git/tibia assets';
@@ -146,6 +149,34 @@ for (let z = 0; z < 16; z++) {
 log(`${Object.values(chunkIndex).reduce((a, l) => a + l.length, 0)} chunks, ${(chunkBytes / 1e6).toFixed(1)} MB`);
 
 const tileAt = (x, y, z) => floors[z]?.get(`${Math.floor(x / CHUNK)},${Math.floor(y / CHUNK)}`)?.get((y - Math.floor(y / CHUNK) * CHUNK) * CHUNK + (x - Math.floor(x / CHUNK) * CHUNK));
+
+// ---------- walk data (router) ----------
+// walk.bin: one byte per tile, chunk by chunk in the order of map.json "chunks" (per floor, as listed):
+// 0 = can't walk there, else ground speed / 2. links.json: [[x, y, z, to x, to y, to z, kind]] floor changes.
+log('Building walk data');
+const { rules: walkRuleMap, counts: walkCounts } = walkRules({ dataDir: DATA, itemInfo, dat });
+const walk = buildWalk({ tileAt, rules: walkRuleMap });
+const walkBytes = [];
+const speeds = new Map();
+for (let z = 0; z < 16; z++) {
+  for (const [cx, cy] of chunkIndex[z] || []) {
+    const buf = new Uint8Array(CHUNK * CHUNK);
+    for (const [i, items] of floors[z].get(`${cx},${cy}`)) {
+      const x = cx * CHUNK + (i % CHUNK), y = cy * CHUNK + Math.floor(i / CHUNK);
+      const sp = walk.speedAt(x, y, z);
+      if (sp) { buf[i] = Math.max(1, Math.min(255, Math.round(sp / 2))); speeds.set(sp, (speeds.get(sp) || 0) + 1); }
+      walk.visitTile(x, y, z, items);
+    }
+    walkBytes.push(buf);
+  }
+}
+fs.writeFileSync(path.join(OUT, 'walk.bin'), Buffer.concat(walkBytes.map((b) => Buffer.from(b))));
+fs.writeFileSync(path.join(OUT, 'links.json'), JSON.stringify({ kinds: LINK_KINDS, links: walk.links }));
+{
+  const byKind = LINK_KINDS.map((k, i) => `${k} ${walk.links.filter((l) => l[6] === i).length}`).join(', ');
+  const walkable = [...speeds.values()].reduce((a, b) => a + b, 0);
+  log(`Walk: ${walkable} walkable tiles, ground speeds ${[...speeds.keys()].sort((a, b) => a - b).join('/')}; links: ${byKind}; ${walk.skipped()} without a destination; ${walkCounts.doors} door ids open`);
+}
 
 // ---------- NPCs ----------
 // 7.1 positions from the spawn file; names, outfits, trade and travel from the TVP (7.6) NPC files for now.

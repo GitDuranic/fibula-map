@@ -203,6 +203,20 @@ Agree each slice before building it, then build one at a time.
 
 ## Decisions made while building
 
+### Slice 3a: walk data (built 2026-11-12)
+- **Converter** (`tools/lib/walk.js`) writes `walk.bin` and `links.json`.
+  - `walk.bin` has one byte per tile, in map.json chunk order: 0 = can't walk, otherwise ground speed ÷ 2. It's 7.2 MB raw, mostly zeros, so it compresses well.
+  - `links.json` holds the floor changes: `[x,y,z, tx,ty,tz, kind]`.
+- **Walkable:** a ground item (the dat's GROUND speed; 0 counts as 100) and nothing with items.otb flag 1 ("block solid"). All door ids from global.lua (78) count as open, as the user chose.
+- **Floor changes**, as the TVP server does them:
+  - **step** (stairs, ramps, holes; items.xml `floorchange`): up = z−1 shifted one tile in the stairs' direction. Down = the tile below, shifted by that tile's own direction (north +y, south −y, east −x, west +x).
+  - **ladder** (1386, 3678) and **rope** (ropeSpots 384, 418): one floor up, on the tile south of the spot. If that's not walkable, the first walkable of N, E, W, W, SW, SE, NW, NE (Position:moveUpstairs).
+  - **grate** (430): the tile straight below.
+  - **dig** (holes 468, 481, 483, loose stone piles): like a hole (down).
+- **7.1 result:** 791,795 walkable tiles; ground speeds 90–200. Links: step 2920, ladder 1195, grate 76, rope 546, dig 108. 2 links have no destination tile and are left out.
+- **Debug view** `?debug=walk` (zoom 16+, the floor you're on): red = a tile that exists but can't be walked on; a blue ↓ / orange ↑ square with the kind's letter (S step, L ladder, G grate, R rope, D dig) = a floor change. Checked in Thais (streets, houses, stairs, grates) and on floor 8 below Thais (tunnels, ladders).
+- The walk data loads only in debug mode for now; the router (3b) will load it in a web worker.
+
 ### Slice 2c: town names (built 2026-11-12)
 - **Town names over the zoomed-out map**, below zoom 16; gone once the sprites show.
   - Centred on the temple, white, in the client's outlined font at 2 client pixels per font pixel (whole screen pixels), drawn over everything.

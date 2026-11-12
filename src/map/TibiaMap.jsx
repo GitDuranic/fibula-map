@@ -10,6 +10,8 @@ import './tibia-map.css';
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
 const ZOOMS = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 96, 128, 160];
 const SPRITES_FROM = 16; // below this: only the pre-drawn overview images (live drawing is too slow that far out)
+// ?debug=walk: show the router's walk data (red = can't walk, arrows = floor changes) to check it against the game.
+const DEBUG_WALK = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'walk';
 const START = { x: 32369, y: 32221, z: 7, zoom: 32 }; // Thais
 
 const nearestZoom = (s) => ZOOMS.reduce((b, z) => (Math.abs(Math.log(z / s)) < Math.abs(Math.log(b / s)) ? z : b), ZOOMS[0]);
@@ -157,6 +159,24 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       if (budget.n < 0) more = true;
     }
 
+    // Debug: the walk data of this floor (see DEBUG_WALK).
+    if (DEBUG_WALK && world.walk && v.zoom >= 16) {
+      const k0 = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      ctx.font = `bold ${Math.max(9, Math.round(s / 3))}px Verdana`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (let y = Math.floor(top); y <= bottom; y++) for (let x = Math.floor(left); x <= right; x++) {
+        const t = world.tile(x, y, v.z), sx = ox + x * s, sy = oy + y * s;
+        if (t && !world.speedAt(x, y, v.z)) { ctx.fillStyle = 'rgba(255,0,0,0.35)'; ctx.fillRect(sx, sy, s, s); }
+        for (const l of world.walk.linksAt.get(`${x},${y},${v.z}`) || []) {
+          const upward = l[5] < l[2];
+          ctx.fillStyle = upward ? 'rgba(255,160,0,0.8)' : 'rgba(0,120,255,0.8)';
+          ctx.fillRect(sx + k0, sy + k0, s - 2 * k0, s - 2 * k0);
+          ctx.fillStyle = '#fff';
+          ctx.fillText((upward ? '↑' : '↓') + world.walk.kinds[l[6]][0].toUpperCase(), sx + s / 2, sy + s / 2);
+        }
+      }
+    }
+
     // NPCs over everything (roofs too): outfit, then the name above it in the client's outlined font, green like
     // a creature at full health (white when selected). Back to front, so the ones further south are on top.
     const k = Math.max(1, Math.round(window.devicePixelRatio || 1)), sel = selected.current;
@@ -257,6 +277,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     world.load().then(() => {
       const v = view.current;
       if (!world.floors.includes(v.z)) v.z = 7;
+      if (DEBUG_WALK) world.loadWalk().then(() => redraw());
       setReady(true);
       viewChanged();
     }, (e) => setError(e.message));

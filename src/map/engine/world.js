@@ -215,6 +215,35 @@ export class World {
     drawTile(this.defs, { x: 0, y: 0, z: 0, items: [{ id, count }] }, dx, dy, drawSprite);
   }
 
+  // ---------- walk data (router) ----------
+
+  // Loads walk.bin (per tile: 0 = blocked, else ground speed / 2; chunks in map.json order) and links.json.
+  async loadWalk() {
+    if (this.walk) return this.walk;
+    const [bin, links] = await Promise.all([
+      fetch(`${this.base}/walk.bin`).then((r) => r.arrayBuffer()),
+      loadJson(`${this.base}/links.json`),
+    ]);
+    const offset = new Map();
+    let i = 0;
+    for (let z = 0; z < 16; z++) for (const [cx, cy] of this.map.chunks[z] || []) offset.set(`${z}:${cx}:${cy}`, (i++) * this.CHUNK * this.CHUNK);
+    const linksAt = new Map();
+    for (const l of links.links) {
+      const k = `${l[0]},${l[1]},${l[2]}`;
+      if (!linksAt.has(k)) linksAt.set(k, []);
+      linksAt.get(k).push(l);
+    }
+    this.walk = { bytes: new Uint8Array(bin), offset, kinds: links.kinds, links: links.links, linksAt };
+    return this.walk;
+  }
+
+  // Ground speed of a walkable tile, or 0 (needs loadWalk).
+  speedAt(x, y, z) {
+    const C = this.CHUNK, cx = Math.floor(x / C), cy = Math.floor(y / C);
+    const o = this.walk.offset.get(`${z}:${cx}:${cy}`);
+    return o === undefined ? 0 : this.walk.bytes[o + (y - cy * C) * C + (x - cx * C)] * 2;
+  }
+
   // ---------- search ----------
 
   // One list of everything that can be searched: places, depots, NPCs and the items NPCs trade.
