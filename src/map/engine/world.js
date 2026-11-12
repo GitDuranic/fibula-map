@@ -34,7 +34,7 @@ export class World {
     this.chunks = new Map(); // "z:cx:cy" -> tiles[] (index = row-major) | 'loading' | 'missing'
     this.canvases = new Map(); // key -> { canvas, pixels }
     this.cachedPixels = 0;
-    this.minimaps = new Map(); // "variant:z:mx:my" -> Image | 'loading' | 'missing'
+    this.overviews = new Map(); // "set:level:bx:by" -> Image | 'loading' | 'missing'
   }
 
   async load() {
@@ -44,13 +44,12 @@ export class World {
     this.sheets = await Promise.all(Array.from({ length: items.sheets }, (_, i) => loadImage(`${this.base}/sprites-${i}.png`)));
     this.map = map;
     this.CHUNK = map.chunk;
-    this.MINI = map.mini;
     this.bounds = map.bounds;
     this.exists = new Set();
     for (const [z, list] of Object.entries(map.chunks)) for (const [cx, cy] of list) this.exists.add(`${z}:${cx}:${cy}`);
-    this.miniExists = new Set();
-    for (const [variant, floors] of Object.entries(map.minimap)) {
-      for (const [z, list] of Object.entries(floors)) for (const [mx, my] of list) this.miniExists.add(`${variant}:${z}:${mx}:${my}`);
+    this.ovExists = new Set();
+    for (const [set, levels] of Object.entries(map.overview.sets)) {
+      for (const [level, list] of Object.entries(levels)) for (const [bx, by] of list) this.ovExists.add(`${set}:${level}:${bx}:${by}`);
     }
     this.floors = Object.keys(map.chunks).map(Number).sort((a, b) => a - b);
   }
@@ -145,16 +144,17 @@ export class World {
     return canvas;
   }
 
-  // A minimap image (1 px per tile, MINI x MINI tiles) or null while loading / when there is none.
-  minimap(variant, z, mx, my) {
-    const k = `${variant}:${z}:${mx}:${my}`;
-    const m = this.minimaps.get(k);
+  // An overview image (the map pre-drawn with sprites at `level` px per tile, map.overview.px square),
+  // or null while loading / when there is none. set: "surface" or an underground floor "8".."15".
+  overview(set, level, bx, by) {
+    const k = `${set}:${level}:${bx}:${by}`;
+    const m = this.overviews.get(k);
     if (m !== undefined) return typeof m === 'string' ? null : m;
-    if (!this.miniExists.has(k)) { this.minimaps.set(k, 'missing'); return null; }
-    this.minimaps.set(k, 'loading');
-    loadImage(`${this.base}/minimap/${variant}/${z}/${mx}_${my}.png`).then(
-      (img) => { this.minimaps.set(k, img); this.onChange(); },
-      () => { this.minimaps.set(k, 'missing'); },
+    if (!this.ovExists.has(k)) { this.overviews.set(k, 'missing'); return null; }
+    this.overviews.set(k, 'loading');
+    loadImage(`${this.base}/overview/${set}/${level}/${bx}_${by}.webp`).then(
+      (img) => { this.overviews.set(k, img); this.onChange(); },
+      () => { this.overviews.set(k, 'missing'); },
     );
     return null;
   }

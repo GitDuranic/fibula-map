@@ -6,7 +6,7 @@ import './tibia-map.css';
 
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
 const ZOOMS = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 96, 128, 160];
-const SPRITES_FROM = 16; // below this: minimap colours only
+const SPRITES_FROM = 16; // below this: only the pre-drawn overview images (live drawing is too slow that far out)
 const INSIDE_FROM = 64; // from this zoom: this floor only (inside buildings); further out: roofs, seen from above
 const START = { x: 32369, y: 32221, z: 7, zoom: 32 }; // Thais
 
@@ -68,14 +68,19 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
 
-    // Minimap colours: everywhere as a quick first layer, the only layer when zoomed out.
+    // Overview images (the map pre-drawn with sprites): the only layer when zoomed out, and a quick
+    // first layer under the live sprites while their chunks load.
     const inside = v.zoom >= INSIDE_FROM;
-    const M = world.MINI;
-    ctx.imageSmoothingEnabled = s < 1;
-    for (let my = Math.floor(top / M); my <= Math.floor(bottom / M); my++) {
-      for (let mx = Math.floor(left / M); mx <= Math.floor(right / M); mx++) {
-        const img = world.minimap(inside ? 'floor' : 'above', v.z, mx, my);
-        if (img) ctx.drawImage(img, ox + mx * M * s, oy + my * M * s, M * s, M * s);
+    const ov = world.map.overview;
+    const level = ov.levels.find((l) => l >= v.zoom) ?? ov.levels[ov.levels.length - 1];
+    const set = v.z <= 7 ? 'surface' : String(v.z);
+    const shift = v.z <= 7 ? 7 - v.z : 0; // floors 0-6 use the surface image, shifted like the client does
+    const B = ov.px / level; // tiles per image
+    ctx.imageSmoothingEnabled = s !== level;
+    for (let by = Math.floor((top - shift) / B); by <= Math.floor((bottom - shift) / B); by++) {
+      for (let bx = Math.floor((left - shift) / B); bx <= Math.floor((right - shift) / B); bx++) {
+        const img = world.overview(set, level, bx, by);
+        if (img) ctx.drawImage(img, ox + (bx * B + shift) * s, oy + (by * B + shift) * s, B * s, B * s);
       }
     }
 

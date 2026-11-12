@@ -13,14 +13,17 @@
 //   map.json              bounds, chunk size, which chunks exist per floor
 //   chunks/<z>/<cx>_<cy>.json   one 32x32 tile chunk, tiles in row order: 0 (none), an item, or [item, item, ...]
 //                         item = client id, or [client id, count] for stack counts / fluid types
-//   minimap/<variant>/<z>/<mx>_<my>.png   minimap colours, 1 px per tile, 256x256 tiles per image
-//                         variant "floor" = this floor only, "above" = seen from above (higher floors on top)
+//   overview/<set>/<level>/<bx>_<by>.webp  the map drawn with sprites for far zoom: level = px per tile (8, 4, 2, 1),
+//                         1024x1024 px each; set "surface" (floors 7..0 from above) or "8".."15"
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseDat } from './lib/dat.js';
 import { openSpr, readPic, blit } from './lib/spr.js';
 import { walkNodes, Reader, parseOtb } from './lib/nodefile.js';
 import { writePng } from './lib/png.js';
+import sharp from 'sharp';
+import { drawTile, TILE as TILE32 } from '../src/map/engine/render.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
 const ASSETS = args.assets || 'C:/git/tibia assets';
@@ -28,7 +31,6 @@ const DATA = args.data || path.join(ASSETS, 'TVP-main/TVP-main/data');
 const MAP = args.map || 'C:/git/tibia assets/tibia71-tvp-converted/Tibia71.otbm'; // 7.1 map in TVP item ids
 const OUT = args.out || 'public/map-data';
 const CHUNK = 32; // tiles per data chunk side
-const MINI = 256; // tiles per minimap image side
 
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 fs.rmSync(OUT, { recursive: true, force: true });
@@ -126,56 +128,7 @@ for (let z = 0; z < 16; z++) {
 }
 log(`${Object.values(chunkIndex).reduce((a, l) => a + l.length, 0)} chunks, ${(chunkBytes / 1e6).toFixed(1)} MB`);
 
-// ---------- minimap ----------
-// The client's 8-bit automap palette: index c -> 6x6x6 colour cube.
-const palette = (c) => [Math.floor(c / 36) % 6 * 51, Math.floor(c / 6) % 6 * 51, c % 6 * 51];
-const tileAt = (x, y, z) => floors[z]?.get(`${Math.floor(x / CHUNK)},${Math.floor(y / CHUNK)}`)?.get((y % CHUNK) * CHUNK + (x % CHUNK));
-// A tile's minimap colour: the last item in the stack that has one (as the client draws its automap), or -1.
-const colourOf = (items) => {
-  if (!items) return -1;
-  let c = -1;
-  for (const it of items) {
-    const f = dat.items.get(Array.isArray(it) ? it[0] : it).flags;
-    if (f.MINIMAP_COLOR !== undefined) c = f.MINIMAP_COLOR;
-  }
-  return c;
-};
-log('Writing minimap');
-const miniIndex = {};
-for (const variant of ['floor', 'above']) {
-  miniIndex[variant] = {};
-  for (let z = 0; z < 16; z++) {
-    if (!floors[z].size) continue;
-    // "above" only differs from "floor" at or over the surface: underground nothing higher is visible.
-    // Seen from above, top floor first: 0, 1, ... 7 (the client shows the surface floors 0-7 together).
-    const order = variant === 'above' && z <= 7 ? [0, 1, 2, 3, 4, 5, 6, 7] : [z];
-    const dir = path.join(OUT, 'minimap', variant, String(z));
-    fs.mkdirSync(dir, { recursive: true });
-    miniIndex[variant][z] = [];
-    const mx1 = Math.floor(bounds.x1 / MINI), mx2 = Math.floor(bounds.x2 / MINI);
-    const my1 = Math.floor(bounds.y1 / MINI), my2 = Math.floor(bounds.y2 / MINI);
-    for (let my = my1; my <= my2; my++) for (let mx = mx1; mx <= mx2; mx++) {
-      const img = new Uint8Array(MINI * MINI * 4);
-      let any = false;
-      for (let ty = 0; ty < MINI; ty++) for (let tx = 0; tx < MINI; tx++) {
-        const x = mx * MINI + tx, y = my * MINI + ty;
-        for (const zz of order) {
-          const d = z - zz; // a higher floor (zz < z) is drawn one tile up-left per floor
-          const c = colourOf(tileAt(x + d, y + d, zz));
-          if (c < 0) continue;
-          const [r, g, b] = palette(c);
-          const p = (ty * MINI + tx) * 4;
-          img[p] = r; img[p + 1] = g; img[p + 2] = b; img[p + 3] = 255;
-          any = true;
-          break;
-        }
-      }
-      if (!any) continue;
-      writePng(path.join(dir, `${mx}_${my}.png`), MINI, MINI, img);
-      miniIndex[variant][z].push([mx, my]);
-    }
-  }
-}
+const tileAt = (x, y, z) => floors[z]?.get(`${Math.floor(x / CHUNK)},${Math.floor(y / CHUNK)}`)?.get((y - Math.floor(y / CHUNK) * CHUNK) * CHUNK + (x - Math.floor(x / CHUNK) * CHUNK));
 
 // ---------- sprite atlases ----------
 log(`Packing sprites for ${usedItems.size} items`);
@@ -222,5 +175,125 @@ log(`${nextSlot - 1} sprites in ${sheetCount} sheet(s)`);
 }
 
 fs.writeFileSync(path.join(OUT, 'items.json'), JSON.stringify({ sheetCells: SHEET_CELLS, sheets: sheetCount, items: itemsOut }));
-fs.writeFileSync(path.join(OUT, 'map.json'), JSON.stringify({ chunk: CHUNK, mini: MINI, bounds, chunks: chunkIndex, minimap: miniIndex }));
+
+// ---------- overview images (zoomed out) ----------
+// The map drawn with the real sprites at 8 px per tile (sprites shrunk 4x4 -> 1 px), then halved for
+// 4, 2 and 1 px per tile. Every image is 1024x1024 px, so it covers 1024 / level tiles.
+// Sets: "surface" = floors 7..0 seen from above in floor 7's frame (floors 0-6 reuse it, shifted one tile
+// per floor, as the client draws them); "8".."15" = that underground floor alone.
+const OV_PX = 1024, OV_LEVELS = [1, 2, 4, 8], OV_TOP = 8;
+const SHRINK = TILE32 / OV_TOP; // 4
+const sidOfSlot = [];
+for (const [sid, slot] of spriteSlot) sidOfSlot[slot] = sid;
+const smallCache = new Map();
+// A sprite shrunk to 8x8 (box filter, colour weighted by alpha).
+function smallSprite(slot) {
+  let s = smallCache.get(slot);
+  if (s) return s;
+  const src = spr.get(sidOfSlot[slot]), N = TILE32 / SHRINK;
+  s = new Uint8ClampedArray(N * N * 4);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    let a = 0, r = 0, g = 0, b = 0;
+    for (let yy = 0; yy < SHRINK; yy++) for (let xx = 0; xx < SHRINK; xx++) {
+      const p = ((y * SHRINK + yy) * TILE32 + x * SHRINK + xx) * 4, al = src[p + 3];
+      a += al; r += src[p] * al; g += src[p + 1] * al; b += src[p + 2] * al;
+    }
+    const o = (y * N + x) * 4;
+    if (a) { s[o] = r / a; s[o + 1] = g / a; s[o + 2] = b / a; s[o + 3] = a / (SHRINK * SHRINK); }
+  }
+  smallCache.set(slot, s);
+  return s;
+}
+// Paints src (w x h, straight alpha) over dst at (dx, dy).
+function paint(dst, W, src, w, h, dx, dy) {
+  for (let y = 0; y < h; y++) {
+    const ty = dy + y;
+    if (ty < 0 || ty >= W) continue;
+    for (let x = 0; x < w; x++) {
+      const tx = dx + x;
+      if (tx < 0 || tx >= W) continue;
+      const s = (y * w + x) * 4, sa = src[s + 3] / 255;
+      if (!sa) continue;
+      const d = (ty * W + tx) * 4, da = dst[d + 3] / 255, oa = sa + da * (1 - sa);
+      for (let c = 0; c < 3; c++) dst[d + c] = (src[s + c] * sa + dst[d + c] * da * (1 - sa)) / oa;
+      dst[d + 3] = oa * 255;
+    }
+  }
+}
+const wrapTile = (items, x, y, z) => ({ x, y, z, items: items.map((v) => (Array.isArray(v) ? { id: v[0], count: v[1] } : { id: v })) });
+// Is there anything of these floors in the frame-z tile square [x0, x0+n) x [y0, y0+n)?
+function anyIn(floorsList, z, x0, y0, n) {
+  for (const zz of floorsList) {
+    const d = z - zz;
+    for (let cy = Math.floor((y0 + d) / CHUNK); cy <= Math.floor((y0 + d + n + 2) / CHUNK); cy++)
+      for (let cx = Math.floor((x0 + d) / CHUNK); cx <= Math.floor((x0 + d + n + 2) / CHUNK); cx++)
+        if (floors[zz].has(`${cx},${cy}`)) return true;
+  }
+  return false;
+}
+// The 8 px/tile image of block (bx, by): 128x128 tiles of frame z.
+function renderTop(floorsList, z, bx, by) {
+  const n = OV_PX / OV_TOP, x0 = bx * n, y0 = by * n, img = new Uint8ClampedArray(OV_PX * OV_PX * 4);
+  const drawSprite = (slot, dx, dy) => paint(img, OV_PX, smallSprite(slot), OV_TOP, OV_TOP, Math.round(dx / SHRINK), Math.round(dy / SHRINK));
+  for (const zz of floorsList) { // bottom floor first
+    const d = z - zz;
+    for (let sy = 0; sy < n + 2; sy++) for (let sx = 0; sx < n + 2; sx++) {
+      const items = tileAt(x0 + sx + d, y0 + sy + d, zz);
+      if (items && items.length) drawTile(itemsOut, wrapTile(items, x0 + sx + d, y0 + sy + d, zz), sx * TILE32, sy * TILE32, drawSprite);
+    }
+  }
+  return img;
+}
+// Halves a 1024 px image into one quadrant of another (box filter, colour weighted by alpha).
+function halveInto(dst, src, qx, qy) {
+  const H = OV_PX / 2;
+  for (let y = 0; y < H; y++) for (let x = 0; x < H; x++) {
+    let a = 0, r = 0, g = 0, b = 0;
+    for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const p = ((y * 2 + oy) * OV_PX + x * 2 + ox) * 4, al = src[p + 3];
+      a += al; r += src[p] * al; g += src[p + 1] * al; b += src[p + 2] * al;
+    }
+    const o = ((qy * H + y) * OV_PX + qx * H + x) * 4;
+    if (a) { dst[o] = r / a; dst[o + 1] = g / a; dst[o + 2] = b / a; dst[o + 3] = a / 4; }
+  }
+}
+const overviewIndex = {};
+let overviewBytes = 0;
+async function writeOverview(set, level, bx, by, img) {
+  const dir = path.join(OUT, 'overview', set, String(level));
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${bx}_${by}.webp`);
+  await sharp(Buffer.from(img.buffer), { raw: { width: OV_PX, height: OV_PX, channels: 4 } }).webp({ quality: 80, alphaQuality: 60, effort: 4 }).toFile(file);
+  overviewBytes += fs.statSync(file).size;
+  ((overviewIndex[set] ||= {})[level] ||= []).push([bx, by]);
+}
+// Renders block (bx, by) of `level` (and everything under it), writes it, returns its pixels or null if empty.
+async function overview(set, floorsList, z, level, bx, by) {
+  const n = OV_PX / level;
+  if (!anyIn(floorsList, z, bx * n, by * n, n)) return null;
+  let img;
+  if (level === OV_TOP) img = renderTop(floorsList, z, bx, by);
+  else {
+    img = new Uint8ClampedArray(OV_PX * OV_PX * 4);
+    for (const [qx, qy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const child = await overview(set, floorsList, z, level * 2, bx * 2 + qx, by * 2 + qy);
+      if (child) halveInto(img, child, qx, qy);
+    }
+  }
+  await writeOverview(set, level, bx, by, img);
+  return img;
+}
+log('Rendering overview images');
+const sets = [['surface', [7, 6, 5, 4, 3, 2, 1, 0], 7]];
+for (let z = 8; z < 16; z++) if (floors[z].size) sets.push([String(z), [z], z]);
+for (const [set, floorsList, z] of sets) {
+  const n = OV_PX / OV_LEVELS[0];
+  for (let by = Math.floor((bounds.y1 - 8) / n); by <= Math.floor(bounds.y2 / n); by++)
+    for (let bx = Math.floor((bounds.x1 - 8) / n); bx <= Math.floor(bounds.x2 / n); bx++)
+      await overview(set, floorsList, z, OV_LEVELS[0], bx, by);
+  log(`  ${set}: ${OV_LEVELS.map((l) => `${l}px ${overviewIndex[set]?.[l]?.length || 0}`).join(', ')}`);
+}
+log(`Overview images: ${(overviewBytes / 1e6).toFixed(1)} MB`);
+
+fs.writeFileSync(path.join(OUT, 'map.json'), JSON.stringify({ chunk: CHUNK, bounds, chunks: chunkIndex, overview: { px: OV_PX, levels: OV_LEVELS, sets: overviewIndex } }));
 log(`Done -> ${OUT}`);

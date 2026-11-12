@@ -19,9 +19,9 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
 - **Rookgaard works**: it is on the map, and routes on the island work.
 
 ### Map
-- **Real sprites, drawn in the browser (2026-11-12).** Pre-rendering the whole map as 32 px sprite images was estimated at ~1 GB+ per floor, which is too big to host and too slow to load. Instead, the way the house planner works: the converter writes **compact map data** (item ids per tile, in chunks) plus a **sprite sheet** of the items used on the map. The browser draws the visible chunks with the planner's render engine and caches them. Only the **far zoom levels** are pre-rendered images, in the **minimap colours**. This keeps the download small, is sharp at every zoom step, and makes it easy to cut roofs away per building at runtime.
+- **Real sprites, drawn in the browser (2026-11-12).** Pre-rendering the whole map as 32 px sprite images was estimated at ~1 GB+ per floor, which is too big to host and too slow to load. Instead, the way the house planner works: the converter writes **compact map data** (item ids per tile, in chunks) plus a **sprite sheet** of the items used on the map. The browser draws the visible chunks with the planner's render engine and caches them. Only the **far zoom levels** are pre-rendered images, drawn with the same sprites (see "Overview images" below; originally minimap colours, changed 2026-11-12). This keeps the download small, is sharp at every zoom step, and makes it easy to cut roofs away per building at runtime.
 - Pan, zoom, and floor up/down feel like Google Maps (drag, scroll wheel, pinch).
-- **Roofs depend on zoom (2026-11-12):** zoomed out, the map shows the surface from above with roofs, like a satellite view. Zoomed in past a threshold, it shows one floor at a time, without roofs: the inside of buildings, like tibiamaps.io. Around the route and a selected NPC, the roofs are cut away even when zoomed out, so you can see where to go. The viewer draws either "from above" (that floor plus the floors above it, with the client's 1-tile shift per floor) or "this floor only", per area. Only the minimap images are pre-rendered in both variants.
+- **Roofs depend on zoom (2026-11-12):** zoomed out, the map shows the surface from above with roofs, like a satellite view. Zoomed in past a threshold, it shows one floor at a time, without roofs: the inside of buildings, like tibiamaps.io. Around the route and a selected NPC, the roofs are cut away even when zoomed out, so you can see where to go. The viewer draws either "from above" (that floor plus the floors above it, with the client's 1-tile shift per floor) or "this floor only", per area. The far-zoom overview images exist only "from above" (surface) and per underground floor.
 - **Viewer: our own canvas code, no map library (2026-11-12).** Leaflet was considered. It can look like Tibia, but the per-building roof swap and pixel-exact zoom steps (sharp at DPR 2.5) fight its design, and it would be an extra npm package for Ryndean. The pan/zoom/markers code is small enough to write ourselves.
 - **Code sharing:** the planner's `tools/lib` (dat, spr, otbm, png) and render engine are **copied** into tibia-map, not linked, so the planner's sync to Ryndean's site isn't affected.
 - A position readout shows x, y, z under the cursor. You can type a position to jump there.
@@ -91,7 +91,7 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
 ## Delivery slices
 Agree each slice before building it, then build one at a time.
 
-1. **Map viewer.** A converter turns `map.otbm` into sprite tiles plus minimap tiles at different zooms. A viewer with Google Maps-style pan, zoom and floors, a position readout and shareable links.
+1. **Map viewer.** A converter turns `map.otbm` into sprite chunks plus overview images for far zoom. A viewer with Google Maps-style pan, zoom and floors, a position readout and shareable links.
 2. Places and NPC pins + search (town, NPC, coordinates).
 3. Walking router (one floor, then floor changes) + run time with level and speed settings.
 4. Boats, carpets, teleports + quest checkboxes.
@@ -102,10 +102,14 @@ Agree each slice before building it, then build one at a time.
 ## Decisions made while building
 
 ### Slice 1: map viewer (built 2026-11-12, waiting for the user to try it)
-- **Converter** `tools/convert-map.js` (`npm run convert`, ~1 min). Readers for dat/spr/otbm/png are copied from the planner. Output goes to `public/map-data/` (about 30 MB). It is generated, so it isn't committed (`.gitignore`), but rerun it after a fresh checkout.
+- **Converter** `tools/convert-map.js` (`npm run convert`, ~1 min). Readers for dat/spr/otbm/png are copied from the planner. Output goes to `public/map-data/` (about 80 MB). It is generated, so it isn't committed (`.gitignore`), but rerun it after a fresh checkout.
 - **Chunks:** 32×32 tiles per JSON file, tiles in row order (`0` = none, a number = a tile with one item, an array = the items). That's 26 MB raw for 7.1, ~11 MB gzipped (7.6 measurements).
-- **Minimap images:** 256×256 tiles per PNG, in the client's 6×6×6 automap palette, in `floor` and `above` versions. "Above" covers floors 7..0 with the client's 1-tile up-left shift per floor.
-- **Zoom steps** (screen pixels per tile): 0.25, 0.5, 1, 2, 4, 8 = minimap only; 16, 32 = sprites with roofs; 64, 96, 128, 160 = sprites, this floor only (inside buildings). From 32 up, a game pixel is a whole number of screen pixels, so it's sharp. The minimap is drawn under the sprites as a quick placeholder while chunks load.
+- **Overview images instead of minimap colours (2026-11-12).** The user found the switch from sprites (zoom 16) to minimap colours (zoom 8) too hard a transition, and doesn't want a minimap switch either. Measured: drawing the sprites live below zoom 16 is too slow (zoom 8: >10 s to fill a screen; zoom 4: >50 s and a frozen tab). So the converter now pre-draws the map with the real sprites, shrunk to **8 px per tile** (each 4×4 block averaged), and halves that to 4, 2 and 1 px per tile.
+  - Images are 1024×1024 px WebP (quality 80), in `overview/<set>/<level>/<bx>_<by>.webp`. The sets: `surface` (floors 7..0 from above, in floor 7's frame) and `8`..`15` (each underground floor alone). Floors 0–6 reuse the surface images, shifted one tile per floor like the client.
+  - Total 51.5 MB for 7.1. A screen loads only a few images. The converter now takes ~3 min.
+  - It needs `sharp` as a **dev dependency, used only by the converter**, so there's nothing for Ryndean to add.
+  - The minimap-colour output is gone.
+- **Zoom steps** (screen pixels per tile): 0.25, 0.5, 1, 2, 4, 8 = overview images only; 16, 32 = sprites with roofs; 64, 96, 128, 160 = sprites, this floor only (inside buildings). From 32 up, a game pixel is a whole number of screen pixels, so it's sharp. The overview images are drawn under the live sprites as a quick placeholder while chunks load.
 - **Floors underground** (8–15) are always drawn alone.
 - **Controls:**
   - drag to pan, with a short glide after a flick
@@ -117,6 +121,7 @@ Agree each slice before building it, then build one at a time.
 - **Text is plain Verdana 11px for now.** The client's bitmap font, as in the planner, may come later.
 - **URL:** `#x,y,z,zoom`, updated 250 ms after the view stops. Pasting a link into the same tab also jumps there. Start position: Thais (32369, 32221, 7) at zoom 32.
 - The view centre stays inside the map's bounds.
+- Dev gotcha: Vite only serves public files that existed when it started. After a convert that adds new files, restart the dev server.
 - **Not done in slice 1:**
   - water and other animations (phase 0 only)
   - roofs cut away per building
