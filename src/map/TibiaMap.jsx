@@ -172,8 +172,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const i = ZOOMS.indexOf(v.zoom), j = Math.max(0, Math.min(ZOOMS.length - 1, i + steps));
     let peeled = false;
     if (world && v.z <= 7 && steps > 0 && v.zoom >= PEEL_FROM) {
-      // Take off the topmost layer still showing under the cursor, over its building (see World.peelArea).
-      // It remembers the zoom it came off at: zooming back out past that puts it back.
+      // Take the building under the cursor down to this floor (see World.buildingArea). It remembers the zoom
+      // it was opened at: zooming back out past that puts it back.
       // The topmost layer still showing at (x, y), or -1.
       const topAt = (x, y) => {
         const pk = `${x},${y}`;
@@ -196,8 +196,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         seed = best;
       }
       if (seed) {
-        const area = world.peelArea(seed.x, seed.y, v.z, seed.zz);
-        if (area) { opened.current = [...opened.current, { ...area, cut: seed.zz + 1, zoom: ZOOMS[j] }]; peeled = true; }
+        // The whole building at once: everything above this floor comes off (user's choice, see the design doc).
+        const area = world.buildingArea(seed.x, seed.y, v.z);
+        if (area) { opened.current = [...opened.current, { ...area, cut: v.z, zoom: ZOOMS[j] }]; peeled = true; }
       }
     } else if (steps < 0 && opened.current.length) {
       const keep = opened.current.filter((o) => o.zoom < v.zoom); // layers taken off at this zoom come back

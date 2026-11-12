@@ -128,18 +128,41 @@ export class World {
     return { tiles, box };
   }
 
-  // Where to take layer zz (and everything above it) off, for frame position (x, y) of floor z:
-  // 1. the whole building: everything at or above zz connected to (x, y), bridging 1-tile gaps between wall
-  //    pieces (e.g. Darashia's open-walled buildings), if that stays small (a single building);
-  // 2. otherwise (touching houses that would make a whole city block): just layer zz's own connected area.
-  // Null if there is nothing, or even the layer is too big to be a building (mountain ranges).
-  peelArea(x, y, z, zz) {
-    if (!this.hasAt(x, y, z, zz)) return null;
-    const above = (px, py) => { for (let f = 0; f <= zz; f++) if (this.hasAt(px, py, z, f)) return true; return false; };
-    const a = this.area(x, y, above, 1, 400) || this.area(x, y, (px, py) => this.hasAt(px, py, z, zz), 0, 3000);
+  // The building over frame position (x, y) of floor z, to take all its layers off at once:
+  // 1. everything above z connected to (x, y), bridging 1-tile gaps between wall pieces (e.g. Darashia's
+  //    open-topped buildings), if that stays small (a single building);
+  // 2. otherwise (touching houses that would make a whole city block): each layer's own connected area
+  //    from (x, y), together.
+  // Null if nothing is above (x, y), or every layer is too big to be a building (mountain ranges).
+  buildingArea(x, y, z) {
+    const above = (px, py) => { for (let f = 0; f < z; f++) if (this.hasAt(px, py, z, f)) return true; return false; };
+    if (!above(x, y)) return null;
+    let a = this.area(x, y, above, 1, 400);
+    if (!a) {
+      for (let f = 0; f < z; f++) {
+        if (!this.hasAt(x, y, z, f)) continue;
+        const l = this.area(x, y, (px, py) => this.hasAt(px, py, z, f), 0, 3000);
+        if (!l) continue;
+        if (!a) a = { tiles: new Set(l.tiles), box: { ...l.box } };
+        else {
+          for (const t of l.tiles) a.tiles.add(t);
+          a.box = { x1: Math.min(a.box.x1, l.box.x1), y1: Math.min(a.box.y1, l.box.y1), x2: Math.max(a.box.x2, l.box.x2), y2: Math.max(a.box.y2, l.box.y2) };
+        }
+      }
+    }
     if (!a) return null;
-    const { box } = a;
-    return { ...a, key: `${zz}@${box.x1},${box.y1},${box.x2},${box.y2}` };
+    // Also take the edges: roof overhangs and wall pieces 1 tile outside the area (else thin roof strips stay).
+    const box = { ...a.box }, tiles = new Set(a.tiles);
+    for (const t of a.tiles) {
+      const [px, py] = t.split(',').map(Number);
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = px + dx, ny = py + dy, k = `${nx},${ny}`;
+        if (tiles.has(k) || !above(nx, ny)) continue;
+        tiles.add(k);
+        box.x1 = Math.min(box.x1, nx); box.y1 = Math.min(box.y1, ny); box.x2 = Math.max(box.x2, nx); box.y2 = Math.max(box.y2, ny);
+      }
+    }
+    return { tiles, box, key: `${box.x1},${box.y1},${box.x2},${box.y2}` };
   }
 
   // ---------- drawing ----------
