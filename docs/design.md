@@ -379,13 +379,37 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - **But many of those chests are missing from the converted 7.1 map.** Of the 216 TVP quest chests, only 69 have a chest or box on the 7.1 tile (or next to it). At the others the tile has only its floor (dirt, muddy floor, marble): the chest was dropped when the map was converted to TVP format, e.g. Rapier Quest (32099,32198,9), Ring Quest (33131,31624,15), Thais Lighthouse (32225,32265,10).
   - Of the 146 chests matched to a wiki quest, 47 are on the 7.1 map.
 
-**Open questions for the user**
-- **The quest chests missing from the converted 7.1 map** (about 100 that match a wiki quest): mark them anyway at their spot (the area is on the 7.1 map, only the chest item is gone), or only the 47 whose chest is on the map? Or ask Ryndean whether the original 7.1 map still has them?
-- **Contents:** show only the items the wiki's reward confirms (e.g. leave out a "vial" the wiki doesn't mention), or the whole TVP chest?
-- How should a quest show on the map: its name as a label (like town names), a chest icon, or both? From which zoom?
-- Order: before or after the loot seller (slice 7)?
+**Decided with the user (2026-11-13), after the findings**
+- **Start with the 47 quest chests that are on the 7.1 map.** The ones missing from the converted map wait (perhaps Ryndean's original map has them).
+- **Contents: only what the wiki confirms for 7.1** ("just the wiki for 7.1 items"): items in the chest that the wiki's reward names. Anything else (a vial the wiki doesn't mention) is left out.
+- **On the map: a chest icon with the quest's name as a label.**
+- **Slice 10 comes before the loot seller** (the user isn't sure the loot seller is still wanted).
+
+**Sub-slices**
+- **10b. Data:** the converter matches the quest chests itself and writes quests.json (quest name, version, wiki reward text, and per chest its 7.1 position and the confirmed items).
+- **10c. On the map:**
+  - A chest icon on each quest chest, with the quest's name as a label.
+  - Clicking it opens a quest window: name, version, what's in this chest (items open their item window), and the quest's whole reward as the wiki gives it.
 
 ## Decisions made while building
+
+### Slice 10b–10c: quest chests on the map (built 2026-11-13)
+- **10b, data** (`tools/lib/quests.js`, quests.json `[{ n, v, reward, chests: [{ p, id, items: [[id, count, key?]] }] }]`):
+  - The converter's pass over the 7.6 map (for key numbers) also notes every item with an action id 1000–2000: TVP's quest spots (220).
+  - **On the 7.1 map** (changed after user feedback): the user pointed out that quest items don't only come from chests ("like the blood herb quest, you click a tree in 7.1").
+    - The first rule (the same object on the 7.1 tile, or next to it) found only 69 spots. The 7.1 map often has another object there: a chest where 7.6 has a box, a sycamore for a dead tree, the Paradox Tower rewards lying on a counter.
+    - Now: on the spot itself any object that isn't ground or a wall counts; next to it, the same object or any container-like one (chest, box, crate, coffin, dead body, …). That gives 97 spots on the 7.1 map.
+  - **The quest:** a spot belongs to a wiki quest when the wiki's reward names items TVP has there (keys by number, "Key 4603"), and the spot is within 200 tiles of the quest's coordinates. The shared placeholder 32356,32171,7 doesn't count; a quest without coordinates needs two items in common.
+  - **Contents: only the items the wiki names**, with the wiki's count where it gives one ("30 Burst Arrows", "two …"); bags and backpacks aren't shown.
+  - **Result: 55 spots in 31 quests**, e.g. Time Ring Quest (3), Katana Quest (3), Minotaur Hell (4), Demon Helmet (4), Black Knight (2), Blood Herb (1), Alawar's Vault (3).
+- **10c, map:**
+  - From zoom 16, where their floor is shown (`npcFrame`): each quest spot gets a gold ring (white when its window is open) with the spot's item inside, and the quest's name in gold above each group of its spots (same floor, within 6 tiles).
+  - **Quest window** (click a spot; after NPCs and searched monsters, before monsters and doors): the quest name, the version ("Came in 7.1" / "Version unknown"), the position, how many spots, "Found here" (the confirmed items; click for the item window), and the quest's whole reward as TibiaWiki gives it.
+  - **Quests are in the search:** picking one jumps to its first spot and opens its window (Back returns).
+- Seen in the browser:
+  - The Time Ring Quest's three chests at 33038–33040,32171,9 with the label; the middle one holds the time ring.
+  - "Blood Herb" in the search flew to the dead tree in the swamp (32769,31968,7), with the blood herb.
+- Not yet: the quest chests that are missing from the converted 7.1 map (see the plan).
 
 ### Slice 6d: monster search (built 2026-11-13)
 - **Monsters are in the search** ("Monster" results): every kind that spawns on the map.

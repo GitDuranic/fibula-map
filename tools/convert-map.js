@@ -9,6 +9,7 @@
 // Outputs (in <out>/):
 //   items.json            draw info and name for every item on the map or traded by an NPC (keyed by client id),
 //                         plus fluid names by fluid type
+//   quests.json           quest chests on the 7.1 map: quest name/version/reward (TibiaWiki), chests with items
 //   doors.json            locked doors [[x,y,z, door id, open door id, key number (0 unknown), key id]] (client ids)
 //   walk.bin, links.json  router data: per tile 0 (blocked) or ground speed / 2, in map.json chunk order;
 //                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig, teleport);
@@ -33,6 +34,7 @@ import { parseDat } from './lib/dat.js';
 import { openSpr, readPic, blit } from './lib/spr.js';
 import { walkNodes, Reader, parseOtb } from './lib/nodefile.js';
 import { doorLists, readItemAttrs, scanDoorsAndKeys } from './lib/doors.js';
+import { parseQuestChests, matchQuests, loadWikiQuests } from './lib/quests.js';
 import { writePng } from './lib/png.js';
 import sharp from 'sharp';
 import { drawTile, TILE as TILE32 } from '../src/map/engine/render.js';
@@ -231,6 +233,44 @@ fs.writeFileSync(path.join(OUT, 'doors.json'), JSON.stringify(doorsOut));
   const nums = doorsOut.filter((d) => d[5]);
   const typed = nums.filter((d) => keys71.has(d[5]) || map76.keys.has(d[5])).length;
   log(`Locked doors: ${doorsOut.length}, key number known for ${nums.length} (${from71} from 7.1, ${from76} from 7.6; ${new Set(nums.map((d) => d[5])).size} keys, ${typed} doors with a key of known look)`);
+}
+
+// ---------- quest chests (slice 10) ----------
+// quests.json: [{ n quest name, v version ('' = the wiki gives none), reward (the wiki's text),
+//                 chests: [{ p [x, y, z] on the 7.1 map, id (the chest item), items [[client id, count, key number?]] }] }]
+// Only chests that are on the 7.1 map, with only the items TibiaWiki names (see tools/lib/quests.js).
+{
+  const lua = fs.readFileSync(path.join(DATA, 'scripts/actions/map/quests.lua'), 'latin1');
+  const nameOf = (sid) => itemInfo.server.get(sid)?.name;
+  // Where the quest spot is on the 7.1 map. The 7.1 map often has another object there than the 7.6 map (a chest
+  // where 7.6 has a box, a sycamore for a dead tree, the rewards lying on a counter), and quest items don't only come
+  // from chests (user: e.g. the Blood Herb Quest, where you use a tree). So:
+  //   - on the spot itself: any object that isn't ground or a wall;
+  //   - on a tile next to it: the same object, or any container-like one (chest, box, crate, coffin, dead body, ...).
+  const CONTAINERISH = /chest|box|crate|coffin|sarcophag|dead|bones|corpse|trunk|barrel|drawers/;
+  const objects = (x, y, z) => (tileAt(x, y, z) || []).map((v) => (Array.isArray(v) ? v[0] : v))
+    .filter((cid) => dat.items.get(cid)?.flags.GROUND === undefined)
+    .map((cid) => nameOf(itemInfo.toServer.get(cid)) || '')
+    .filter((n) => n && !/wall|border|edge|pillar|archway|framework/.test(n));
+  const on71 = (pt, name) => {
+    if (objects(pt[0], pt[1], pt[2]).length) return pt;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+      if (objects(pt[0] + dx, pt[1] + dy, pt[2]).some((n) => n === name || CONTAINERISH.test(n))) return [pt[0] + dx, pt[1] + dy, pt[2]];
+    }
+    return null;
+  };
+  const { quests, stats } = matchQuests({
+    spots76: map76.questSpots, chestItems: parseQuestChests(lua), wiki: loadWikiQuests('tools/data/wikiquests.json'), nameOf, on71,
+  });
+  const questsOut = quests.map((q) => ({
+    n: q.name, v: q.version, reward: q.reward,
+    chests: q.chests.map((c) => ({
+      p: c.p, id: (() => { const cid = toClient(c.sid); if (cid) usedItems.add(cid); return cid; })(), // the chest itself (icon)
+      items: c.items.map((i) => { const cid = toClient(i.sid); if (cid) usedItems.add(cid); return i.key ? [cid, i.count, i.key] : [cid, i.count]; }).filter((x) => x[0]),
+    })),
+  }));
+  fs.writeFileSync(path.join(OUT, 'quests.json'), JSON.stringify(questsOut));
+  log(`Quest chests: ${stats.spots} on the 7.6 map, ${stats.on71} of them on the 7.1 map, ${stats.matched} with a TibiaWiki quest -> ${questsOut.length} quests, ${questsOut.reduce((a, q) => a + q.chests.length, 0)} chests`);
 }
 
 // ---------- NPCs ----------

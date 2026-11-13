@@ -36,10 +36,12 @@ export function readItemAttrs(r) {
   return a;
 }
 
-// Scans a map for locked doors with a key number and for numbered keys (also in containers).
-// Returns { holes: Map("x,y,z" -> key number), keys: Map(key number -> key server id) }.
+// Scans a map for locked doors with a key number and for numbered keys (also in containers), and for TVP quest
+// chests: items on a tile with an action id 1000-2000 (data/scripts/actions/map/quests.lua: chests[actionId]).
+// Returns { holes: Map("x,y,z" -> key number), keys: Map(key number -> key server id),
+//           questSpots: [{ p: [x, y, z], sid, aid }] }.
 export function scanDoorsAndKeys(file, lists) {
-  const holes = new Map(), keys = new Map();
+  const holes = new Map(), keys = new Map(), questSpots = [];
   let area = null, pos = null;
   walkNodes(file, (node) => {
     const r = new Reader(node.data);
@@ -47,8 +49,10 @@ export function scanDoorsAndKeys(file, lists) {
     if (node.type === 5 || node.type === 14) { pos = [area.x + r.u8(), area.y + r.u8(), area.z]; return true; }
     if (node.type === 6) {
       const sid = r.u16();
-      if (!lists.locked.has(sid) && !lists.keys.has(sid)) return true;
+      const onTile = node.parent?.type === 5 || node.parent?.type === 14;
+      if (!onTile && !lists.locked.has(sid) && !lists.keys.has(sid)) return true;
       const a = readItemAttrs(r);
+      if (onTile && pos && a.actionId >= 1000 && a.actionId <= 2000) questSpots.push({ p: pos, sid, aid: a.actionId });
       const num = a.keyhole || a.actionId;
       if (lists.locked.has(sid) && num && pos) holes.set(pos.join(','), num);
       const keyNo = a.keyNumber || a.actionId; // 7.1 keys carry their number as action id
@@ -57,5 +61,5 @@ export function scanDoorsAndKeys(file, lists) {
     }
     return true;
   });
-  return { holes, keys };
+  return { holes, keys, questSpots };
 }

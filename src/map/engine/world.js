@@ -79,6 +79,7 @@ export class World {
     this.doorAt = new Map(this.doors.map((d) => [d.p.join(','), d]));
     this.isDoorOpen = () => false; // set by the map (unlocked doors, or all opened)
     await this.loadMonsters();
+    await this.loadQuests();
     this.buildSearch();
     this.map = map;
     this.CHUNK = map.chunk;
@@ -90,6 +91,35 @@ export class World {
       for (const [level, list] of Object.entries(levels)) for (const [bx, by] of list) this.ovExists.add(`${set}:${level}:${bx}:${by}`);
     }
     this.floors = Object.keys(map.chunks).map(Number).sort((a, b) => a - b);
+  }
+
+  // ---------- quest chests (slice 10) ----------
+
+  // Loads quests.json (older data without it: none).
+  //   quests: [{ n, v (version, '' = unknown), reward (TibiaWiki's text), chests: [{ p, items: [[id, count, key?]] }] }]
+  //   questChests: every chest: { p, items, quest }
+  //   questLabels: one name label per group of a quest's chests on one floor within 6 tiles: { p (the top chest), quest }
+  async loadQuests() {
+    const quests = await loadJson(`${this.base}/quests.json`).catch(() => []);
+    this.quests = quests;
+    this.questChests = quests.flatMap((q) => q.chests.map((c) => ({ p: c.p, items: c.items, quest: q })));
+    const labels = [];
+    for (const q of quests) {
+      const left = [...q.chests];
+      while (left.length) {
+        const group = [left.shift()];
+        for (let i = 0; i < group.length; i++) {
+          for (let j = left.length - 1; j >= 0; j--) {
+            const a = group[i].p, b = left[j].p;
+            if (a[2] === b[2] && Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1])) <= 6) group.push(...left.splice(j, 1));
+          }
+        }
+        const top = group.reduce((t, c) => (c.p[1] < t.p[1] || (c.p[1] === t.p[1] && c.p[0] < t.p[0]) ? c : t));
+        const xs = group.map((c) => c.p[0]);
+        labels.push({ p: [Math.round((Math.min(...xs) + Math.max(...xs)) / 2), top.p[1], top.p[2]], quest: q });
+      }
+    }
+    this.questLabels = labels;
   }
 
   // ---------- monsters ----------
@@ -358,6 +388,8 @@ export class World {
     // Monsters that spawn on the map (6d): picking one shows all of them.
     const spawning = new Set((this.spawnPoints || []).map((sp) => sp.kind));
     (this.monKinds || []).forEach((m, i) => { if (spawning.has(i)) entries.push({ kind: 'Monster', name: m.n, mon: i }); });
+    // Quests with a chest on the map (slice 10): picking one goes to its first chest.
+    for (const q of this.quests || []) entries.push({ kind: 'Quest', name: q.n, quest: q });
     for (const e of entries) e.lower = e.name.toLowerCase();
     this.searchEntries = entries;
   }

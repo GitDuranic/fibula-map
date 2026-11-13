@@ -5,6 +5,7 @@ import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
 import DoorWindow from './DoorWindow.jsx';
 import MonsterWindow from './MonsterWindow.jsx';
+import QuestWindow from './QuestWindow.jsx';
 import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf } from './RoutePanel.jsx';
 import { createRouter } from './engine/router.js';
@@ -296,6 +297,21 @@ function searchedRect(kd, f, ox, oy, s, k) {
   return { x: Math.round(cx + (16 - w0 - kd.d[0]) * sc), y: Math.round(cy + (16 - h0 - kd.d[1]) * sc), w: Math.round(w0 * sc), h: Math.round(h0 * sc), sc, cx, cy, r: Math.max(10 * k, 18 * sc) };
 }
 
+// Quest chests (slice 10): a chest icon in a gold ring on each quest chest, and the quest's name above each group
+// of its chests, from QUESTS_FROM, where their floor is shown (as NPCs, npcFrame).
+const QUESTS_FROM = 16;
+function visibleQuestChests(world, v, left, top, right, bottom) {
+  if (v.zoom < QUESTS_FROM || !world.questChests) return [];
+  const out = [];
+  for (const c of world.questChests) {
+    const f = npcFrame(c, v.z, v.cut);
+    if (f && f[0] >= left - 2 && f[0] <= right + 2 && f[1] >= top - 2 && f[1] <= bottom + 2) out.push({ c, f });
+  }
+  return out;
+}
+// A quest chest's ring on the canvas: centre and radius.
+const questRing = (f, ox, oy, s, k) => ({ cx: ox + (f[0] + 0.5) * s, cy: oy + (f[1] + 0.5) * s, r: Math.max(9 * k, s * 0.55) });
+
 // The character's settings before the user changes them (user, 2026-11-13).
 const CHAR_DEFAULT = { level: 8, haste: 'none', boh: false };
 
@@ -313,6 +329,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const viewBox = useRef(null); // the tile area on screen, from the last draw
   const selected = useRef(null); // the NPC whose window is open (drawn with a frame)
   const selectedDoor = useRef(null); // the locked door whose window is open (drawn with a frame)
+  const selectedQuest = useRef(null); // the quest chest whose window is open (drawn with a white ring)
   const selectedMon = useRef(null); // the monster window's { kind | 'all', group } (its spawn drawn with frames)
   const offRef = useRef(null); // scratch canvases for the see-through along the route
   const hoverLink = useRef(null); // the floor change under the mouse (no route planned): [x, y, z, tx, ty, tz, kind]
@@ -327,6 +344,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [item, setItem] = useState(null); // the item whose window is open: { id, fluid }
   const [door, setDoor] = useState(null); // the locked door whose window is open
   const [mon, setMon] = useState(null); // the monster window: { kind | 'all', group }
+  const [questSel, setQuestSel] = useState(null); // the quest window: a quest chest
   const monSearch = useRef(null); // the searched monster kind (6d), or null
   // Back (6c): where you were before each jump (search result, item to seller, boat trip): the view and the open
   // windows. The Back button and the browser's back key return there.
@@ -538,6 +556,36 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           ctx.restore();
         }
         ctx.globalAlpha = 1;
+      }
+    }
+
+    // Quest chests (slice 10): the chest in a gold ring (white when its window is open), then the quests' names.
+    {
+      const kq = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      for (const { c, f } of visibleQuestChests(world, v, left, top, right, bottom)) {
+        const r = questRing(f, ox, oy, s, kq), sel = selectedQuest.current === c;
+        ctx.beginPath(); ctx.arc(r.cx, r.cy, r.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
+        ctx.strokeStyle = sel ? '#ffffff' : '#ffd700'; ctx.lineWidth = 2 * kq; ctx.stroke();
+        if (c.id) {
+          const size = Math.round(r.r * 1.5);
+          ctx.imageSmoothingEnabled = size < 32;
+          ctx.drawImage(world.iconCanvas(c.id), Math.round(r.cx - size / 2), Math.round(r.cy - size / 2), size, size);
+        }
+      }
+      if (v.zoom >= QUESTS_FROM && world.questLabels) {
+        const fq = Math.max(kq, Math.round(s / 32));
+        ctx.imageSmoothingEnabled = false;
+        for (const l of world.questLabels) {
+          const f = npcFrame(l, v.z, v.cut);
+          if (!f || f[0] < left - 10 || f[0] > right + 10 || f[1] < top - 2 || f[1] > bottom + 2) continue;
+          const r = questRing(f, ox, oy, s, kq), t = l.quest.n, w = textWidth(world.font, t) * fq;
+          ctx.save();
+          ctx.translate(Math.round(r.cx - w / 2), Math.round(r.cy - r.r - 13 * fq));
+          ctx.scale(fq, fq);
+          drawText(ctx, world.font, t, 0, 0, '#ffd700');
+          ctx.restore();
+        }
       }
     }
 
@@ -766,6 +814,19 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     return best;
   };
 
+  // The quest chest at canvas point p (inside its ring), or null.
+  const questAtPoint = (p) => {
+    const world = worldRef.current, c = canvasRef.current, v = view.current, s = anim.current.s, b = viewBox.current;
+    if (!world?.questChests || !c || !b) return null;
+    const ox = Math.round(c.width / 2 - v.x * s), oy = Math.round(c.height / 2 - v.y * s);
+    const k = Math.max(1, Math.round(window.devicePixelRatio || 1));
+    for (const { c: ch, f } of visibleQuestChests(world, v, b.left, b.top, b.right, b.bottom)) {
+      const r = questRing(f, ox, oy, s, k);
+      if (Math.hypot(p.x - r.cx, p.y - r.cy) <= r.r) return ch;
+    }
+    return null;
+  };
+
   // The locked door at canvas point p (its tile), or null.
   const doorAtPoint = (p) => {
     const world = worldRef.current, b = viewBox.current;
@@ -939,7 +1000,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   // is marked and a new one added, so the browser's back key comes back here too.
   const pushBack = () => {
     const st = backStack.current;
-    st.push({ view: { ...view.current }, npc: selected.current, mon: selectedMon.current, door: selectedDoor.current, item: itemRef.current });
+    st.push({ view: { ...view.current }, npc: selected.current, mon: selectedMon.current, door: selectedDoor.current, quest: selectedQuest.current, item: itemRef.current });
     if (st.length > 50) st.shift();
     setBackCount(st.length);
     if (syncUrl) {
@@ -958,6 +1019,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     selected.current = sn.npc; setNpc(sn.npc);
     selectedMon.current = sn.mon; setMon(sn.mon);
     selectedDoor.current = sn.door; setDoor(sn.door);
+    selectedQuest.current = sn.quest || null; setQuestSel(sn.quest || null);
     setItem(sn.item);
     viewChanged();
   };
@@ -1037,20 +1099,27 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const selectNpc = useCallback((n) => {
     selected.current = n;
     setNpc(n);
-    if (n) { setItem(null); selectedDoor.current = null; setDoor(null); selectedMon.current = null; setMon(null); }
+    if (n) { setItem(null); selectedDoor.current = null; setDoor(null); selectedMon.current = null; setMon(null); selectedQuest.current = null; setQuestSel(null); }
     redraw();
   }, [redraw]);
   // Opens the monster window ({ kind | 'all', group }) or closes it (null).
   const selectMonster = useCallback((m) => {
     selectedMon.current = m;
     setMon(m);
-    if (m) { setItem(null); selected.current = null; setNpc(null); selectedDoor.current = null; setDoor(null); }
+    if (m) { setItem(null); selected.current = null; setNpc(null); selectedDoor.current = null; setDoor(null); selectedQuest.current = null; setQuestSel(null); }
+    redraw();
+  }, [redraw]);
+  // Opens the quest window for a quest chest, or closes it (null).
+  const selectQuest = useCallback((c) => {
+    selectedQuest.current = c;
+    setQuestSel(c);
+    if (c) { setItem(null); selected.current = null; setNpc(null); selectedDoor.current = null; setDoor(null); selectedMon.current = null; setMon(null); }
     redraw();
   }, [redraw]);
   const selectDoor = useCallback((d) => {
     selectedDoor.current = d;
     setDoor(d);
-    if (d) { setItem(null); selected.current = null; setNpc(null); selectedMon.current = null; setMon(null); }
+    if (d) { setItem(null); selected.current = null; setNpc(null); selectedMon.current = null; setMon(null); selectedQuest.current = null; setQuestSel(null); }
     redraw();
   }, [redraw]);
   // Unlocking and locking: the doors are drawn again (open or closed) and the route searched again.
@@ -1114,7 +1183,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       setHover(tileAt(p));
       const l = floorChangeAtPoint(p);
       setHoverLink(l);
-      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || searchedAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
+      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || searchedAtPoint(p) || questAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
       return;
     }
     setHoverLink(null);
@@ -1161,9 +1230,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (d && !d.moved) {
       // A click: open the NPC there, else the monster, else the locked door, else go to the floor a hole, stairs or
       // ladder leads to, else close.
-      const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p), m = !n && !sm && monsterAtPoint(p);
-      const dr = !n && !sm && !m && doorAtPoint(p), l = !n && !sm && !m && !dr && floorChangeAtPoint(p);
+      const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p), qc = !n && !sm && questAtPoint(p);
+      const m = !n && !sm && !qc && monsterAtPoint(p);
+      const dr = !n && !sm && !qc && !m && doorAtPoint(p), l = !n && !sm && !qc && !m && !dr && floorChangeAtPoint(p);
       if (n) selectNpc(n);
+      else if (qc) selectQuest(qc);
       else if (sm) {
         // A searched monster: on another floor, go to it there (Back returns); then its window.
         if (!sm.here) jump({ x: sm.p[0], y: sm.p[1], z: sm.p[2] }, { zoom: Math.max(view.current.zoom, MAIN_FROM) });
@@ -1171,7 +1242,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       }
       else if (m) selectMonster({ kind: m.kind, group: m.group });
       else if (l) { setHoverLink(null); setFloor(l[5]); }
-      else { selectNpc(null); selectMonster(null); selectDoor(dr || null); }
+      else { selectNpc(null); selectMonster(null); selectQuest(null); selectDoor(dr || null); }
       return;
     }
     if (d && performance.now() - d.t < 80) {
@@ -1249,6 +1320,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     setQuery(r.name);
     monSearch.current = r.kind === 'Monster' ? r.mon : null;
     if (r.kind === 'Monster') { fitMonsters(r.mon); return; }
+    if (r.kind === 'Quest') {
+      const c = worldRef.current.questChests.find((x) => x.quest === r.quest);
+      if (c) { jump({ x: c.p[0], y: c.p[1], z: c.p[2] }); selectQuest(c); }
+      return;
+    }
     redraw();
     if (r.kind === 'Position') jump(r.pos);
     else if (r.kind === 'NPC') { jump({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
@@ -1358,6 +1434,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             onShow={() => showRoute(route.result?.routes?.[route.pick]?.path)} onPick={pickRoute}
             onClose={clearRoute} doorsAll={doors.all} onDoorsAll={(all) => setDoors({ ...doors, all })}
           />
+        )}
+        {questSel && world && (
+          <QuestWindow world={world} chest={questSel} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)} />
         )}
         {mon && world && (
           <MonsterWindow
