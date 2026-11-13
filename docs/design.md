@@ -356,7 +356,11 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - The user: "we know a 'to' and 'from' … you only see the layers of the direction ahead of you."
   - A stretch of the route on another floor now only shows through when the route has already been on the floor you're looking at before it. You see where you're going, not where you came from.
   - Example, Thais → Kazordoon going down at 33310,31997: from floor 9 you see 10 and 11 ahead, no longer 8 behind.
-  - If the route visits a floor twice, everything after the first visit counts as ahead.
+  - ~~If the route visits a floor twice, everything after the first visit counts as ahead.~~
+  - **Only 2 floor changes ahead** (user, 2026-11-13: "if a path goes down 1 and down 1 again, then up 1 again, it shouldn't show that path yet … otherwise there's too much information on the screen").
+    - From where the route leaves the floor you're looking at, only the stretches up to the 2nd floor change show through (`SEE_CHANGES`). The 3rd change and beyond wait until you're further along.
+    - Each time the route is back on your floor, the count starts again.
+    - Boats and forcefields on the same floor don't count as a change.
   - The route lines on other floors (5b) are unchanged; this is only the see-through.
 - **To tune with the user:** the band width, the fade, the clear zone and the strength per floor (all constants at the top of `seeThrough` in TibiaMap.jsx).
 

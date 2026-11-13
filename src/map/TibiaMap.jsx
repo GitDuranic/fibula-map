@@ -108,6 +108,7 @@ const SEE_BAND = 3, SEE_EDGE = 7, SEE_FADE = 0.4;
 const SEE_CLEAR = 1, SEE_CLEAR_EDGE = 3;
 const clearAlpha = (d) => (d <= SEE_CLEAR ? 1 : d >= SEE_CLEAR_EDGE ? 0 : 1 - (d - SEE_CLEAR) / (SEE_CLEAR_EDGE - SEE_CLEAR));
 const SEE_FLOOR_ALPHA = [0, 0.8, 0.5];
+const SEE_CHANGES = 2; // floor changes ahead that show through
 const seeAlpha = (d) => (d <= SEE_BAND ? 1 : d >= SEE_EDGE ? 0 : SEE_FADE * (1 - (d - SEE_BAND) / (SEE_EDGE - SEE_BAND)));
 
 // g: { ox, oy, s, W, H, left, top, right, bottom, C, ts } of the current draw; offRef: a ref for the scratch canvases.
@@ -115,12 +116,15 @@ function seeThrough(ctx, world, v, rp, g, budget, offRef) {
   const { ox, oy, s, W, H, left, top, right, bottom, C, ts } = g;
   const floors = new Map(); // floor -> route tiles on it
   // Only the way ahead (user): a stretch on another floor shows through only when the route has already been on
-  // this floor before it, so you see where you're going, not where you came from.
-  let been = false;
-  for (const e of rp) {
-    const z = e[2], dz = Math.abs(z - v.z);
-    if (!dz) { been = true; continue; }
-    if (!been || dz > 2) continue;
+  // this floor before it, so you see where you're going, not where you came from; and only up to SEE_CHANGES
+  // floor changes after leaving this floor (down, down again: shown; back up after that: not yet). Back on this
+  // floor, the count starts again.
+  let been = false, changes = 0;
+  for (let i = 0; i < rp.length; i++) {
+    const e = rp[i], z = e[2], dz = Math.abs(z - v.z);
+    if (!dz) { been = true; changes = 0; continue; }
+    if (i > 0 && z !== rp[i - 1][2]) changes++;
+    if (!been || changes > SEE_CHANGES || dz > 2) continue;
     // A floor above that is already drawn (the surface with its upper floors, below the layer cut) needs nothing.
     if (z < v.z && v.z <= 7 && z >= v.cut) continue;
     if (!floors.has(z)) floors.set(z, []);
