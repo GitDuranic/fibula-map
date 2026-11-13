@@ -348,7 +348,11 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - **Floors above** that are already drawn (the surface with its upper floors, below the layer cut) are skipped. Seen from the surface, floors 0–7 are shifted one tile up-left per floor, as the map draws them.
 - **Only with the game sprites** (zoom 16 and closer). Each floor is drawn from its own cached chunk pictures into a scratch canvas, cut to the band with a mask of one pixel per tile (scaled up smoothly), then laid over the map. The route lines are drawn on top as before.
 - Seen in the browser on Thais → Kazordoon: at 33310,31997 the cave of floor 8 shows through the grass around the hole; on floor 10 near 32622,31935 the corridors of floors 9 and 11 along the route show as a faint band.
-- **To tune with the user:** the band width, the fade, and the strength per floor (all constants at the top of `seeThrough` in TibiaMap.jsx).
+- **Changed after user feedback (2026-11-13): the path on the floor you're looking at always comes first.**
+  - The user: "the main path on the main layer should always be the most visible … the layer underneath shows over, which is fine when you're a bit away from the path but … it's more confusing than it was."
+  - Now nothing shows through around the route on the current floor: clear within 1 tile of it (`SEE_CLEAR`), back to the full band at 3 tiles (`SEE_CLEAR_EDGE`). The band is multiplied by (1 − that).
+  - Seen on floor 10 near 32622,31935: the holes on the path show as holes again (before, the floor 9/11 stairs drawn over them hid them), and the corridors of the other floors still show further from the path.
+- **To tune with the user:** the band width, the fade, the clear zone and the strength per floor (all constants at the top of `seeThrough` in TibiaMap.jsx).
 
 ### Slice 5b: route lines on other floors (built 2026-11-13)
 - **How visible the route is on floor z when looking at floor vz** (`routeAlpha`):

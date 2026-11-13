@@ -103,6 +103,10 @@ function routeAlpha(z, vz) {
 // SEE_BAND tiles from the path and then fades out to SEE_EDGE (very faint, user: "a bit more but very faded").
 // Floors further away are fainter (SEE_FLOOR_ALPHA by distance).
 const SEE_BAND = 3, SEE_EDGE = 7, SEE_FADE = 0.4;
+// Around the route on the floor you're looking at, nothing shows through (user: the main path on the main floor must
+// always be the most visible): clear within SEE_CLEAR tiles, back to full at SEE_CLEAR_EDGE.
+const SEE_CLEAR = 1, SEE_CLEAR_EDGE = 3;
+const clearAlpha = (d) => (d <= SEE_CLEAR ? 1 : d >= SEE_CLEAR_EDGE ? 0 : 1 - (d - SEE_CLEAR) / (SEE_CLEAR_EDGE - SEE_CLEAR));
 const SEE_FLOOR_ALPHA = [0, 0.8, 0.5];
 const seeAlpha = (d) => (d <= SEE_BAND ? 1 : d >= SEE_EDGE ? 0 : SEE_FADE * (1 - (d - SEE_BAND) / (SEE_EDGE - SEE_BAND)));
 
@@ -119,6 +123,19 @@ function seeThrough(ctx, world, v, rp, g, budget, offRef) {
     floors.get(z).push(e);
   }
   if (!floors.size) return;
+  // How much to keep this floor clear, per cell: near its own part of the route (see SEE_CLEAR).
+  const gx0c = Math.floor(left) - 1, gy0c = Math.floor(top) - 1;
+  const gwc = Math.ceil(right) + 2 - gx0c, ghc = Math.ceil(bottom) + 2 - gy0c;
+  const keep = new Float32Array(gwc * ghc);
+  for (const [x0, y0, z] of rp) {
+    if (z !== v.z || x0 < gx0c - SEE_CLEAR_EDGE || x0 >= gx0c + gwc + SEE_CLEAR_EDGE || y0 < gy0c - SEE_CLEAR_EDGE || y0 >= gy0c + ghc + SEE_CLEAR_EDGE) continue;
+    for (let dy = -SEE_CLEAR_EDGE; dy <= SEE_CLEAR_EDGE; dy++) for (let dx = -SEE_CLEAR_EDGE; dx <= SEE_CLEAR_EDGE; dx++) {
+      const cx = x0 + dx - gx0c, cy = y0 + dy - gy0c;
+      if (cx < 0 || cy < 0 || cx >= gwc || cy >= ghc) continue;
+      const a = clearAlpha(Math.hypot(dx, dy));
+      if (a > keep[cy * gwc + cx]) keep[cy * gwc + cx] = a;
+    }
+  }
   offRef.current ||= { off: document.createElement('canvas'), mask: document.createElement('canvas') };
   const { off, mask } = offRef.current;
   if (off.width !== W || off.height !== H) { off.width = W; off.height = H; }
@@ -147,7 +164,7 @@ function seeThrough(ctx, world, v, rp, g, budget, offRef) {
     if (!any) continue;
     mask.width = gw; mask.height = gh;
     const img = mctx.createImageData(gw, gh);
-    for (let i = 0; i < cells.length; i++) img.data[i * 4 + 3] = Math.round(cells[i] * 255);
+    for (let i = 0; i < cells.length; i++) img.data[i * 4 + 3] = Math.round(cells[i] * (1 - keep[i]) * 255);
     mctx.putImageData(img, 0, 0);
     // That floor on its own, then cut to the band.
     octx.globalCompositeOperation = 'source-over';
