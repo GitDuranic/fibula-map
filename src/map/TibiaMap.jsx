@@ -90,9 +90,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [results, setResults] = useState([]);
   const [active, setActive] = useState(0); // highlighted search result
   const [item, setItem] = useState(null); // the item whose window is open: { id, fluid }
-  // The route: { open, from, to: { label, pos: [x,y,z] }, result: { path, time, steps } | { error }, busy }.
-  const [route, setRoute] = useState({ open: false, from: null, to: null, result: null, busy: false });
-  const routePath = useRef(null); // the route's tiles, for drawing: [[x, y, z, how]]
+  // The route: { open, from, to: { label, pos: [x,y,z] }, result: { routes: [{ name, path, steps, gold }] } | { error },
+  // pick: which of the routes is shown (fastest / cheapest), busy }.
+  const [route, setRoute] = useState({ open: false, from: null, to: null, result: null, pick: 0, busy: false });
+  const routePath = useRef(null); // the shown route's tiles, for drawing: [[x, y, z, how, ...]]
   const router = useRef(null); // the route finder (a web worker, made on first use)
   // The character for run times: level, haste ('none' | 'haste' | 'strong'), boots of haste. Remembered in this
   // browser (a convenience; it works without storage too).
@@ -292,11 +293,29 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         ctx.beginPath(); ctx.arc(x, y, r - k, 0, Math.PI * 2);
         ctx.fillStyle = color; ctx.fill();
       };
+      // Passages (boat, carpet, the Oracle): an arc from where you talk to the NPC to where you arrive, curving to
+      // the right of the direction of travel, solid when it starts or ends on this floor.
       for (let i = 1; i < rp.length; i++) {
-        if (rp[i][3] === 'walk' || rp[i][3] === 'diagonal') continue;
+        if (rp[i][3] !== 'npc') continue;
+        const [ax, ay] = at(rp[i - 1]), [bx, by] = at(rp[i]);
+        const mx = (ax + bx) / 2, my = (ay + by) / 2, bend = 0.25;
+        const cx = mx - (by - ay) * bend, cy = my + (bx - ax) * bend;
+        const here = rp[i - 1][2] === v.z || rp[i][2] === v.z;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(cx, cy, bx, by);
+        ctx.setLineDash([8 * k, 5 * k]);
+        if (here) { ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 5 * k; ctx.stroke(); }
+        ctx.strokeStyle = here ? '#7fd8ff' : 'rgba(127,216,255,0.55)'; ctx.lineWidth = (here ? 3 : 2) * k; ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      for (let i = 1; i < rp.length; i++) {
+        const how = rp[i][3];
+        if (how === 'walk' || how === 'diagonal') continue;
         const up = rp[i][2] < rp[i - 1][2];
-        dot(rp[i - 1], up ? '#ffa000' : '#3080ff', 5 * k); // where you change floor (orange up, blue down)
-        dot(rp[i], up ? '#ffa000' : '#3080ff', 3 * k); // where you arrive
+        // Where you change floor (orange up, blue down), take a forcefield (purple) or a passage (light blue),
+        // and a smaller dot where you arrive.
+        const color = how === 'npc' ? '#7fd8ff' : how === 'teleport' ? '#b040ff' : up ? '#ffa000' : '#3080ff';
+        dot(rp[i - 1], color, 5 * k);
+        dot(rp[i], color, 3 * k);
       }
       dot(rp[0], '#30c030', 6 * k);
       dot(rp[rp.length - 1], '#e03030', 6 * k);
@@ -526,11 +545,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         r.busy = true; r.result = null;
         router.current ||= createRouter(dataUrl);
         const speed = speedOf(charRef.current); // the time shown is worked out again when the settings change
-        router.current.route(r.from.pos, r.to.pos, speed).then((res) => {
+        router.current.route(r.from.pos, r.to.pos, speed, Number(charRef.current.level) || 1).then((res) => {
           if (seq !== routeSeq.current) return; // a newer request
-          routePath.current = res.path || null;
-          setRoute((cur) => ({ ...cur, busy: false, result: res }));
-          if (res.path) showRoute(res.path); else redraw();
+          const path = res.routes?.[0].path || null;
+          routePath.current = path;
+          setRoute((cur) => ({ ...cur, busy: false, result: res, pick: 0 }));
+          if (path) showRoute(path); else redraw();
         });
       } else { r.busy = false; r.result = null; }
       redraw();
@@ -538,7 +558,22 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     });
   }, [dataUrl, redraw, showRoute]);
   useEffect(() => () => router.current?.terminate(), []);
-  const clearRoute = () => { routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, busy: false }); redraw(); };
+  // Shows the fastest or the cheapest route.
+  const pickRoute = (i) => {
+    const path = route.result?.routes?.[i]?.path;
+    if (!path) return;
+    routePath.current = path;
+    setRoute((cur) => ({ ...cur, pick: i }));
+    showRoute(path);
+  };
+  // The Oracle needs level 8: search again when the level crosses it.
+  const oracleLevel = Number(char.level) >= 8;
+  const routeRef = useRef(route);
+  routeRef.current = route;
+  useEffect(() => {
+    if (routeRef.current.from && routeRef.current.to) updateRoute({});
+  }, [oracleLevel, updateRoute]);
+  const clearRoute = () => { routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
 
   const selectNpc = useCallback((n) => {
     selected.current = n;
@@ -796,7 +831,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             world={world} route={route} char={char} onChar={setChar}
             onFrom={(pt) => updateRoute({ from: pt })} onTo={(pt) => updateRoute({ to: pt })}
             onSwap={() => updateRoute({ from: route.to, to: route.from })}
-            onShow={() => showRoute(route.result?.path)}
+            onShow={() => showRoute(route.result?.routes?.[route.pick]?.path)} onPick={pickRoute}
             onClose={clearRoute}
           />
         )}

@@ -180,11 +180,18 @@ for (let z = 0; z < 16; z++) {
 fs.writeFileSync(path.join(OUT, 'walk.bin'), Buffer.concat(walkBytes.map((b) => Buffer.from(b))));
 // Magic forcefields: stepping onto one moves you to its destination. Destination 0,0,0 (scripted, or broken) or
 // not on the map: left out.
-const badTeleports = [];
+// Nothing leads back to Rookgaard from the mainland in the game. With doors counted as open, a GM forcefield in
+// the Thais temple (32366,32235,7) would otherwise send routes to Rookgaard and on through the Oracle.
+const ROOKGAARD = { x1: 31900, y1: 32000, x2: 32255, y2: 32300 }; // the island, every floor
+const inRook = (x, y) => x >= ROOKGAARD.x1 && x <= ROOKGAARD.x2 && y >= ROOKGAARD.y1 && y <= ROOKGAARD.y2;
+const intoRook = (x, y, tx, ty) => !inRook(x, y) && inRook(tx, ty);
+const badTeleports = [], rookTeleports = [];
 for (const [x, y, z, tx, ty, tz] of teleports) {
-  if (tileAt(tx, ty, tz)) walk.links.push([x, y, z, tx, ty, tz, LINK_KINDS.indexOf('teleport')]);
-  else badTeleports.push(`${x},${y},${z} -> ${tx},${ty},${tz}`);
+  if (!tileAt(tx, ty, tz)) badTeleports.push(`${x},${y},${z} -> ${tx},${ty},${tz}`);
+  else if (intoRook(x, y, tx, ty)) rookTeleports.push(`${x},${y},${z} -> ${tx},${ty},${tz}`);
+  else walk.links.push([x, y, z, tx, ty, tz, LINK_KINDS.indexOf('teleport')]);
 }
+if (rookTeleports.length) log(`Teleports from the mainland to Rookgaard, left out: ${rookTeleports.join('; ')}`);
 if (badTeleports.length) log(`Teleports without a destination on the map, left out: ${badTeleports.length} (${badTeleports.slice(0, 8).join('; ')}${badTeleports.length > 8 ? '; ...' : ''})`);
 {
   const byKind = LINK_KINDS.map((k, i) => `${k} ${walk.links.filter((l) => l[6] === i).length}`).join(', ');
@@ -276,7 +283,10 @@ if (droppedTravel.length) log(`Passages to places not on this map, left out: ${d
 // carpets (talk to the NPC, pay, arrive), and the Oracle's one-way trips from Rookgaard (level 8, free).
 const passages = [];
 npcList.forEach((n, i) => {
-  for (const [name, price, tx, ty, tz] of npcsOut[i].travel) passages.push([n.name, name, price, 0, n.x, n.y, n.z, tx, ty, tz]);
+  for (const [name, price, tx, ty, tz] of npcsOut[i].travel) {
+    if (intoRook(n.x, n.y, tx, ty)) droppedTravel.push(`${n.name} -> ${name} (Rookgaard)`);
+    else passages.push([n.name, name, price, 0, n.x, n.y, n.z, tx, ty, tz]);
+  }
   for (const t of n.oracle) {
     if (tileAt(...t.to)) passages.push([n.name, t.name, t.price, t.level, n.x, n.y, n.z, ...t.to]);
     else droppedTravel.push(`${n.name} -> ${t.name}`);

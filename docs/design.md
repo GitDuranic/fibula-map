@@ -227,6 +227,34 @@ Agree each slice before building it, then build one at a time.
 
 ## Decisions made while building
 
+### Slice 4b: routes with passages (built 2026-11-13)
+- **Forcefields:** stepping onto one is one step on the forcefield's own ground (diagonal ×3 as usual), and then you're at its destination.
+- **NPC passages:** you can take one from any tile within 3 of the NPC on its floor (TVP npcbehavior.cpp, `areInRange<3, 3>`). It takes 2 s for talking, then you're at the destination, and it costs its price. The Oracle only counts when the level in the panel is 8 or higher. The route is searched again when the level crosses 8.
+- **No way back to Rookgaard:** the converter drops any teleport or passage that goes from the mainland into Rookgaard (the box x 31900–32255, y 32000–32300, every floor).
+  - Found while testing: a GM forcefield 6 tiles from the Thais temple (32366,32235,7) goes to Rookgaard. With doors counted as open, every route went Thais → Rookgaard → the Oracle for free.
+  - Because nothing leads to Rookgaard any more, the Oracle can only be reached from Rookgaard.
+- **Two routes:** the fastest, and the cheapest (least gold, then fastest; gold counts 10⁹ ms per gp in the search).
+  - The cheapest is only searched when the fastest costs gold, and shown only when it is cheaper.
+  - The panel has two buttons (name, time, gold) to switch between them; the fastest is shown first.
+- **Estimate with jumps:** a passage or forcefield can cover any distance, so the straight-line estimate alone would over-estimate. The estimate is the smaller of:
+  - walking straight to the goal;
+  - walking to the nearest jump (counting the talk range), then walking from the jump destination closest to the goal.
+
+  This never over-estimates, so the routes are still the best ones.
+- **Panel:** the total time (bold), the gold, the haste casts, and the route in legs: "Walk 64 steps, 2 floor changes (22 s)", "**Captain Greyhound**: to Thais, 110 gp", and so on.
+- **On the map:** a passage is a dashed light-blue arc from where you talk to the NPC to where you arrive (curving to the right of the direction of travel). Forcefields get purple dots; floor changes keep their orange and blue dots.
+- Tested in Node (level 50, speed 318):
+
+  | Route | Fastest | Cheapest | Search |
+  |---|---|---|---|
+  | Thais → Carlin | 0:55, Captain Bluebear 110 gp | 7:39, walking | 2.5 s |
+  | Thais → Edron | 1:04, Captain Bluebear 160 gp | 7:18, walk to Venore + Captain Fearless 40 gp | 4.2 s |
+  | Thais → Venore | 0:45, 170 gp | 6:25, walking | 1.8 s |
+  | Carlin → Thais depot | 0:44, Captain Greyhound 110 gp | 7:44, walking | 2.3 s |
+  | Rookgaard → Thais, level 1 / 8 | not connected / 0:16 through the Oracle | – | |
+
+  Almost all of the search time is the cheapest route: it walks through 200,000–500,000 tiles, and the estimate checks all 73 jumps for each one. Seen in the browser too (Thais → Edron, both routes and the arc).
+
 ### Slice 4a: passage data (built 2026-11-13)
 - **Forcefields:** the converter now reads the map's item attributes for text (6, 7) and the teleport destination (8).
   - 64 items have one: 27 become `teleport` links (stepped onto, like stairs), and 37 go to 0,0,0 and are left out (the converter lists them).

@@ -1,6 +1,6 @@
 // The route panel in the side panel: From / To fields (using the search) and the route found.
 import React, { useState } from 'react';
-import { routeTime } from './engine/router.js';
+import { routeTime, routeLegs } from './engine/router.js';
 
 // The character's speed (the client's speed value), from the TVP server (see the design doc, run times):
 // base = 70 + (level - 1); haste adds base * 30 / 100, strong haste base * 70 / 100 (whole numbers);
@@ -77,13 +77,24 @@ const fmtTime = (ms) => {
   return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`;
 };
 
-export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, onSwap, onClose, onShow }) {
-  const r = route.result;
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const gp = (n) => (n ? `${n} gp` : 'free');
+
+// One leg of the route: a walk, or a passage with an NPC.
+function legText(l) {
+  if (l.kind === 'npc') return <><b>{l.npc}</b>: to {l.dest}, {gp(l.price)}</>;
+  const extra = [l.floors && plural(l.floors, 'floor change'), l.teleports && plural(l.teleports, 'forcefield')].filter(Boolean);
+  return <>Walk {plural(l.steps, 'step')}{extra.length ? `, ${extra.join(', ')}` : ''} ({fmtTime(l.time)})</>;
+}
+
+export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, onSwap, onClose, onShow, onPick }) {
+  const routes = route.result?.routes || [];
+  const r = routes[route.pick] || routes[0];
   const speed = speedOf(char);
-  const time = r?.path ? routeTime(r.path, speed) : 0;
+  const time = r ? routeTime(r.path, speed) : 0;
   const spell = HASTE[char.haste];
   const casts = spell && time ? Math.ceil(time / spell.ms) : 0; // recast the moment it runs out (user's choice)
-  const changes = r?.path ? r.path.filter((p) => !['start', 'walk', 'diagonal'].includes(p[3])).length : 0;
+  const legs = r ? routeLegs(r.path, speed) : [];
   return (
     <div className="tm-panel tm-route">
       <div className="tm-window-title">
@@ -112,19 +123,33 @@ export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, o
         </label>
         <div className="tm-route-actions">
           <button type="button" className="tm-btn" onClick={onSwap} disabled={!route.from && !route.to} title="Swap start and destination">Swap</button>
-          <button type="button" className="tm-btn" onClick={onShow} disabled={!r?.path} title="Show the whole route">Show</button>
+          <button type="button" className="tm-btn" onClick={onShow} disabled={!r} title="Show the whole route">Show</button>
         </div>
         <div className="tm-route-result">
           {route.busy && 'Finding the way...'}
-          {!route.busy && r?.error && <span className="tm-error">{r.error}</span>}
-          {!route.busy && r?.path && (
+          {!route.busy && route.result?.error && <span className="tm-error">{route.result.error}</span>}
+          {!route.busy && routes.length > 1 && (
+            <div className="tm-route-choice" role="tablist">
+              {routes.map((x, i) => (
+                <button
+                  type="button" key={x.name} role="tab" aria-selected={x === r}
+                  className={x === r ? 'tm-btn tm-route-pick tm-pressed' : 'tm-btn tm-route-pick'} onClick={() => onPick(i)}
+                >
+                  <span>{x.name}</span><span>{fmtTime(routeTime(x.path, speed))}, {gp(x.gold)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {!route.busy && r && (
             <>
-              <div>{r.steps} steps{changes ? `, ${changes} floor change${changes > 1 ? 's' : ''}` : ''}</div>
-              <div className="tm-route-time">{fmtTime(time)}</div>
-              {spell && <div>{spell.name}: {casts} cast{casts > 1 ? 's' : ''}, {casts * spell.mana} mana</div>}
+              <div className="tm-route-time">{fmtTime(time)}{r.gold ? `, ${r.gold} gp` : ''}</div>
+              {spell && <div>{spell.name}: {plural(casts, 'cast')}, {casts * spell.mana} mana</div>}
+              <ol className="tm-route-legs">
+                {legs.map((l, i) => <li key={i} className={l.kind === 'npc' ? 'tm-leg-npc' : undefined}>{legText(l)}</li>)}
+              </ol>
             </>
           )}
-          {!route.busy && !r && 'Right-click the map, or fill in both fields.'}
+          {!route.busy && !route.result && 'Right-click the map, or fill in both fields.'}
         </div>
       </div>
     </div>
