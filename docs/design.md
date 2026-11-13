@@ -275,11 +275,14 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - **5c. See-through along the route.** A band along the path (e.g. 3 tiles on each side) where the floor drawn on top becomes see-through and up to 2 floors below show through, fainter with depth, with their part of the route.
 - **5d. Hover preview and click to change floor.** The same see-through drawing in a small area around a floor change under the mouse; a click goes to the floor it leads to (keeping this-floor-only).
 
-**Open questions**
-- How wide should the see-through band along the route be (3 tiles on each side?), and how see-through should the top floor be?
-- How big should the hover preview be (e.g. 7×7 tiles around the hole or stairs)?
-- Going *up* from underground: show the floor above along the path too, or only going down?
-- Should a click on a hole or stairs still open an NPC or locked door when one is there? (Proposal: NPC and door first, then the floor change.)
+**Decided with the user (2026-11-13)**
+- **The see-through band and the hover preview fade out at the edge:** fully see-through for 3 tiles from the path (or from the hole or stairs), then fading out over a few more tiles (e.g. to 6) and very faint there.
+- **Going up shows through too:** the floor above along the path, and in the hover preview of stairs and ladders going up.
+- **Slice 5 (routes) is built before slice 6 (monsters).**
+
+**Still open** (my proposal, unless the user says otherwise)
+- How see-through the top floor is inside the band: to try out while building 5c.
+- A click on a hole or stairs with an NPC or locked door on it: the NPC or door first, then the floor change.
 
 ## Slice 6 plan: monsters (asked for 2026-11-13, sub-slices to agree)
 
@@ -311,7 +314,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - Spawn points close together on the same floor become one **spawn group**, e.g. within 10 tiles.
 - **6b. On the map.**
   - Monsters are drawn on their own floor only, standing still, at their spawn.
-  - Clicking one opens a **monster window**: HP, XP, loot with drop chances, sorted by chance.
+  - Clicking one opens a **monster window**: HP, XP, loot (with drop chances only if a 7.1 source is found, see below).
   - Clicking a mixed spawn group (a spawn button or the group's outline) opens a **spawn window**: every kind in the group with amounts, and all the loot you can get there.
   - The NPC rule: underground NPCs aren't drawn on the surface.
 - **6c. From loot to the seller, and Back.**
@@ -321,12 +324,20 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - Monsters in the search. Picking one draws every monster of that kind bigger, on every floor, and zooms to fit them all.
   - Clicking one goes to its floor. Clearing the search ends it.
 
-**Open questions**
-- How to draw a spawn of 3: three monsters spread over the spawn's radius, or one monster? (The user doesn't want text on the map, so no "×3".)
-- Drop chances: are the TVP (7.6) chances good enough for now, or should they come from TibiaWiki?
-- How close together should spawn points be to count as one spawn group (10 tiles on the same floor?)
-- From which zoom should monsters show? NPCs show from zoom 4. 3,941 spawns would crowd the map zoomed out, so maybe from 16.
-- Order: monsters (6) before or after routes across floors (5), and before the loot seller (7)? The monster loot data helps the loot seller.
+**Decided with the user (2026-11-13)**
+- **Counts are allowed on the map:** monsters of one kind spawning close together are drawn as **one monster with "2x", "3x", …**.
+  - Zoomed in far enough, they split into one monster on each tile that spawns them.
+  - This is an exception to the earlier "no text on the map" preference: the user asked for it.
+- **Drop chances only from TibiaWiki for 7.1, else none:** the user doesn't want wrong rates shown.
+  - The TVP (7.6) chances are not shown. Without a 7.1 source the loot list has no percentages.
+  - To check in 6a: whether TibiaWiki has 7.1-era drop chances at all. Its loot statistics are mostly from much later versions, so likely the loot shows without chances.
+- **Monsters show from zoom 16** (to start with).
+- Slice 5 (routes) comes first.
+
+**Still open** (my proposal, unless the user says otherwise)
+- How close together counts as one spawn group, and as "close together" for the count: 10 tiles on the same floor for the group; same kind within the spawn's radius for the count.
+- The zoom where counts split into single monsters: 64 to start with.
+- Which loot to list when the TVP list doesn't match 7.1 (it's a 7.6 stand-in): the TVP items, until Ryndean's 7.1 monster files arrive.
 
 ## Decisions made while building
 
