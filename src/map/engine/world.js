@@ -246,24 +246,40 @@ export class World {
   // ---------- walk data (router) ----------
 
   // Loads walk.bin (per tile: 0 = blocked, else ground speed / 2; chunks in map.json order) and links.json.
+  // Loads links.json only (floor changes, teleports, passages; small): { kinds, links, linksAt: Map("x,y,z" ->
+  // links), passages }. Used by the hover preview of floor changes and by loadWalk.
+  loadLinks() {
+    this.linksPromise ||= loadJson(`${this.base}/links.json`).then((links) => {
+      const linksAt = new Map();
+      for (const l of links.links) {
+        const k = `${l[0]},${l[1]},${l[2]}`;
+        if (!linksAt.has(k)) linksAt.set(k, []);
+        linksAt.get(k).push(l);
+      }
+      // NPC passages (boats, carpets, the Oracle): [NPC, destination, price, min level, x, y, z, tx, ty, tz].
+      this.links = { kinds: links.kinds, links: links.links, linksAt, passages: links.passages || [] };
+      return this.links;
+    });
+    return this.linksPromise;
+  }
+
+  // The floor change on tile (x, y, z) (stairs, hole, ladder, ...; not forcefields): [x, y, z, tx, ty, tz, kind],
+  // or null. Needs loadLinks.
+  floorChangeAt(x, y, z) {
+    const list = this.links?.linksAt.get(`${x},${y},${z}`);
+    return list?.find((l) => l[5] !== l[2] && this.links.kinds[l[6]] !== 'teleport') || null;
+  }
+
   async loadWalk() {
     if (this.walk) return this.walk;
     const [bin, links] = await Promise.all([
       fetch(`${this.base}/walk.bin`).then((r) => r.arrayBuffer()),
-      loadJson(`${this.base}/links.json`),
+      this.loadLinks(),
     ]);
     const offset = new Map();
     let i = 0;
     for (let z = 0; z < 16; z++) for (const [cx, cy] of this.map.chunks[z] || []) offset.set(`${z}:${cx}:${cy}`, (i++) * this.CHUNK * this.CHUNK);
-    const linksAt = new Map();
-    for (const l of links.links) {
-      const k = `${l[0]},${l[1]},${l[2]}`;
-      if (!linksAt.has(k)) linksAt.set(k, []);
-      linksAt.get(k).push(l);
-    }
-    // NPC passages (boats, carpets, the Oracle): [NPC, destination, price, min level, x, y, z, tx, ty, tz].
-    const passages = links.passages || [];
-    this.walk = { bytes: new Uint8Array(bin), offset, kinds: links.kinds, links: links.links, linksAt, passages };
+    this.walk = { bytes: new Uint8Array(bin), offset, ...links };
     return this.walk;
   }
 

@@ -341,6 +341,18 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 
 ## Decisions made while building
 
+### Slice 5d: hover preview and click to change floor (built 2026-11-13)
+- **Without a route**, zoomed in to 16 or closer: hovering a floor change on the floor you're looking at shows the floor it leads to around where you land. That covers stairs, ramps, holes, ladders, grates, rope spots and stone piles; forcefields can go far away, so they're left out.
+  - It uses the same see-through drawing as along a route: full for 3 tiles, fading out to 7, at 80 %.
+  - The hovered tile itself stays clear, so you still see the hole or stairs you point at.
+  - A floor above that is already drawn (the surface at zoom 16, with its roofs) gets no preview.
+- **Clicking it goes to that floor** (the floor buttons' rule: zoomed in, this floor only). An NPC or locked door on the tile comes first, as proposed. The cursor is a pointer over floor changes.
+- **With a route planned** there's no hover preview or click to another floor: the see-through along the route (5c) is what shows then.
+- **Code:**
+  - The see-through drawing is now one function for a floor in a band (`seeBand`), used by `seeThrough` (route) and `seePreview` (hover).
+  - The World loads only links.json (160 KB) for this (`loadLinks`, `floorChangeAt`), when the map has loaded; `loadWalk` (debug view) reuses it.
+- Seen in the browser: hovering the hole at 33309,31996,7 showed floor 8 with its stairs around the hole, and clicking it went to floor 8.
+
 ### Slice 5c: see-through along the route (built 2026-11-13, an experiment to tune with the user)
 - **Where the route is on another floor up to 2 floors away** (above or below), that floor is drawn over the current one in a band along the path. So the floor you're on looks see-through there.
 - **The band:** fully see-through within 3 tiles of the path (`SEE_BAND`), then fading from 40 % to nothing at 7 tiles (`SEE_EDGE`, `SEE_FADE`). The distance is measured round (Euclidean), per tile, and smoothed between tiles.

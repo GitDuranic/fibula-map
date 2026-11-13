@@ -111,9 +111,72 @@ const SEE_FLOOR_ALPHA = [0, 0.8, 0.5];
 const SEE_CHANGES = 2; // floor changes ahead that show through
 const seeAlpha = (d) => (d <= SEE_BAND ? 1 : d >= SEE_EDGE ? 0 : SEE_FADE * (1 - (d - SEE_BAND) / (SEE_EDGE - SEE_BAND)));
 
+// The mask grid of a draw: one cell per tile of the view (plus a margin).
+function seeGrid({ left, top, right, bottom }) {
+  const x0 = Math.floor(left) - 1, y0 = Math.floor(top) - 1;
+  return { x0, y0, w: Math.ceil(right) + 2 - x0, h: Math.ceil(bottom) + 2 - y0 };
+}
+
+// Adds alpha(distance) around tile (x, y) to cells (keeping the highest value), up to distance r.
+function spread(cells, gr, x, y, r, alpha) {
+  if (x < gr.x0 - r || x >= gr.x0 + gr.w + r || y < gr.y0 - r || y >= gr.y0 + gr.h + r) return false;
+  let any = false;
+  for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    const cx = x + dx - gr.x0, cy = y + dy - gr.y0;
+    if (cx < 0 || cy < 0 || cx >= gr.w || cy >= gr.h) continue;
+    const a = alpha(Math.hypot(dx, dy));
+    if (a > cells[cy * gr.w + cx]) { cells[cy * gr.w + cx] = a; any = true; }
+  }
+  return any;
+}
+
+// Draws floor z over the map in a band around `tiles` ([[x, y, ...]] on floor z), see-through as SEE_BAND /
+// SEE_EDGE say, at SEE_FLOOR_ALPHA for its distance; `keep` (cells, or null): where this floor stays clear.
 // g: { ox, oy, s, W, H, left, top, right, bottom, C, ts } of the current draw; offRef: a ref for the scratch canvases.
-function seeThrough(ctx, world, v, rp, g, budget, offRef) {
+function seeBand(ctx, world, v, z, tiles, keep, g, budget, offRef) {
   const { ox, oy, s, W, H, left, top, right, bottom, C, ts } = g;
+  offRef.current ||= { off: document.createElement('canvas'), mask: document.createElement('canvas') };
+  const { off, mask } = offRef.current;
+  if (off.width !== W || off.height !== H) { off.width = W; off.height = H; }
+  const octx = off.getContext('2d'), mctx = mask.getContext('2d');
+  const gr = seeGrid(g);
+  // Floors 0-7 seen from the surface sit one tile up-left per floor higher (as the client draws them).
+  const d = v.z <= 7 && z <= 7 ? v.z - z : 0;
+  const cells = new Float32Array(gr.w * gr.h);
+  let any = false;
+  const seen = new Set();
+  for (const [x0, y0] of tiles) {
+    const x = x0 - d, y = y0 - d, k = `${x},${y}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    if (spread(cells, gr, x, y, SEE_EDGE, seeAlpha)) any = true;
+  }
+  if (!any) return;
+  mask.width = gr.w; mask.height = gr.h;
+  const img = mctx.createImageData(gr.w, gr.h);
+  for (let i = 0; i < cells.length; i++) img.data[i * 4 + 3] = Math.round(cells[i] * (keep ? 1 - keep[i] : 1) * 255);
+  mctx.putImageData(img, 0, 0);
+  // That floor on its own, then cut to the band.
+  octx.globalCompositeOperation = 'source-over';
+  octx.clearRect(0, 0, W, H);
+  octx.imageSmoothingEnabled = s < ts;
+  for (let cy = Math.floor((top + d) / C); cy <= Math.floor((bottom + d) / C); cy++) {
+    for (let cx = Math.floor((left + d) / C); cx <= Math.floor((right + d) / C); cx++) {
+      const c = world.chunkCanvas(z, cx, cy, 'floor', ts, budget);
+      if (c) octx.drawImage(c, ox + (cx * C - d) * s, oy + (cy * C - d) * s, C * s, C * s);
+    }
+  }
+  octx.globalCompositeOperation = 'destination-in';
+  octx.imageSmoothingEnabled = true; // a soft edge between tile cells
+  octx.drawImage(mask, ox + gr.x0 * s, oy + gr.y0 * s, gr.w * s, gr.h * s); // cell centres on tile centres
+  octx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = SEE_FLOOR_ALPHA[Math.min(2, Math.abs(z - v.z))];
+  ctx.drawImage(off, 0, 0);
+  ctx.globalAlpha = 1;
+}
+
+// See-through along the route (5c): the floors ahead on the route, in a band along it.
+function seeThrough(ctx, world, v, rp, g, budget, offRef) {
   const floors = new Map(); // floor -> route tiles on it
   // Only the way ahead (user): a stretch on another floor shows through only when the route has already been on
   // this floor before it, so you see where you're going, not where you came from; and only up to SEE_CHANGES
@@ -132,66 +195,21 @@ function seeThrough(ctx, world, v, rp, g, budget, offRef) {
   }
   if (!floors.size) return;
   // How much to keep this floor clear, per cell: near its own part of the route (see SEE_CLEAR).
-  const gx0c = Math.floor(left) - 1, gy0c = Math.floor(top) - 1;
-  const gwc = Math.ceil(right) + 2 - gx0c, ghc = Math.ceil(bottom) + 2 - gy0c;
-  const keep = new Float32Array(gwc * ghc);
-  for (const [x0, y0, z] of rp) {
-    if (z !== v.z || x0 < gx0c - SEE_CLEAR_EDGE || x0 >= gx0c + gwc + SEE_CLEAR_EDGE || y0 < gy0c - SEE_CLEAR_EDGE || y0 >= gy0c + ghc + SEE_CLEAR_EDGE) continue;
-    for (let dy = -SEE_CLEAR_EDGE; dy <= SEE_CLEAR_EDGE; dy++) for (let dx = -SEE_CLEAR_EDGE; dx <= SEE_CLEAR_EDGE; dx++) {
-      const cx = x0 + dx - gx0c, cy = y0 + dy - gy0c;
-      if (cx < 0 || cy < 0 || cx >= gwc || cy >= ghc) continue;
-      const a = clearAlpha(Math.hypot(dx, dy));
-      if (a > keep[cy * gwc + cx]) keep[cy * gwc + cx] = a;
-    }
-  }
-  offRef.current ||= { off: document.createElement('canvas'), mask: document.createElement('canvas') };
-  const { off, mask } = offRef.current;
-  if (off.width !== W || off.height !== H) { off.width = W; off.height = H; }
-  const octx = off.getContext('2d'), mctx = mask.getContext('2d');
-  // The mask grid: one cell per tile of the view (plus a margin), alpha = how see-through.
-  const gx0 = Math.floor(left) - 1, gy0 = Math.floor(top) - 1;
-  const gw = Math.ceil(right) + 2 - gx0, gh = Math.ceil(bottom) + 2 - gy0;
+  const gr = seeGrid(g), keep = new Float32Array(gr.w * gr.h);
+  for (const [x, y, z] of rp) if (z === v.z) spread(keep, gr, x, y, SEE_CLEAR_EDGE, clearAlpha);
   // Farthest floor first, so the nearer one lies on top where both show.
   for (const [z, tiles] of [...floors].sort((a, b) => Math.abs(b[0] - v.z) - Math.abs(a[0] - v.z))) {
-    // Floors 0-7 seen from the surface sit one tile up-left per floor higher (as the client draws them).
-    const d = v.z <= 7 && z <= 7 ? v.z - z : 0;
-    const cells = new Float32Array(gw * gh);
-    let any = false;
-    const seen = new Set();
-    for (const [x0, y0] of tiles) {
-      const x = x0 - d, y = y0 - d, k = `${x},${y}`;
-      if (seen.has(k) || x < gx0 - SEE_EDGE || x >= gx0 + gw + SEE_EDGE || y < gy0 - SEE_EDGE || y >= gy0 + gh + SEE_EDGE) continue;
-      seen.add(k);
-      for (let dy = -SEE_EDGE; dy <= SEE_EDGE; dy++) for (let dx = -SEE_EDGE; dx <= SEE_EDGE; dx++) {
-        const cx = x + dx - gx0, cy = y + dy - gy0;
-        if (cx < 0 || cy < 0 || cx >= gw || cy >= gh) continue;
-        const a = seeAlpha(Math.hypot(dx, dy));
-        if (a > cells[cy * gw + cx]) { cells[cy * gw + cx] = a; any = true; }
-      }
-    }
-    if (!any) continue;
-    mask.width = gw; mask.height = gh;
-    const img = mctx.createImageData(gw, gh);
-    for (let i = 0; i < cells.length; i++) img.data[i * 4 + 3] = Math.round(cells[i] * (1 - keep[i]) * 255);
-    mctx.putImageData(img, 0, 0);
-    // That floor on its own, then cut to the band.
-    octx.globalCompositeOperation = 'source-over';
-    octx.clearRect(0, 0, W, H);
-    octx.imageSmoothingEnabled = s < ts;
-    for (let cy = Math.floor((top + d) / C); cy <= Math.floor((bottom + d) / C); cy++) {
-      for (let cx = Math.floor((left + d) / C); cx <= Math.floor((right + d) / C); cx++) {
-        const c = world.chunkCanvas(z, cx, cy, 'floor', ts, budget);
-        if (c) octx.drawImage(c, ox + (cx * C - d) * s, oy + (cy * C - d) * s, C * s, C * s);
-      }
-    }
-    octx.globalCompositeOperation = 'destination-in';
-    octx.imageSmoothingEnabled = true; // a soft edge between tile cells
-    octx.drawImage(mask, ox + gx0 * s, oy + gy0 * s, gw * s, gh * s); // cell centres on tile centres
-    octx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = SEE_FLOOR_ALPHA[Math.abs(z - v.z)];
-    ctx.drawImage(off, 0, 0);
-    ctx.globalAlpha = 1;
+    seeBand(ctx, world, v, z, tiles, keep, g, budget, offRef);
   }
+}
+
+// Hover preview (5d): the floor a hole, stairs, ladder or other floor change leads to, around where you land, in the
+// same see-through way. The hovered tile itself stays clear, so you still see what you point at.
+// link: [x, y, z, tx, ty, tz, kind].
+function seePreview(ctx, world, v, link, g, budget, offRef) {
+  const gr = seeGrid(g), keep = new Float32Array(gr.w * gr.h);
+  spread(keep, gr, link[0], link[1], 1, (d) => (d < 0.5 ? 1 : d >= 1 ? 0 : 1 - (d - 0.5) / 0.5));
+  seeBand(ctx, world, v, link[5], [[link[3], link[4]]], keep, g, budget, offRef);
 }
 
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
@@ -209,6 +227,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const selected = useRef(null); // the NPC whose window is open (drawn with a frame)
   const selectedDoor = useRef(null); // the locked door whose window is open (drawn with a frame)
   const offRef = useRef(null); // scratch canvases for the see-through along the route
+  const hoverLink = useRef(null); // the floor change under the mouse (no route planned): [x, y, z, tx, ty, tz, kind]
   const [npc, setNpc] = useState(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
@@ -313,7 +332,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         }
       }
       // See-through along the route (5c): the floors above and below where the route goes show through.
-      if (routePath.current) seeThrough(ctx, world, v, routePath.current, { ox, oy, s, W, H, left, top, right, bottom, C, ts }, budget, offRef);
+      const g = { ox, oy, s, W, H, left, top, right, bottom, C, ts };
+      if (routePath.current) seeThrough(ctx, world, v, routePath.current, g, budget, offRef);
+      // Hover preview without a route (5d): where the hole, stairs or ladder under the mouse leads.
+      else if (hoverLink.current && hoverLink.current[2] === v.z && !(hoverLink.current[5] < v.z && v.z <= 7 && hoverLink.current[5] >= v.cut)) {
+        seePreview(ctx, world, v, hoverLink.current, g, budget, offRef); // (a floor above that is already drawn: nothing to add)
+      }
       if (budget.n < 0) more = true;
     }
 
@@ -585,6 +609,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       const v = view.current;
       if (!world.floors.includes(v.z)) v.z = 7;
       if (DEBUG_WALK) world.loadWalk().then(() => redraw());
+      world.loadLinks().catch(() => {}); // floor changes, for the hover preview (5d)
       world.isDoorOpen = (d) => doorOpen(doorsRef.current, d);
       setReady(true);
       viewChanged();
@@ -819,13 +844,31 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     }
   };
 
+  // The floor change at canvas point p, for the hover preview and a click to that floor: only without a route,
+  // zoomed in far enough to see the sprites. Null otherwise.
+  const floorChangeAtPoint = (p) => {
+    const world = worldRef.current, v = view.current;
+    if (!world?.links || routePath.current || v.zoom < SPRITES_FROM) return null;
+    const t = tileAt(p);
+    const l = world.floorChangeAt(t.x, t.y, v.z);
+    return l && world.floors.includes(l[5]) ? l : null;
+  };
+  const setHoverLink = (l) => {
+    if (l === hoverLink.current) return;
+    hoverLink.current = l;
+    redraw();
+  };
+
   const onPointerMove = (e) => {
     const p = toCanvas(e);
     if (!pointers.current.has(e.pointerId)) {
       setHover(tileAt(p));
-      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || doorAtPoint(p) ? 'pointer' : '';
+      const l = floorChangeAtPoint(p);
+      setHoverLink(l);
+      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
       return;
     }
+    setHoverLink(null);
     pointers.current.set(e.pointerId, p);
     const d = drag.current;
     if (!d) return;
@@ -867,10 +910,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     }
     drag.current = null;
     if (d && !d.moved) {
-      // A click: open the NPC there, else the locked door there, else close.
-      const p = toCanvas(e), n = npcAtPoint(p);
+      // A click: open the NPC there, else the locked door there, else go to the floor a hole, stairs or ladder
+      // leads to (no route planned), else close.
+      const p = toCanvas(e), n = npcAtPoint(p), dr = !n && doorAtPoint(p), l = !n && !dr && floorChangeAtPoint(p);
       if (n) selectNpc(n);
-      else { selectNpc(null); selectDoor(doorAtPoint(p)); }
+      else if (l) { setHoverLink(null); setFloor(l[5]); }
+      else { selectNpc(null); selectDoor(dr || null); }
       return;
     }
     if (d && performance.now() - d.t < 80) {
@@ -975,7 +1020,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         <canvas
           ref={canvasRef} className="tm-canvas"
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
-          onPointerLeave={() => setHover(null)}
+          onPointerLeave={() => { setHover(null); setHoverLink(null); }}
           onContextMenu={(e) => {
             e.preventDefault();
             const r = wrapRef.current.getBoundingClientRect(), t = tileAt(toCanvas(e));
