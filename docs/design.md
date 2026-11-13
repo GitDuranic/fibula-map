@@ -341,6 +341,14 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 
 ## Decisions made while building
 
+### Slice 5b: route lines on other floors (built 2026-11-13)
+- **How visible the route is on floor z when looking at floor vz** (`routeAlpha`):
+  - On this floor: full, solid line.
+  - Looking at the surface, the other surface floors (0–7): 55 % dashes, as before.
+  - Underground floors, and anything seen from underground: up to 2 floors away, 55 % and 30 % dashes; further away it's not drawn. From floor 7 you see floors 8 and 9 of the route; from floor 11, floors 9, 10, 12 and 13.
+- The floor-change dots, the dashed "use" lines and the boat arcs follow the same rule (an arc takes the more visible of its two ends).
+- Seen in the browser on Thais → Kazordoon, where the route goes down floor by floor (8–15) near 33310,31997. The stairs and holes there are stacked on top of each other, so nearby floors' dashes lie close together. 5c (see-through along the route) should make that clearer.
+
 ### Slice 5a: the step onto floor changes (built 2026-11-13)
 - **The router keeps the floor change's own tile in the path**, as an entry without time of its own. The time is still counted on the landing entry, so run times don't change (Thais temple → depot: 67 steps, 24 s, as before).
   - `onto`: stairs, ramps, holes and forcefields, which you step onto.

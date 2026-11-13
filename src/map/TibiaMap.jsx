@@ -88,6 +88,16 @@ function visibleDoors(world, v, left, top, right, bottom) {
   return out;
 }
 
+// How visible the route is on floor z when looking at floor vz (5b): 1 on this floor. Seen from the surface, the
+// other surface floors (0-7) at 0.55, as before. Underground floors, and everything seen from underground: up to
+// 2 floors away, 0.55 and 0.3; further away not drawn.
+const ROUTE_FADE = [1, 0.55, 0.3];
+function routeAlpha(z, vz) {
+  if (z === vz) return 1;
+  if (z <= 7 && vz <= 7) return ROUTE_FADE[1];
+  return ROUTE_FADE[Math.abs(z - vz)] || 0;
+}
+
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
@@ -299,12 +309,13 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         ctx.restore();
       }
     }
-    // The route: a line through the tiles, bright on this floor, faint dashes on other floors; markers where the
-    // floor changes, green at the start, red at the end. Line widths in client pixels.
+    // The route: a line through the tiles, bright on this floor, fainter dashes on other floors (see routeAlpha);
+    // markers where the floor changes, green at the start, red at the end. Line widths in client pixels.
     const rp = routePath.current;
     if (rp && rp.length > 1) {
       const fr = ([x, y, z]) => (v.z <= 7 && z <= 7 ? [x - (v.z - z), y - (v.z - z)] : [x, y]);
       const at = (pt) => { const f = fr(pt); return [ox + (f[0] + 0.5) * s, oy + (f[1] + 0.5) * s]; };
+      const alpha = (z) => routeAlpha(z, v.z);
       // Runs of tiles walked on one floor. The line goes onto stairs, holes and forcefields ('onto'); a ladder, grate
       // or rope spot used from next to it ('use') gets a short dashed line from where you stand.
       const runs = [], uses = [];
@@ -319,8 +330,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       for (const pass of [0, 1]) {
         for (const r of runs) {
-          const here = r[0][2] === v.z;
-          if (r.length < 2 || here !== (pass === 1)) continue;
+          const here = r[0][2] === v.z, a = alpha(r[0][2]);
+          if (r.length < 2 || !a || here !== (pass === 1)) continue;
           ctx.beginPath();
           r.forEach((pt, i) => { const [x, y] = at(pt); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
           if (here) {
@@ -328,38 +339,52 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 5 * k; ctx.stroke();
             ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3 * k; ctx.stroke();
           } else {
+            ctx.globalAlpha = a;
             ctx.setLineDash([4 * k, 4 * k]);
-            ctx.strokeStyle = 'rgba(255,215,0,0.55)'; ctx.lineWidth = 2 * k; ctx.stroke();
+            ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2 * k; ctx.stroke();
+            ctx.globalAlpha = 1;
           }
         }
       }
       for (const [a, b] of uses) {
-        const here = a[2] === v.z, [ax, ay] = at(a), [bx, by] = at(b);
+        const here = a[2] === v.z, al = alpha(a[2]), [ax, ay] = at(a), [bx, by] = at(b);
+        if (!al) continue;
+        ctx.globalAlpha = al;
         ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
         ctx.setLineDash([3 * k, 3 * k]);
         if (here) { ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 4 * k; ctx.stroke(); }
-        ctx.strokeStyle = here ? '#ffd700' : 'rgba(255,215,0,0.55)'; ctx.lineWidth = 2 * k; ctx.stroke();
+        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2 * k; ctx.stroke();
+        ctx.globalAlpha = 1;
       }
       ctx.setLineDash([]);
+      // A dot on its floor's visibility (none on floors not shown).
       const dot = (pt, color, r) => {
+        const a = alpha(pt[2]);
+        if (!a) return;
         const [x, y] = at(pt);
+        ctx.globalAlpha = a;
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fillStyle = '#000'; ctx.fill();
         ctx.beginPath(); ctx.arc(x, y, r - k, 0, Math.PI * 2);
         ctx.fillStyle = color; ctx.fill();
+        ctx.globalAlpha = 1;
       };
       // Passages (boat, carpet, the Oracle): an arc from where you talk to the NPC to where you arrive, curving to
       // the right of the direction of travel, solid when it starts or ends on this floor.
       for (let i = 1; i < rp.length; i++) {
         if (rp[i][3] !== 'npc') continue;
+        const a = Math.max(alpha(rp[i - 1][2]), alpha(rp[i][2]));
+        if (!a) continue;
         const [ax, ay] = at(rp[i - 1]), [bx, by] = at(rp[i]);
         const mx = (ax + bx) / 2, my = (ay + by) / 2, bend = 0.25;
         const cx = mx - (by - ay) * bend, cy = my + (bx - ax) * bend;
-        const here = rp[i - 1][2] === v.z || rp[i][2] === v.z;
+        const here = a === 1;
+        ctx.globalAlpha = a;
         ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(cx, cy, bx, by);
         ctx.setLineDash([8 * k, 5 * k]);
         if (here) { ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 5 * k; ctx.stroke(); }
-        ctx.strokeStyle = here ? '#7fd8ff' : 'rgba(127,216,255,0.55)'; ctx.lineWidth = (here ? 3 : 2) * k; ctx.stroke();
+        ctx.strokeStyle = '#7fd8ff'; ctx.lineWidth = (here ? 3 : 2) * k; ctx.stroke();
+        ctx.globalAlpha = 1;
       }
       ctx.setLineDash([]);
       for (let i = 1; i < rp.length; i++) {
