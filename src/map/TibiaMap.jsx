@@ -98,6 +98,77 @@ function routeAlpha(z, vz) {
   return ROUTE_FADE[Math.abs(z - vz)] || 0;
 }
 
+// See-through along the route (5c): where the route is on another floor (up to 2 floors away), that floor is drawn
+// over this one in a band along the path, so the floor you're on looks see-through there. The band is full for
+// SEE_BAND tiles from the path and then fades out to SEE_EDGE (very faint, user: "a bit more but very faded").
+// Floors further away are fainter (SEE_FLOOR_ALPHA by distance).
+const SEE_BAND = 3, SEE_EDGE = 7, SEE_FADE = 0.4;
+const SEE_FLOOR_ALPHA = [0, 0.8, 0.5];
+const seeAlpha = (d) => (d <= SEE_BAND ? 1 : d >= SEE_EDGE ? 0 : SEE_FADE * (1 - (d - SEE_BAND) / (SEE_EDGE - SEE_BAND)));
+
+// g: { ox, oy, s, W, H, left, top, right, bottom, C, ts } of the current draw; offRef: a ref for the scratch canvases.
+function seeThrough(ctx, world, v, rp, g, budget, offRef) {
+  const { ox, oy, s, W, H, left, top, right, bottom, C, ts } = g;
+  const floors = new Map(); // floor -> route tiles on it
+  for (const e of rp) {
+    const z = e[2], dz = Math.abs(z - v.z);
+    if (!dz || dz > 2) continue;
+    // A floor above that is already drawn (the surface with its upper floors, below the layer cut) needs nothing.
+    if (z < v.z && v.z <= 7 && z >= v.cut) continue;
+    if (!floors.has(z)) floors.set(z, []);
+    floors.get(z).push(e);
+  }
+  if (!floors.size) return;
+  offRef.current ||= { off: document.createElement('canvas'), mask: document.createElement('canvas') };
+  const { off, mask } = offRef.current;
+  if (off.width !== W || off.height !== H) { off.width = W; off.height = H; }
+  const octx = off.getContext('2d'), mctx = mask.getContext('2d');
+  // The mask grid: one cell per tile of the view (plus a margin), alpha = how see-through.
+  const gx0 = Math.floor(left) - 1, gy0 = Math.floor(top) - 1;
+  const gw = Math.ceil(right) + 2 - gx0, gh = Math.ceil(bottom) + 2 - gy0;
+  // Farthest floor first, so the nearer one lies on top where both show.
+  for (const [z, tiles] of [...floors].sort((a, b) => Math.abs(b[0] - v.z) - Math.abs(a[0] - v.z))) {
+    // Floors 0-7 seen from the surface sit one tile up-left per floor higher (as the client draws them).
+    const d = v.z <= 7 && z <= 7 ? v.z - z : 0;
+    const cells = new Float32Array(gw * gh);
+    let any = false;
+    const seen = new Set();
+    for (const [x0, y0] of tiles) {
+      const x = x0 - d, y = y0 - d, k = `${x},${y}`;
+      if (seen.has(k) || x < gx0 - SEE_EDGE || x >= gx0 + gw + SEE_EDGE || y < gy0 - SEE_EDGE || y >= gy0 + gh + SEE_EDGE) continue;
+      seen.add(k);
+      for (let dy = -SEE_EDGE; dy <= SEE_EDGE; dy++) for (let dx = -SEE_EDGE; dx <= SEE_EDGE; dx++) {
+        const cx = x + dx - gx0, cy = y + dy - gy0;
+        if (cx < 0 || cy < 0 || cx >= gw || cy >= gh) continue;
+        const a = seeAlpha(Math.hypot(dx, dy));
+        if (a > cells[cy * gw + cx]) { cells[cy * gw + cx] = a; any = true; }
+      }
+    }
+    if (!any) continue;
+    mask.width = gw; mask.height = gh;
+    const img = mctx.createImageData(gw, gh);
+    for (let i = 0; i < cells.length; i++) img.data[i * 4 + 3] = Math.round(cells[i] * 255);
+    mctx.putImageData(img, 0, 0);
+    // That floor on its own, then cut to the band.
+    octx.globalCompositeOperation = 'source-over';
+    octx.clearRect(0, 0, W, H);
+    octx.imageSmoothingEnabled = s < ts;
+    for (let cy = Math.floor((top + d) / C); cy <= Math.floor((bottom + d) / C); cy++) {
+      for (let cx = Math.floor((left + d) / C); cx <= Math.floor((right + d) / C); cx++) {
+        const c = world.chunkCanvas(z, cx, cy, 'floor', ts, budget);
+        if (c) octx.drawImage(c, ox + (cx * C - d) * s, oy + (cy * C - d) * s, C * s, C * s);
+      }
+    }
+    octx.globalCompositeOperation = 'destination-in';
+    octx.imageSmoothingEnabled = true; // a soft edge between tile cells
+    octx.drawImage(mask, ox + gx0 * s, oy + gy0 * s, gw * s, gh * s); // cell centres on tile centres
+    octx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = SEE_FLOOR_ALPHA[Math.abs(z - v.z)];
+    ctx.drawImage(off, 0, 0);
+    ctx.globalAlpha = 1;
+  }
+}
+
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
@@ -112,6 +183,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const viewBox = useRef(null); // the tile area on screen, from the last draw
   const selected = useRef(null); // the NPC whose window is open (drawn with a frame)
   const selectedDoor = useRef(null); // the locked door whose window is open (drawn with a frame)
+  const offRef = useRef(null); // scratch canvases for the see-through along the route
   const [npc, setNpc] = useState(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
@@ -215,6 +287,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           if (c) ctx.drawImage(c, ox + cx * C * s, oy + cy * C * s, C * s, C * s);
         }
       }
+      // See-through along the route (5c): the floors above and below where the route goes show through.
+      if (routePath.current) seeThrough(ctx, world, v, routePath.current, { ox, oy, s, W, H, left, top, right, bottom, C, ts }, budget, offRef);
       if (budget.n < 0) more = true;
     }
 
