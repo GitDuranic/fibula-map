@@ -14,6 +14,7 @@
 //                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig, teleport);
 //                         passages [[NPC, destination, price, min level, x,y,z, tx,ty,tz]] (boats, carpets, Oracle)
 //   places.json           [{ n name, k 'town' | 'depot', p [x,y,z] }] towns from the map's town list (temple), depots
+//   monsters.json, monsters.png  monster kinds (stats, outfit, loot without chances) and 7.1 spawns, see below
 //   npcs.json, npcs.png   NPCs: [{ n name, p [x,y,z], img [x,y,w,h] in npcs.png (outfit standing, coloured),
 //                         d displacement, sells/buys [[client id, price(, fluid type)]], travel [[name, price, x,y,z]] }]
 //                         (7.1 positions from --spawn; names/outfits/trade/travel from the TVP NPC files for now)
@@ -37,6 +38,7 @@ import sharp from 'sharp';
 import { drawTile, TILE as TILE32 } from '../src/map/engine/render.js';
 import { loadItemInfo } from './lib/iteminfo.js';
 import { loadNpcs, renderOutfit } from './lib/npcs.js';
+import { loadMonsters, spawnGroups } from './lib/monsters.js';
 import { walkRules, buildWalk, LINK_KINDS } from './lib/walk.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
@@ -326,6 +328,45 @@ npcList.forEach((n, i) => {
 });
 fs.writeFileSync(path.join(OUT, 'links.json'), JSON.stringify({ kinds: LINK_KINDS, links: walk.links, passages }));
 log(`Passages: ${passages.length} (${new Set(passages.map((p) => p[0])).size} NPCs), of which ${passages.filter((p) => p[3]).length} need a level`);
+
+// ---------- monsters ----------
+// monsters.json: { kinds: [{ n name, hp, xp, img [x,y,w,h] in monsters.png, d displacement, loot [[client id, max count]] }],
+//                  spawns: [[x, y, z, kind, amount, radius, group]] }   (group: spawn points within 10 tiles, same floor)
+// 7.1 spawns from --spawn; stats, outfits and loot from the TVP monster files for now. No drop chances (see the doc).
+log('Reading monsters');
+const mons = loadMonsters({ spawnFile: SPAWN, monsterDir: path.join(DATA, 'monster') });
+if (mons.missing.length) log(`Monsters without a TVP file (shown without stats/outfit): ${mons.missing.join(', ')}`);
+const spawnGroup = spawnGroups(mons.spawns, 10);
+const MON_CELL = 64, MON_COLS = 16;
+const monSheetW = MON_COLS * MON_CELL, monSheetH = Math.max(1, Math.ceil(mons.kinds.length / MON_COLS)) * MON_CELL;
+const monSheet = new Uint8Array(monSheetW * monSheetH * 4);
+const kindsOut = mons.kinds.map((m, i) => {
+  let thing = null, colors = [0, 0, 0, 0];
+  if (m.look.type) { thing = dat.outfits[m.look.type - 1]; colors = [m.look.head || 0, m.look.body || 0, m.look.legs || 0, m.look.feet || 0]; }
+  else if (m.look.typeex) thing = dat.items.get(toClient(m.look.typeex));
+  let img = null;
+  if (thing) {
+    const r = renderOutfit(spr, thing, 2, colors); // facing south
+    const ax = (i % MON_COLS) * MON_CELL, ay = Math.floor(i / MON_COLS) * MON_CELL;
+    blit(monSheet, monSheetW, r.data, r.width, r.height, ax, ay, monSheetH);
+    img = [ax, ay, r.width, r.height];
+  }
+  const disp = thing?.flags.DISPLACEMENT;
+  const loot = m.loot.map(({ sid, count }) => {
+    const cid = toClient(sid);
+    if (!cid || !dat.items.has(cid)) return null;
+    usedItems.add(cid);
+    return [cid, count];
+  }).filter(Boolean);
+  return { n: m.name, hp: m.hp, xp: m.xp, img, d: disp ? [disp.x, disp.y] : [0, 0], loot };
+});
+const spawnsOut = mons.spawns.map((sp, i) => [sp.x, sp.y, sp.z, sp.kind, sp.amount, sp.radius, spawnGroup[i]]);
+writePng(path.join(OUT, 'monsters.png'), monSheetW, monSheetH, monSheet);
+fs.writeFileSync(path.join(OUT, 'monsters.json'), JSON.stringify({ kinds: kindsOut, spawns: spawnsOut }));
+{
+  const creatures = mons.spawns.reduce((a, sp) => a + sp.amount, 0);
+  log(`Monsters: ${kindsOut.length} kinds, ${spawnsOut.length} spawn points (${creatures} creatures) in ${new Set(spawnGroup).size} spawn groups; ${kindsOut.filter((k) => !k.img).length} kinds without an outfit`);
+}
 
 // ---------- sprite atlases ----------
 log(`Packing sprites for ${usedItems.size} items`);

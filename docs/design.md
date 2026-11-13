@@ -330,7 +330,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - This is an exception to the earlier "no text on the map" preference: the user asked for it.
 - **Drop chances only from TibiaWiki for 7.1, else none:** the user doesn't want wrong rates shown.
   - The TVP (7.6) chances are not shown. Without a 7.1 source the loot list has no percentages.
-  - To check in 6a: whether TibiaWiki has 7.1-era drop chances at all. Its loot statistics are mostly from much later versions, so likely the loot shows without chances.
+  - ~~To check in 6a: whether TibiaWiki has 7.1-era drop chances at all.~~ Checked 2026-11-13: **it doesn't.** The oldest loot statistics on TibiaWiki are "after Update 8.2" (2008); Rotworm and Dragon go from 8.2 to 8.6 (2010) and later (Dragon also 13.21, 2023). So the loot shows **without chances**.
 - **Monsters show from zoom 16** (to start with).
 - Slice 5 (routes) comes first.
 
@@ -340,6 +340,18 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - Which loot to list when the TVP list doesn't match 7.1 (it's a 7.6 stand-in): the TVP items, until Ryndean's 7.1 monster files arrive.
 
 ## Decisions made while building
+
+### Slice 6a: monster data (built 2026-11-13)
+- **monsters.json + monsters.png** (`tools/lib/monsters.js`), written by the converter:
+  - `kinds`: [{ n name, hp, xp, img [x, y, w, h] in monsters.png, d displacement, loot [[client id, max count]] }]
+  - `spawns`: [[x, y, z, kind, amount, radius, group]]
+- **Spawns:** from the 7.1 spawn file (`--spawn`): 3,941 spawn points, 10,103 creatures, 71 kinds. Names are matched to the TVP monster files case-insensitively; all 71 have one.
+- **Stats, outfits and loot** come from the TVP monster files (7.6 stand-ins). Outfits are drawn facing south with their colours, as for NPCs; all 71 have one.
+- **Loot:** the items and their max count. Two lines of the same item are added up (dragon gold coin 60 + 45 = up to 105).
+  - **Drop chances are not read at all**, so they can't show by mistake: the user only wants 7.1 rates, and TibiaWiki has none (see the plan).
+  - Loot items get into the sprite atlas for their icons (1,750 items now, was 1,650).
+- **Spawn groups:** spawn points on the same floor within 10 tiles of each other, chained, are one group (`spawnGroups`). That gives 2,365 groups; the biggest has 20 spawn points, and 498 groups have more than one kind of monster.
+- TibiaWiki checked in the browser (the fetch tool is refused by the site): no drop chances older than 8.2.
 
 ### Slice 5d: hover preview and click to change floor (built 2026-11-13)
 - **Without a route**, zoomed in to 16 or closer: hovering a floor change on the floor you're looking at shows the floor it leads to around where you land. That covers stairs, ramps, holes, ladders, grates, rope spots and stone piles; forcefields can go far away, so they're left out.
