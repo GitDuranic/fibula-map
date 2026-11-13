@@ -372,6 +372,14 @@ export class World {
     return list?.find((l) => l[5] !== l[2] && this.links.kinds[l[6]] !== 'teleport') || null;
   }
 
+  // The magic forcefield on tile (x, y, z): [x, y, z, tx, ty, tz, kind], or null. Needs loadLinks.
+  teleportAt(x, y, z) {
+    const list = this.links?.linksAt.get(`${x},${y},${z}`);
+    return list?.find((l) => this.isTeleport(l)) || null;
+  }
+
+  isTeleport(l) { return this.links?.kinds[l[6]] === 'teleport'; }
+
   async loadWalk() {
     if (this.walk) return this.walk;
     const [bin, links] = await Promise.all([
