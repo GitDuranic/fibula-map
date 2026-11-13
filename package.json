@@ -4,8 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5180 --strictPort",
     "build": "vite build",
+    "preview": "vite preview --port 5181",
     "convert": "node --max-old-space-size=8192 tools/convert-map.js"
   },
   "dependencies": {
