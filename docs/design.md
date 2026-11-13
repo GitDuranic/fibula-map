@@ -365,10 +365,23 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - The wiki refuses the fetch tool but can be read in the browser.
   - Matching a quest to a chest would be by position and reward.
 
+**Decided with the user (2026-11-13):** the chests on the 7.1 map are the ones that count; what's in them for 7.1 comes from TibiaWiki, plus the quest's name if it's a quest. Reading the wiki in the browser is OK.
+
+**Slice 10a findings (2026-11-13)**
+- **The 7.1 map** has 1,927 chest-like items (465 chests, 575 boxes, 887 crates), nearly all empty decoration.
+- **TibiaWiki, read in the browser** (the API from the page; the fetch tool is refused). Saved in `tools/data/wikiquests.json`.
+  - 46 quest overview pages say they came in 7.1 or earlier; another 41 give no version (e.g. Life Ring, Power Ring, Mintwallin). 87 quests in all, 65 with coordinates in their spoiler.
+  - **The coordinates are mostly entrances and route points** ("go down the hole here"), not the chests, which are usually floors deeper. Several unversioned quests share 32356,32171,7, a placeholder.
+  - **The reward is per quest, not per chest.**
+  - Getting the data out of the browser: the tool returns ~1,300 characters per call, a download was blocked (no user click), and Chrome won't let a public page post to localhost. What worked: put the JSON in the page as text and read it with the page-text tool.
+- **Matching** (script: TVP quest chests' contents and 7.6 positions against the wiki rewards, within 200 tiles of the quest's coordinates):
+  - 72 of the 87 wiki quests found their chests, e.g. Katana Quest (katana, viking helmet: 32174,32149,11 and 32175,32145,11), Time Ring Quest (3 chests at 33038–33040,32171,9), Black Knight (crown armor, crown shield, floor 11).
+  - **But many of those chests are missing from the converted 7.1 map.** Of the 216 TVP quest chests, only 69 have a chest or box on the 7.1 tile (or next to it). At the others the tile has only its floor (dirt, muddy floor, marble): the chest was dropped when the map was converted to TVP format, e.g. Rapier Quest (32099,32198,9), Ring Quest (33131,31624,15), Thais Lighthouse (32225,32265,10).
+  - Of the 146 chests matched to a wiki quest, 47 are on the 7.1 map.
+
 **Open questions for the user**
-- Which chests: only **quest chests** (rewards), or also ordinary containers with items (bookcases with books, drawers)?
-- Of the 222 TVP quest chests, only the ~69 that match the 7.1 map are sure. Should the other ~110, where the tile exists but the chest is gone, show too (marked "7.6 data"), or not at all, like the drop chances?
-- Quest names from TibiaWiki: only quests that came in 7.1 or earlier. That means reading many wiki pages in the browser; OK?
+- **The quest chests missing from the converted 7.1 map** (about 100 that match a wiki quest): mark them anyway at their spot (the area is on the 7.1 map, only the chest item is gone), or only the 47 whose chest is on the map? Or ask Ryndean whether the original 7.1 map still has them?
+- **Contents:** show only the items the wiki's reward confirms (e.g. leave out a "vial" the wiki doesn't mention), or the whole TVP chest?
 - How should a quest show on the map: its name as a label (like town names), a chest icon, or both? From which zoom?
 - Order: before or after the loot seller (slice 7)?
 
