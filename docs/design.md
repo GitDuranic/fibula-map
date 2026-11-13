@@ -429,7 +429,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - Every monster of that kind is drawn **bigger** with a **gold ring**, on **every floor** and at every zoom (also zoomed far out, where other monsters aren't shown). Those on other floors are fainter (55 %).
   - The size is 1.5× the normal monster size, but never smaller than 60 % of the game size, so zoomed far out they don't crowd each other. Counts ("3x") sit at the ring's bottom right.
   - Markers and the split per tile from zoom 64 work as for other monsters (6b).
-- **The view fits them all**: centred on their spawns, at the closest zoom (up to 32) where they all fit, on the floor where most of them are. This is a jump, so Back returns.
+- **The view fits them all**: centred on their spawns, at the closest zoom (up to 32) where they all fit, ~~on the floor where most of them are~~ **on the surface, floor 7** (user, 2026-11-13: it sometimes went underground). Those on other floors show there, fainter, with their ring. This is a jump, so Back returns.
 - **Clicking a searched monster**: on another floor, the map goes there (a jump, zoom at least 32), then opens its monster window; on this floor, just the window. Within a ring counts as a hit; this floor's monsters come first, then the nearest.
 - **The search ends** when the search field is cleared or another result is picked.
 - Seen in the browser: "Dragon" fitted all dragon spawns at zoom 1 on floor 10 (most dragons are there). Clicking the one between Ab'Dendriel and Edron went to floor 9, where its spawn shares a group with 4 orc leaders, and opened the window.

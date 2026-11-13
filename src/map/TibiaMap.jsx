@@ -1041,7 +1041,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const goBack = () => (syncUrl ? window.history.back() : restoreBack());
   // A jump that Back can undo.
   const jump = (p, opts) => { pushBack(); goTo(p, opts); };
-  // Monster search (6d): fit the view to every spawn of that kind, on the floor where most of them are.
+  // Monster search (6d): fit the view to every spawn of that kind, on the surface (floor 7; user: not the floor where
+  // most of them are, which was often underground). Those on other floors still show there, fainter, with their ring.
   const fitMonsters = (kind) => {
     const world = worldRef.current, c = canvasRef.current;
     const pts = world?.spawnPoints.filter((sp) => sp.kind === kind) || [];
@@ -1049,9 +1050,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const xs = pts.map((sp) => sp.p[0]), ys = pts.map((sp) => sp.p[1]);
     const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys), y2 = Math.max(...ys);
     const fit = [...ZOOMS].reverse().find((zz) => zz <= MAIN_FROM && (x2 - x1 + 10) * zz <= c.width * 0.9 && (y2 - y1 + 10) * zz <= c.height * 0.9) ?? ZOOMS[0];
-    const perFloor = new Map();
-    for (const sp of pts) perFloor.set(sp.p[2], (perFloor.get(sp.p[2]) || 0) + sp.amount);
-    const z = [...perFloor].sort((a, b) => b[1] - a[1])[0][0];
+    const z = 7;
     jump({ x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2), z }, { zoom: fit, cut: fit >= MAIN_FROM && z <= 7 ? z : 0 });
   };
 
