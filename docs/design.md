@@ -341,6 +341,23 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 
 ## Decisions made while building
 
+### Slice 6b: monsters on the map (built 2026-11-13)
+- **Only on the floor they spawn on**, from zoom 16 (`MONSTERS_FROM`), drawn under the doors' keys and the NPCs, at the same scale as NPCs.
+- **Markers** (zoom 16–32):
+  - Monsters of one kind in one spawn group, within 3 tiles of each other (chained), are one marker. It shows one outfit with "3x" in the client's outlined font (white) at the tile's bottom right, at the spawn point nearest their middle.
+  - The count is all of them together (spawn amounts added up).
+- **One per tile** from zoom 64 (`MONSTERS_SPLIT`): each spawn point's monsters stand on their own tiles, spread from the centre outwards within the spawn's radius.
+  - The server picks random tiles in the radius, so this only shows *about* where they are.
+  - It doesn't check whether the tile can be walked on (that would need the 7 MB walk data on the page).
+- **Monster window** (click a monster; NPCs come first, then monsters, then locked doors, then floor changes):
+  - The monster's outfit, HP and XP, and the loot (icon, name, "up to N"). The note "No drop chances: none are known for 7.1" sits under the loot.
+  - Clicking a loot item opens its item window (who sells and buys it); the monster window stays open.
+  - **A spawn with more than one kind** lists them at the top ("In this spawn": outfit, name, total count; click to switch) plus "All loot in this spawn": every item any of them drops, with the highest max count and who drops it, e.g. "meat (troll, wolf), up to 2".
+  - The monsters of the chosen kind in that spawn group (or all of them) get a white frame on the map.
+- **NPCs underground** were already only drawn on their own floor (`npcFrame`), so they don't show through the ground on the surface. Nothing to change.
+- Seen in the browser near 32463,32242 (Troll 8x + Wolf 3x in one group): "3x" and "5x" markers at zoom 32, the window with both kinds, all loot, and at zoom 64 the 3 wolves and 5 trolls each on a tile.
+- Note: at zoom 16–32 the sprites are at their game size, so small monsters (wolves, rats) are easy to miss. Monster search (6d) will draw them bigger.
+
 ### Slice 6a: monster data (built 2026-11-13)
 - **monsters.json + monsters.png** (`tools/lib/monsters.js`), written by the converter:
   - `kinds`: [{ n name, hp, xp, img [x, y, w, h] in monsters.png, d displacement, loot [[client id, max count]] }]

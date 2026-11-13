@@ -78,6 +78,7 @@ export class World {
     this.doors = doors.map(([x, y, z, id, open, key, keyId]) => ({ p: [x, y, z], id, open, key, keyId }));
     this.doorAt = new Map(this.doors.map((d) => [d.p.join(','), d]));
     this.isDoorOpen = () => false; // set by the map (unlocked doors, or all opened)
+    await this.loadMonsters();
     this.buildSearch();
     this.map = map;
     this.CHUNK = map.chunk;
@@ -89,6 +90,54 @@ export class World {
       for (const [level, list] of Object.entries(levels)) for (const [bx, by] of list) this.ovExists.add(`${set}:${level}:${bx}:${by}`);
     }
     this.floors = Object.keys(map.chunks).map(Number).sort((a, b) => a - b);
+  }
+
+  // ---------- monsters ----------
+
+  // Loads monsters.json and monsters.png (older data without them: no monsters).
+  //   monKinds: [{ n, hp, xp, img, d, loot: [[item id, max count]] }]
+  //   spawnPoints: [{ p: [x, y, z], kind, amount, radius, group }]
+  //   monMarkers: what the map draws zoomed out: monsters of one kind in one spawn group within MARKER_JOIN tiles
+  //     of each other (chained) are one marker { p (the point nearest their middle), kind, count, points, group }.
+  //   spawnGroups: Map(group -> { kinds: Map(kind -> count), points })
+  async loadMonsters() {
+    let data, sheet;
+    try {
+      [data, sheet] = await Promise.all([loadJson(`${this.base}/monsters.json`), loadImage(`${this.base}/monsters.png`)]);
+    } catch { data = { kinds: [], spawns: [] }; sheet = null; }
+    this.monKinds = data.kinds;
+    this.monSheet = sheet;
+    this.spawnPoints = data.spawns.map(([x, y, z, kind, amount, radius, group]) => ({ p: [x, y, z], kind, amount, radius, group }));
+    const MARKER_JOIN = 3;
+    const groups = new Map();
+    for (const sp of this.spawnPoints) {
+      if (!groups.has(sp.group)) groups.set(sp.group, { kinds: new Map(), points: [] });
+      const g = groups.get(sp.group);
+      g.points.push(sp);
+      g.kinds.set(sp.kind, (g.kinds.get(sp.kind) || 0) + sp.amount);
+    }
+    this.spawnGroups = groups;
+    const markers = [];
+    for (const g of groups.values()) {
+      const byKind = new Map();
+      for (const sp of g.points) { if (!byKind.has(sp.kind)) byKind.set(sp.kind, []); byKind.get(sp.kind).push(sp); }
+      for (const [kind, pts] of byKind) {
+        const left = new Set(pts);
+        while (left.size) {
+          const first = left.values().next().value, cl = [first];
+          left.delete(first);
+          for (let i = 0; i < cl.length; i++) {
+            for (const o of [...left]) {
+              if (Math.max(Math.abs(o.p[0] - cl[i].p[0]), Math.abs(o.p[1] - cl[i].p[1])) <= MARKER_JOIN) { cl.push(o); left.delete(o); }
+            }
+          }
+          const mx = cl.reduce((a, q) => a + q.p[0], 0) / cl.length, my = cl.reduce((a, q) => a + q.p[1], 0) / cl.length;
+          const mid = cl.reduce((b, q) => (Math.hypot(q.p[0] - mx, q.p[1] - my) < Math.hypot(b.p[0] - mx, b.p[1] - my) ? q : b));
+          markers.push({ p: mid.p, kind, count: cl.reduce((a, q) => a + q.amount, 0), points: cl, group: first.group });
+        }
+      }
+    }
+    this.monMarkers = markers;
   }
 
   // ---------- map data ----------

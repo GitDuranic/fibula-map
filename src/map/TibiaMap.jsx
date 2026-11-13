@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
 import DoorWindow from './DoorWindow.jsx';
+import MonsterWindow from './MonsterWindow.jsx';
 import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf } from './RoutePanel.jsx';
 import { createRouter } from './engine/router.js';
@@ -226,6 +227,38 @@ function drawArrow(ctx, x, y, size, up, k) {
   ctx.fillStyle = up ? FLOOR_UP : FLOOR_DOWN; ctx.fill();
 }
 
+// Monsters (6b): only on the floor they spawn on, from MONSTERS_FROM. Zoomed out, the monsters of one kind spawning
+// close together are one marker with a count ("3x"); from MONSTERS_SPLIT each one stands on its own tile, spread
+// over its spawn's radius from the centre outwards (the server picks random tiles in the radius; this is a stand-in).
+const MONSTERS_FROM = 16, MONSTERS_SPLIT = 64;
+const SPIRAL = (() => {
+  const out = [];
+  for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) out.push([dx, dy]);
+  return out.sort((a, b) => Math.max(Math.abs(a[0]), Math.abs(a[1])) - Math.max(Math.abs(b[0]), Math.abs(b[1]))
+    || Math.hypot(...a) - Math.hypot(...b) || Math.atan2(a[1], a[0]) - Math.atan2(b[1], b[0]));
+})();
+
+// The monsters to draw for view v, back to front: [{ kind, f: [x, y], count, group }].
+function visibleMonsters(world, v, left, top, right, bottom) {
+  if (v.zoom < MONSTERS_FROM || !world.monMarkers) return [];
+  const out = [], inView = (x, y, m) => x >= left - m && x <= right + m && y >= top - m && y <= bottom + m;
+  if (v.zoom < MONSTERS_SPLIT) {
+    for (const mk of world.monMarkers) {
+      if (mk.p[2] === v.z && inView(mk.p[0], mk.p[1], 3)) out.push({ kind: mk.kind, f: [mk.p[0], mk.p[1]], count: mk.count, group: mk.group });
+    }
+  } else {
+    for (const sp of world.spawnPoints) {
+      if (sp.p[2] !== v.z || !inView(sp.p[0], sp.p[1], sp.radius + 3)) continue;
+      const spots = SPIRAL.filter(([dx, dy]) => Math.max(Math.abs(dx), Math.abs(dy)) <= sp.radius);
+      for (let i = 0; i < sp.amount; i++) {
+        const [dx, dy] = spots[i % spots.length];
+        out.push({ kind: sp.kind, f: [sp.p[0] + dx, sp.p[1] + dy], count: 1, group: sp.group });
+      }
+    }
+  }
+  return out.sort((a, b) => a.f[1] - b.f[1] || a.f[0] - b.f[0]);
+}
+
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
@@ -240,6 +273,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const viewBox = useRef(null); // the tile area on screen, from the last draw
   const selected = useRef(null); // the NPC whose window is open (drawn with a frame)
   const selectedDoor = useRef(null); // the locked door whose window is open (drawn with a frame)
+  const selectedMon = useRef(null); // the monster window's { kind | 'all', group } (its spawn drawn with frames)
   const offRef = useRef(null); // scratch canvases for the see-through along the route
   const hoverLink = useRef(null); // the floor change under the mouse (no route planned): [x, y, z, tx, ty, tz, kind]
   const [npc, setNpc] = useState(null);
@@ -252,6 +286,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [active, setActive] = useState(0); // highlighted search result
   const [item, setItem] = useState(null); // the item whose window is open: { id, fluid }
   const [door, setDoor] = useState(null); // the locked door whose window is open
+  const [mon, setMon] = useState(null); // the monster window: { kind | 'all', group }
   // Unlocked doors (see doorUnit), remembered in this browser (a convenience; it works without storage too).
   const [doors, setDoorsState] = useState(() => {
     try { const d = JSON.parse(window.localStorage.getItem('tm-doors') || '{}'); return { all: !!d.all, open: Array.isArray(d.open) ? d.open : [] }; }
@@ -405,6 +440,34 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         });
       }
       ctx.textAlign = 'center';
+    }
+
+    // Monsters on this floor (6b), under the doors' keys and the NPCs: outfit, and "3x" for a marker of several.
+    // The monsters of the spawn whose window is open get a white frame.
+    if (world.monSheet) {
+      const km = Math.max(1, Math.round(window.devicePixelRatio || 1)), fsm = Math.max(km, Math.round(s / 32));
+      const ms = visibleMonsters(world, v, left, top, right, bottom), msel = selectedMon.current;
+      for (const m of ms) {
+        const kd2 = world.monKinds[m.kind];
+        if (!kd2.img) continue;
+        const r = npcRect(kd2, m.f, ox, oy, s, km);
+        ctx.imageSmoothingEnabled = r.sc < 1;
+        ctx.drawImage(world.monSheet, kd2.img[0], kd2.img[1], kd2.img[2], kd2.img[3], r.x, r.y, r.w, r.h);
+        if (msel && m.group === msel.group && (msel.kind === 'all' || msel.kind === m.kind)) {
+          ctx.strokeStyle = '#fff'; ctx.lineWidth = km;
+          ctx.strokeRect(ox + m.f[0] * s + km / 2, oy + m.f[1] * s + km / 2, s - km, s - km);
+        }
+      }
+      ctx.imageSmoothingEnabled = false;
+      for (const m of ms) {
+        if (m.count < 2) continue;
+        const t = m.count + 'x', w = textWidth(world.font, t) * fsm;
+        ctx.save();
+        ctx.translate(Math.round(ox + (m.f[0] + 1) * s - w), Math.round(oy + (m.f[1] + 1) * s - 12 * fsm));
+        ctx.scale(fsm, fsm);
+        drawText(ctx, world.font, t, 0, 0, '#ffffff');
+        ctx.restore();
+      }
     }
 
     // Locked doors: the key they need, over the door (faint when its number isn't known); a white frame on the
@@ -593,6 +656,23 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         inName = p.x >= r.cx - w / 2 && p.x < r.cx + w / 2 && p.y >= ny && p.y < ny + 14 * fs;
       }
       if (inPic || inTile || inName) hit = n; // later = drawn on top
+    }
+    return hit;
+  };
+
+  // The monster drawn at canvas point p (its outfit or its tile), or null: { kind, group, ... }. The front one wins.
+  const monsterAtPoint = (p) => {
+    const world = worldRef.current, c = canvasRef.current, v = view.current, s = anim.current.s, b = viewBox.current;
+    if (!world?.monSheet || !c || !b) return null;
+    const ox = Math.round(c.width / 2 - v.x * s), oy = Math.round(c.height / 2 - v.y * s);
+    const k = Math.max(1, Math.round(window.devicePixelRatio || 1));
+    let hit = null;
+    for (const m of visibleMonsters(world, v, b.left, b.top, b.right, b.bottom)) {
+      const kd2 = world.monKinds[m.kind];
+      if (!kd2.img) continue;
+      const r = npcRect(kd2, m.f, ox, oy, s, k);
+      const tx = ox + m.f[0] * s, ty = oy + m.f[1] * s;
+      if ((p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h) || (p.x >= tx && p.x < tx + s && p.y >= ty && p.y < ty + s)) hit = m;
     }
     return hit;
   };
@@ -821,13 +901,20 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const selectNpc = useCallback((n) => {
     selected.current = n;
     setNpc(n);
-    if (n) { setItem(null); selectedDoor.current = null; setDoor(null); }
+    if (n) { setItem(null); selectedDoor.current = null; setDoor(null); selectedMon.current = null; setMon(null); }
+    redraw();
+  }, [redraw]);
+  // Opens the monster window ({ kind | 'all', group }) or closes it (null).
+  const selectMonster = useCallback((m) => {
+    selectedMon.current = m;
+    setMon(m);
+    if (m) { setItem(null); selected.current = null; setNpc(null); selectedDoor.current = null; setDoor(null); }
     redraw();
   }, [redraw]);
   const selectDoor = useCallback((d) => {
     selectedDoor.current = d;
     setDoor(d);
-    if (d) { setItem(null); selected.current = null; setNpc(null); }
+    if (d) { setItem(null); selected.current = null; setNpc(null); selectedMon.current = null; setMon(null); }
     redraw();
   }, [redraw]);
   // Unlocking and locking: the doors are drawn again (open or closed) and the route searched again.
@@ -891,7 +978,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       setHover(tileAt(p));
       const l = floorChangeAtPoint(p);
       setHoverLink(l);
-      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
+      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
       return;
     }
     setHoverLink(null);
@@ -936,12 +1023,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     }
     drag.current = null;
     if (d && !d.moved) {
-      // A click: open the NPC there, else the locked door there, else go to the floor a hole, stairs or ladder
-      // leads to (no route planned), else close.
-      const p = toCanvas(e), n = npcAtPoint(p), dr = !n && doorAtPoint(p), l = !n && !dr && floorChangeAtPoint(p);
+      // A click: open the NPC there, else the monster, else the locked door, else go to the floor a hole, stairs or
+      // ladder leads to (no route planned), else close.
+      const p = toCanvas(e), n = npcAtPoint(p), m = !n && monsterAtPoint(p), dr = !n && !m && doorAtPoint(p);
+      const l = !n && !m && !dr && floorChangeAtPoint(p);
       if (n) selectNpc(n);
+      else if (m) selectMonster({ kind: m.kind, group: m.group });
       else if (l) { setHoverLink(null); setFloor(l[5]); }
-      else { selectNpc(null); selectDoor(dr || null); }
+      else { selectNpc(null); selectMonster(null); selectDoor(dr || null); }
       return;
     }
     if (d && performance.now() - d.t < 80) {
@@ -1120,6 +1209,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             onSwap={() => updateRoute({ from: route.to, to: route.from })}
             onShow={() => showRoute(route.result?.routes?.[route.pick]?.path)} onPick={pickRoute}
             onClose={clearRoute} doorsAll={doors.all} onDoorsAll={(all) => setDoors({ ...doors, all })}
+          />
+        )}
+        {mon && world && (
+          <MonsterWindow
+            world={world} sel={mon} onPick={(kind) => selectMonster({ ...mon, kind })}
+            onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectMonster(null)}
           />
         )}
         {door && world && (
