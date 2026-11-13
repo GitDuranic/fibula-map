@@ -206,6 +206,17 @@ for (const [x, y, z, tx, ty, tz] of teleports) {
   else if (intoRook(x, y, tx, ty)) rookTeleports.push(`${x},${y},${z} -> ${tx},${ty},${tz}`);
   else walk.links.push([x, y, z, tx, ty, tz, LINK_KINDS.indexOf('teleport')]);
 }
+// Floor changes made by a script (a lever opens a hole, ...): not on the map, so listed by hand in
+// tools/data/scripted-links.json: [{ from: [x,y,z], to: [x,y,z], kind, note }].
+{
+  let scripted = [];
+  try { scripted = JSON.parse(fs.readFileSync('tools/data/scripted-links.json', 'utf8')); } catch {}
+  for (const s of scripted) {
+    if (!tileAt(...s.to)) { log(`Scripted link without a destination on the map, left out: ${s.from} -> ${s.to}`); continue; }
+    walk.links.push([...s.from, ...s.to, LINK_KINDS.indexOf(s.kind)]);
+  }
+  log(`Scripted links: ${scripted.length}`);
+}
 if (rookTeleports.length) log(`Teleports from the mainland to Rookgaard, left out: ${rookTeleports.join('; ')}`);
 if (badTeleports.length) log(`Teleports without a destination on the map, left out: ${badTeleports.length} (${badTeleports.slice(0, 8).join('; ')}${badTeleports.length > 8 ? '; ...' : ''})`);
 {

@@ -393,6 +393,32 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 
 ## Decisions made while building
 
+### Faster routes (built 2026-11-14, user: "path finding is kind of slow")
+- **Measured first** (Node benchmark on the real data, level 8, no haste):
+  - The slow part was the cheapest route: walking only, and walking routes wind around water and mountains, so the search covers 200k–600k tiles.
+  - "No route" searched the whole map twice (locked doors closed, then all open): 6–14 s.
+  - Each tile cost about 5 µs, mostly bookkeeping: Maps with large number keys, small arrays, and an estimate that looked at every passage and forcefield for every tile.
+- **Ideas considered and dropped:**
+  - A quick first path, improved afterwards: the usual way (weighting the estimate ×2, so the search heads straight for the goal) made it 2–4 times *slower*. Islands and winding tunnels lead the straight line into dead ends.
+  - Ignoring ground speed behind a checkbox: a tighter estimate only saved 5–20% of the work, and routes would no longer be the fastest. Level and character speed cost nothing in the search: level only decides the Oracle, and speed scales every step equally.
+  - A Fastest/Cheapest mode switch before searching: the user preferred showing the fastest first and the cheapest after.
+- **What was built** (the routes are exactly the same as before: steps, gold and time, checked on 6 routes):
+  - **Fastest first:** the fastest route is shown as soon as it's found. When it costs gold, "Looking for a cheaper way..." shows while the cheapest is searched, and the Fastest/Cheapest buttons appear when a cheaper one exists. A new route request (or Clear route) stops that search: it pauses every 65,536 tiles to let messages in.
+  - **Typed arrays:** every tile has a number (its place in walk.bin), and tiles the search uses (walkable, or a link's start or end) have a compact number, so the bookkeeping is in typed arrays reused between searches. Links and locked doors are flagged per tile, so most neighbours need no lookup. Neighbours inside a chunk are found by offset (±1, ±32).
+  - **A better estimate:** Manhattan distance instead of Chebyshev (a diagonal step costs 3 straight ones, so walking takes at least the Manhattan distance in steps). It's worked out once per tile per search. For the cheapest route, passages that cost gold are left out of it.
+  - **"Not connected" at once:** at load, the map is split into walking areas (all doors open; stairs, holes and forcefields don't join areas), joined one way by floor changes and passages (with their level). A small search over that graph rules out impossible routes before the real search. Locked doors still need the real search (with doors, then all open).
+- **Result** (same machine; before: both routes together):
+
+  | Route | Before | Fastest shown | Cheapest too |
+  |---|---|---|---|
+  | Thais → Carlin | 3.0 s | 20 ms | 0.3 s |
+  | Thais → Darashia | 5.8 s | 73 ms | 0.5 s |
+  | Fibula → Demona | 7.1 s | 0.3 s | 0.6 s |
+  | Thais → Fibula dragons (not connected) | 12.3 s | 1 ms | – |
+
+  - Loading the router (once, on the first route) takes about 0.3 s and 54 MB.
+- **Later, if long routes are still too slow:** a network of main routes prepared by the converter (hierarchical path finding).
+
 ### Named locations (built 2026-11-13, user)
 - **What the user asked:** add searchable locations by right-clicking → "Add location here" and typing a name; more than one name per square; the names are searchable. "Later on we can remove the function to add locations … I just want to use this to mark some locations with new names."
 - **Stored in the repo** (`tools/data/custom-places.json`, `[{ n, p }]`), so the names stay when the adding goes. The dev server has a small endpoint for it (`/__custom-places` in vite.config.js: GET the list, POST `{ add }` or `{ remove }`); the file is kept out of Vite's file watching.
@@ -671,6 +697,11 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - **grate** (430): the tile straight below.
   - **dig** (holes 468, 481, 483, loose stone piles): like a hole (down).
   - **well** (added 2026-11-13, user: "the well in fibula is also something that's clickable to go down"): a draw well (an item named "… well") with a ladder straight below it goes down to that ladder's tile, used from the well or next to it, like a grate. TVP has no script for wells, so wells without a ladder below stay plain decoration. On 7.1 that's the Fibula well (32172,32439,7 → floor 8). New kinds go at the end of `LINK_KINDS`, because links.json stores the index.
+- **Scripted floor changes** (added 2026-11-13, user: the Demona hole "should also be routable"):
+  - Some holes are opened by a lever script, so the map only shows plain floor there.
+  - They're listed by hand in `tools/data/scripted-links.json` (`from`, `to`, `kind`, `note`), and the converter adds them to links.json. They then work like any other floor change: hover preview, click, routes.
+  - **Demona entrance:** 32483,31633,9 → 32483,31633,10. The lever is at 32528,31724,10, about 90 squares away and one floor down. In TVP's script the hole stays open once pulled (pulling again only moves the lever), so it counts as always open.
+  - **Other lever spots in TVP**, not added yet: the Thais lighthouse entrance (32225,32276,8), the Kazordoon ladder lever (32605,31902,4), Port Hope's dworc hole (not on 7.1), the McRonald pig pen (32400,32239–41,6).
 - **7.1 result:** 791,795 walkable tiles; ground speeds 90–200. Links: step 2920, ladder 1195, grate 76, rope 546, dig 108. 2 links have no destination tile and are left out.
 - **Debug view** `?debug=walk` (zoom 16+, the floor you're on): red = a tile that exists but can't be walked on; a blue ↓ / orange ↑ square with the kind's letter (S step, L ladder, G grate, R rope, D dig) = a floor change. Checked in Thais (streets, houses, stairs, grates) and on floor 8 below Thais (tunnels, ladders).
 - The walk data loads only in debug mode for now; the router (3b) will load it in a web worker.

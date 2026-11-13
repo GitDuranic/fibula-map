@@ -203,6 +203,7 @@
 .tm-door-text { display: flex; flex-direction: column; min-width: 0; }
 .tm-door-num, .tm-door-pos { color: #8a8a8a; }
 .tm-route-locked { margin-top: 2px; color: #c0c0c0; }
+.tm-route-note { margin-bottom: 4px; color: #a0a0a0; font-style: italic; }
 
 /* monster window: loot rows and spawn rows are buttons (open the item / pick the monster) */
 .tm-loot { padding: 0; font: inherit; color: inherit; text-align: left; background: none; border: 0; cursor: pointer; }

@@ -1,0 +1,8 @@
+[
+  {
+    "from": [32483, 31633, 9],
+    "to": [32483, 31633, 10],
+    "kind": "step",
+    "note": "Demona entrance: a hole the lever at 32528,31724,10 opens (TVP actions/map/carlin/demona_lever_entrance.lua); it stays open, so it counts as open"
+  }
+]

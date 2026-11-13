@@ -111,7 +111,7 @@ map data, so they're also searchable on a built site, where adding and removing 
 |---|---|
 | `src/map/` | The map: React components, drawing, the route finder (`engine/router.js`). |
 | `tools/` | The converter (`convert-map.js`) and its parts in `tools/lib/`. |
-| `tools/data/` | `wikiquests.json` (TibiaWiki quests up to 7.1) and `custom-places.json` (locations you named on the map). |
+| `tools/data/` | `wikiquests.json` (TibiaWiki quests up to 7.1), `custom-places.json` (locations you named on the map) and `scripted-links.json` (holes and such that a lever opens, so they're not on the map; added by hand). |
 | `assets/client/` | `Tibia.dat`, `Tibia.spr`, `Tibia.pic`: the game client's files (7.6 format, 7.1 item data). |
 | `assets/map71/` | `Tibia71.otbm` (the 7.1 map, converted to TVP item ids) and `Tibia71-spawn.xml` (NPC and monster spawns). |
 | `assets/tvp-data/` | The parts of TVP's data the converter reads: items, door and key ids, NPCs, monsters, quest chests, the 7.6 map. TVP is a community fork of [The Forgotten Server](https://github.com/otland/forgottenserver), GPL-2; its licence is in `assets/tvp-data/LICENSE`. |

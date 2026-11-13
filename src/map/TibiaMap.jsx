@@ -1101,14 +1101,27 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         r.busy = true; r.result = null;
         router.current ||= createRouter(dataUrl);
         const speed = speedOf(charRef.current); // the time shown is worked out again when the settings change
-        router.current.route(r.from.pos, r.to.pos, speed, Number(charRef.current.level) || 1, doorsRef.current).then((res) => {
+        const args = [r.from.pos, r.to.pos, speed, Number(charRef.current.level) || 1, doorsRef.current];
+        r.cheapBusy = false;
+        // The fastest route first, shown as soon as it's found; then, when it costs gold, the cheapest is searched
+        // and added when it's cheaper. A newer request stops that search in the worker.
+        router.current.route(...args).then((res) => {
           if (seq !== routeSeq.current) return; // a newer request
           const path = res.routes?.[0].path || null;
           routePath.current = path;
-          setRoute((cur) => ({ ...cur, busy: false, result: res, pick: 0 }));
+          setRoute((cur) => ({ ...cur, busy: false, cheapBusy: !!res.cheaper, result: res, pick: 0 }));
           if (path && !keepView) showRoute(path); else redraw();
+          if (!res.cheaper) return;
+          router.current.cheapest(...args).then((c) => {
+            if (seq !== routeSeq.current || c.cancelled) return;
+            setRoute((cur) => {
+              const fast = cur.result?.routes?.[0];
+              const routes = c.path && fast && c.gold < fast.gold ? [fast, { name: 'Cheapest', ...c }] : cur.result.routes;
+              return { ...cur, cheapBusy: false, result: { ...cur.result, routes } };
+            });
+          });
         });
-      } else { r.busy = false; r.result = null; }
+      } else { r.busy = false; r.cheapBusy = false; r.result = null; }
       redraw();
       return r;
     });
@@ -1131,7 +1144,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   useEffect(() => {
     if (routeRef.current.from && routeRef.current.to) updateRoute({}, true);
   }, [oracleLevel, doorsKey, updateRoute]);
-  const clearRoute = () => { routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
+  const clearRoute = () => { routeSeq.current++; router.current?.cancel(); routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
 
   const selectNpc = useCallback((n) => {
     selected.current = n;
