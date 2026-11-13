@@ -42,7 +42,9 @@ const NPCS_FROM = 4, NAMES_FROM = 16, OUTFIT_MIN = 0.75;
 // Zooming in to MAIN_FROM switches to the area's main level, "this floor only": the ground floor, or the level of
 // the streets where they are higher up (Venore: +1). Ctrl + wheel goes up or down from there; zooming back out
 // brings the roofs back.
-const MAIN_FROM = 64;
+const MAIN_FROM = 32; // was 64; user 2026-11-13: one step earlier, to see into buildings sooner
+// How close Go to, search results and "Show" route fly in (at least), and the closest zoom a route is fitted at.
+const FLY_ZOOM = 64;
 const MAIN_LEVELS = [
   { name: 'Venore', x1: 32915, y1: 32015, x2: 33060, y2: 32140, z: 6 }, // streets on +1 (floor-6 ground, see the doc)
 ];
@@ -556,13 +558,13 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     viewChanged();
   }, [viewChanged]);
 
-  // Flies the map to tile (x, y) on floor z at a zoom (default: at least MAIN_FROM). Zoomed in on the surface it
+  // Flies the map to tile (x, y) on floor z at a zoom (default: at least FLY_ZOOM). Zoomed in on the surface it
   // shows that floor only, so the place isn't hidden under a roof; `cut` overrides that.
   const hashTimerFly = useRef(0);
   const goTo = useCallback((p, { zoom, cut } = {}) => {
     const v = view.current;
     if (worldRef.current?.floors.includes(p.z)) v.z = p.z;
-    v.zoom = zoom ?? Math.max(v.zoom, MAIN_FROM);
+    v.zoom = zoom ?? Math.max(v.zoom, FLY_ZOOM);
     v.cut = cut ?? (v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0);
     anim.current.anchor = null;
     const dist = Math.hypot(p.x + 0.5 - v.x, p.y + 0.5 - v.y);
@@ -580,7 +582,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (!path?.length || !c) return;
     const xs = path.map((pt) => pt[0]), ys = path.map((pt) => pt[1]);
     const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys), y2 = Math.max(...ys);
-    const fit = [...ZOOMS].reverse().find((z) => z <= MAIN_FROM && (x2 - x1 + 6) * z <= c.width * 0.9 && (y2 - y1 + 6) * z <= c.height * 0.9) ?? ZOOMS[0];
+    const fit = [...ZOOMS].reverse().find((z) => z <= FLY_ZOOM && (x2 - x1 + 6) * z <= c.width * 0.9 && (y2 - y1 + 6) * z <= c.height * 0.9) ?? ZOOMS[0];
     const z0 = path[0][2];
     goTo({ x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2), z: z0 }, { zoom: fit, cut: fit >= MAIN_FROM && z0 <= 7 ? z0 : 0 });
   }, [goTo]);

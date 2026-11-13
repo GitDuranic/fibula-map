@@ -422,9 +422,10 @@ Agree each slice before building it, then build one at a time.
 - Tested: Al Dee (sells 26, buys 24); Captain Bluebear → Edron jumps to the Edron ship.
 - **Changed after user feedback (2026-11-12): main level and NPCs over the roofs.**
   - **Main level** (user: "when you zoom in close enough it should go to the main level, … main level is the most important level; around Venore it should go to +1, as that is where the normal roads are"):
-    - Zooming in to 64 (MAIN_FROM) switches to the main level of the place zoomed into, "This floor only". From there Ctrl + wheel goes up or down. Zooming back out below 64 brings the roofs back.
+    - Zooming in to 32 (MAIN_FROM; 64 until 2026-11-13) switches to the main level of the place zoomed into, "This floor only". From there Ctrl + wheel goes up or down. Zooming back out below 32 brings the roofs back.
+    - **Moved from 64 to 32 (2026-11-13, user):** one zoom step earlier, so you can see into buildings sooner while zooming in. Go to, search results and "Show" route still fly in to at least 64 (FLY_ZOOM), and routes are still fitted at 64 at the closest.
     - The main level is floor 7, except in MAIN_LEVELS: Venore x 32915–33060, y 32015–32140 → floor 6. The box comes from where floor 6 has many ground tiles (the raised streets around the temple at 32957,32076).
-    - The same applies to links opened at zoom 64+, Go to and travel jumps (that floor only), the floor buttons (zoomed in: this floor only), and pinch.
+    - The same applies to links opened at zoom 32+, Go to and travel jumps (that floor only), the floor buttons (zoomed in: this floor only), and pinch.
     - Underground (after Ctrl + wheel) the floor stays as it is.
     - This brings back the earlier "inside at 64" switch, now with the main level and Ctrl + wheel to move from it.
   - **NPCs** (user: "the yellow markers are a little small, maybe just show the NPC outfit and name over the roofs"):
