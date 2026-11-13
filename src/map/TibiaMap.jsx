@@ -464,11 +464,27 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       const g = { ox, oy, s, W, H, left, top, right, bottom, C, ts };
       if (routePath.current) seeThrough(ctx, world, v, routePath.current, g, budget, offRef);
       // Hover preview (5d): where the hole, stairs or ladder under the mouse leads, also with a route (user), on top.
-      if (hoverLink.current && hoverLink.current[2] === v.z && !(hoverLink.current[5] < v.z && v.z <= 7 && hoverLink.current[5] >= v.cut)) {
-        seePreview(ctx, world, v, hoverLink.current, g, budget, offRef); // (a floor above that is already drawn: nothing to add)
+      const hl = hoverLink.current, hoverTele = hl && world.isTeleport(hl);
+      if (hl && !hoverTele && hl[2] === v.z && !(hl[5] < v.z && v.z <= 7 && hl[5] >= v.cut)) {
+        seePreview(ctx, world, v, hl, g, budget, offRef); // (a floor above that is already drawn: nothing to add)
+      }
+      // A hovered forcefield: a purple ring on it, and where it leads when that's on this floor and close enough
+      // to see, a ring there with a dashed line to it. Clicking goes there.
+      if (hoverTele && hl[2] === v.z) {
+        const kk = Math.max(1, Math.round(window.devicePixelRatio || 1));
+        const ring = (x, y) => { ctx.beginPath(); ctx.arc(ox + (x + 0.5) * s, oy + (y + 0.5) * s, Math.max(8 * kk, s * 0.55), 0, 2 * Math.PI); ctx.stroke(); };
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 5 * kk; ring(hl[0], hl[1]);
+        ctx.strokeStyle = '#c050ff'; ctx.lineWidth = 3 * kk; ring(hl[0], hl[1]);
+        if (hl[5] === v.z && hl[3] >= left && hl[3] <= right && hl[4] >= top && hl[4] <= bottom) {
+          ctx.setLineDash([6 * kk, 5 * kk]);
+          ctx.beginPath(); ctx.moveTo(ox + (hl[0] + 0.5) * s, oy + (hl[1] + 0.5) * s); ctx.lineTo(ox + (hl[3] + 0.5) * s, oy + (hl[4] + 0.5) * s); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.strokeStyle = '#000'; ctx.lineWidth = 5 * kk; ring(hl[3], hl[4]);
+          ctx.strokeStyle = '#c050ff'; ctx.lineWidth = 3 * kk; ring(hl[3], hl[4]);
+        }
       }
       // The hovered floor change gets an arrow: up or down.
-      if (hoverLink.current && hoverLink.current[2] === v.z) {
+      if (hl && !hoverTele && hl[2] === v.z) {
         const l = hoverLink.current, kk = Math.max(1, Math.round(window.devicePixelRatio || 1));
         drawArrow(ctx, ox + (l[0] + 0.5) * s, oy + (l[1] + 0.5) * s, Math.max(12 * kk, s * 0.6), l[5] < l[2], kk);
       }
@@ -1054,6 +1070,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     jump({ x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2), z }, { zoom: fit, cut: fit >= MAIN_FROM && z <= 7 ? z : 0 });
   };
 
+  // Home: the whole world on the surface (floor 7, all layers), at the closest zoom where it fits. Back undoes it.
+  const goHome = () => {
+    const b = worldRef.current?.bounds, c = canvasRef.current;
+    if (!b || !c) return;
+    const fit = [...ZOOMS].reverse().find((zz) => (b.x2 - b.x1) * zz <= c.width && (b.y2 - b.y1) * zz <= c.height) ?? ZOOMS[0];
+    jump({ x: Math.round((b.x1 + b.x2) / 2), y: Math.round((b.y1 + b.y2) / 2), z: 7 }, { zoom: fit, cut: 0 });
+  };
+
   // Shows the whole route: centred, at the closest zoom where it fits, on the floor it starts on.
   const showRoute = useCallback((path) => {
     const c = canvasRef.current;
@@ -1175,13 +1199,13 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     }
   };
 
-  // The floor change at canvas point p, for the hover preview and a click to that floor (with or without a route),
-  // zoomed in far enough to see the sprites. Null otherwise.
+  // The floor change (or magic forcefield) at canvas point p, for the hover preview and a click to that floor or to
+  // where the forcefield leads (with or without a route), zoomed in far enough to see the sprites. Null otherwise.
   const floorChangeAtPoint = (p) => {
     const world = worldRef.current, v = view.current;
     if (!world?.links || v.zoom < SPRITES_FROM) return null;
     const t = tileAt(p);
-    const l = world.floorChangeAt(t.x, t.y, v.z);
+    const l = world.floorChangeAt(t.x, t.y, v.z) || world.teleportAt(t.x, t.y, v.z);
     return l && world.floors.includes(l[5]) ? l : null;
   };
   const setHoverLink = (l) => {
@@ -1254,6 +1278,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         selectMonster({ kind: sm.kind, group: sm.group });
       }
       else if (m) selectMonster({ kind: m.kind, group: m.group });
+      else if (l && worldRef.current.isTeleport(l)) {
+        // A forcefield: go to where it leads (Back returns), at the same zoom.
+        setHoverLink(null);
+        jump({ x: l[3], y: l[4], z: l[5] }, { zoom: view.current.zoom });
+      }
       else if (l) { setHoverLink(null); setFloor(l[5]); }
       else { selectNpc(null); selectMonster(null); selectQuest(null); selectDoor(dr || null); }
       return;
@@ -1306,6 +1335,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       ArrowUp: () => panBy(0, step), ArrowDown: () => panBy(0, -step),
       '+': () => zoomBy(1), '=': () => zoomBy(1), '-': () => zoomBy(-1),
       PageUp: () => setFloor(view.current.z - 1), PageDown: () => setFloor(view.current.z + 1),
+      Home: goHome,
     };
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
   };
@@ -1427,6 +1457,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             <label htmlFor="tm-search">Search</label>
             <span className="tm-search-btns">
               <button type="button" className="tm-btn" onClick={goBack} disabled={!backCount} title="Back to where you were (or the browser's back key)">Back</button>
+              <button type="button" className="tm-btn" onClick={goHome} title="Show the whole world (Home key)">Home</button>
               <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
             </span>
           </div>

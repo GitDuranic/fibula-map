@@ -446,6 +446,9 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
     - The hash updates keep that mark (`replaceState` with the current state).
     - The Back button then simply goes back in the browser's history, so both stay in step.
   - Embedded without the URL (Ryndean's site, `syncUrl` off), only the button works, from its own list.
+- **Home** (added 2026-11-13, user: "its easy to get lost"):
+  - The Home button (next to Back) and the Home key show the whole world: the surface (floor 7) with all layers, centred on the map's bounds, at the closest zoom step where it fits (0.5 on a normal screen).
+  - It's a jump, so Back returns to where you were.
 - Seen in the browser: troll spawn → wooden shield (loot) → Willard in Edron (flew there) → Back: the troll spawn again, with the troll and wooden shield windows open.
 
 ### Slice 6b: monsters on the map (built 2026-11-13)
@@ -482,12 +485,16 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - TibiaWiki checked in the browser (the fetch tool is refused by the site): no drop chances older than 8.2.
 
 ### Slice 5d: hover preview and click to change floor (built 2026-11-13)
-- **Without a route**, zoomed in to 16 or closer: hovering a floor change on the floor you're looking at shows the floor it leads to around where you land. That covers stairs, ramps, holes, ladders, grates, rope spots and stone piles; forcefields can go far away, so they're left out.
+- **Without a route**, zoomed in to 16 or closer: hovering a floor change on the floor you're looking at shows the floor it leads to around where you land. That covers stairs, ramps, holes, ladders, grates, rope spots and stone piles. ~~Forcefields can go far away, so they're left out.~~ Forcefields have their own hover and click, see below.
   - It uses the same see-through drawing as along a route: full for 3 tiles, fading out to 7, at 80 %.
   - The hovered tile itself stays clear, so you still see the hole or stairs you point at.
   - A floor above that is already drawn (the surface at zoom 16, with its roofs) gets no preview.
 - **Clicking it goes to that floor** (the floor buttons' rule: zoomed in, this floor only). An NPC or locked door on the tile comes first, as proposed. The cursor is a pointer over floor changes.
 - ~~With a route planned there's no hover preview or click to another floor.~~ **Changed (user, 2026-11-13): also with a route.** The hover preview (see-through and arrow) is drawn on top of the see-through along the route (5c), and a click still goes to that floor. Seen in the browser: on the Thais depot route, hovering the stairs shows floor 6 with the orange up arrow.
+- **Forcefields too (user, 2026-11-13: "teleporters should also be clickable to go to their location"):**
+  - Hovering a magic forcefield draws a purple ring on it. When it leads somewhere on the same floor that's in view, a dashed line goes to a second ring there. There's no see-through preview, because the destination is often far away.
+  - Clicking it flies to where it leads, at the same zoom. It's a jump, so Back returns.
+  - The route planner already used forcefields since slice 4 (26 on 7.1, Rookgaard ones left out); they show as purple on the route.
 - **Code:**
   - The see-through drawing is now one function for a floor in a band (`seeBand`), used by `seeThrough` (route) and `seePreview` (hover).
   - The World loads only links.json (160 KB) for this (`loadLinks`, `floorChangeAt`), when the map has loaded; `loadWalk` (debug view) reuses it.
@@ -663,6 +670,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - **ladder** (1386, 3678) and **rope** (ropeSpots 384, 418): one floor up, on the tile south of the spot. If that's not walkable, the first walkable of N, E, W, W, SW, SE, NW, NE (Position:moveUpstairs).
   - **grate** (430): the tile straight below.
   - **dig** (holes 468, 481, 483, loose stone piles): like a hole (down).
+  - **well** (added 2026-11-13, user: "the well in fibula is also something that's clickable to go down"): a draw well (an item named "… well") with a ladder straight below it goes down to that ladder's tile, used from the well or next to it, like a grate. TVP has no script for wells, so wells without a ladder below stay plain decoration. On 7.1 that's the Fibula well (32172,32439,7 → floor 8). New kinds go at the end of `LINK_KINDS`, because links.json stores the index.
 - **7.1 result:** 791,795 walkable tiles; ground speeds 90–200. Links: step 2920, ladder 1195, grate 76, rope 546, dig 108. 2 links have no destination tile and are left out.
 - **Debug view** `?debug=walk` (zoom 16+, the floor you're on): red = a tile that exists but can't be walked on; a blue ↓ / orange ↑ square with the kind's letter (S step, L ladder, G grate, R rope, D dig) = a floor change. Checked in Thais (streets, houses, stairs, grates) and on floor 8 below Thais (tunnels, ladders).
 - The walk data loads only in debug mode for now; the router (3b) will load it in a web worker.

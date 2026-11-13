@@ -4,7 +4,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const LINK_KINDS = ['step', 'ladder', 'grate', 'rope', 'dig', 'teleport'];
+// New kinds go at the end: the index is stored in links.json.
+export const LINK_KINDS = ['step', 'ladder', 'grate', 'rope', 'dig', 'teleport', 'well'];
 const LADDERS_UP = new Set([1386, 3678]); // teleport.lua: used to go up
 const GRATES_DOWN = new Set([430]); // teleport.lua: used to go down
 
@@ -32,6 +33,9 @@ export function walkRules({ dataDir, itemInfo, dat }) {
     else if (GRATES_DOWN.has(sid)) use = 'grate';
     else if (ropeSpots.has(sid)) use = 'rope';
     else if (digSpots.has(sid)) use = 'dig';
+    // A draw well with a ladder straight below it is a way down (the well in Fibula; user). TVP has no script for
+    // it, so only wells over a ladder count (see buildWalk).
+    else if (/(^| )well$/.test(itemInfo.server.get(sid)?.name || '')) use = 'well';
     const door = doors.has(sid);
     // items.otb flag 1 = blocks movement ("block solid"). Doors count as open (user: ignore doors).
     const block = !!(flags & 1) && !door;
@@ -114,6 +118,10 @@ export function buildWalk({ tileAt, rules }) {
     if (use === 'ladder' || use === 'rope') addLink(x, y, z, up(x, y, z), use);
     else if (use === 'grate') addLink(x, y, z, tileAt(x, y, z + 1) ? [x, y, z + 1] : null, 'grate');
     else if (use === 'dig') addLink(x, y, z, down(x, y, z), 'dig');
+    else if (use === 'well') {
+      const below = tileAt(x, y, z + 1);
+      if (below && ids(below).some((id) => rules.get(id)?.use === 'ladder')) addLink(x, y, z, [x, y, z + 1], 'well');
+    }
   };
   return { speedAt, links, visitTile, skipped: () => skipped };
 }
