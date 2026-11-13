@@ -352,6 +352,10 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - The see-through drawing is now one function for a floor in a band (`seeBand`), used by `seeThrough` (route) and `seePreview` (hover).
   - The World loads only links.json (160 KB) for this (`loadLinks`, `floorChangeAt`), when the map has loaded; `loadWalk` (debug view) reuses it.
 - Seen in the browser: hovering the hole at 33309,31996,7 showed floor 8 with its stairs around the hole, and clicking it went to floor 8.
+- **Up and down arrows** (user, 2026-11-13: "to show if you're going up or down it should show a small up or down arrow on the ladder or hole"):
+  - The hovered floor change gets an arrow: orange pointing up, blue pointing down, with a black outline, about 0.6 of a tile (at least 12 px).
+  - On a planned route, each floor change gets the same arrow (0.5 of a tile) instead of the big dot, at that floor's visibility (5b). Forcefields and boats on the same floor keep their dots.
+  - Seen in the browser: a blue down arrow on the hole at 33309,31996,7; on the Thais depot route an orange up arrow on the stairs and a fainter blue down arrow on floor 6.
 
 ### Slice 5c: see-through along the route (built 2026-11-13, an experiment to tune with the user)
 - **Where the route is on another floor up to 2 floors away** (above or below), that floor is drawn over the current one in a band along the path. So the floor you're on looks see-through there.

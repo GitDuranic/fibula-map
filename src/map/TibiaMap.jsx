@@ -212,6 +212,20 @@ function seePreview(ctx, world, v, link, g, budget, offRef) {
   seeBand(ctx, world, v, link[5], [[link[3], link[4]]], keep, g, budget, offRef);
 }
 
+// A small arrow on a floor change, up or down (user: so you see whether you're going up or down), centred on
+// (x, y), `size` screen pixels high, in `color` with a black outline (k: screen pixels per client pixel).
+const FLOOR_UP = '#ffa000', FLOOR_DOWN = '#3080ff';
+function drawArrow(ctx, x, y, size, up, k) {
+  const h = size / 2, w = size * 0.42, sy = up ? 1 : -1;
+  const pts = [[0, -h], [w, -h * 0.05], [w * 0.42, -h * 0.05], [w * 0.42, h], [-w * 0.42, h], [-w * 0.42, -h * 0.05], [-w, -h * 0.05]];
+  ctx.beginPath();
+  pts.forEach(([px, py], i) => (i ? ctx.lineTo(x + px, y + py * sy) : ctx.moveTo(x + px, y + py * sy)));
+  ctx.closePath();
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2 * k; ctx.stroke();
+  ctx.fillStyle = up ? FLOOR_UP : FLOOR_DOWN; ctx.fill();
+}
+
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
@@ -337,6 +351,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       // Hover preview without a route (5d): where the hole, stairs or ladder under the mouse leads.
       else if (hoverLink.current && hoverLink.current[2] === v.z && !(hoverLink.current[5] < v.z && v.z <= 7 && hoverLink.current[5] >= v.cut)) {
         seePreview(ctx, world, v, hoverLink.current, g, budget, offRef); // (a floor above that is already drawn: nothing to add)
+      }
+      // The hovered floor change gets an arrow: up or down.
+      if (!routePath.current && hoverLink.current && hoverLink.current[2] === v.z) {
+        const l = hoverLink.current, kk = Math.max(1, Math.round(window.devicePixelRatio || 1));
+        drawArrow(ctx, ox + (l[0] + 0.5) * s, oy + (l[1] + 0.5) * s, Math.max(12 * kk, s * 0.6), l[5] < l[2], kk);
       }
       if (budget.n < 0) more = true;
     }
@@ -517,8 +536,15 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         // rp[i - 1] is the stairs, hole or ladder itself (5a), so the big dot sits on it.
         // Where you change floor (orange up, blue down), take a forcefield (purple) or a passage (light blue),
         // and a smaller dot where you arrive.
-        const color = how === 'npc' ? '#7fd8ff' : how === 'teleport' ? '#b040ff' : up ? '#ffa000' : '#3080ff';
-        dot(rp[i - 1], color, 5 * k);
+        const color = how === 'npc' ? '#7fd8ff' : how === 'teleport' ? '#b040ff' : up ? FLOOR_UP : FLOOR_DOWN;
+        // A floor change gets an arrow (up or down) instead of the big dot.
+        const a = alpha(rp[i - 1][2]);
+        if (rp[i][2] !== rp[i - 1][2] && a) {
+          const [x, y] = at(rp[i - 1]);
+          ctx.globalAlpha = a;
+          drawArrow(ctx, x, y, Math.max(12 * k, s * 0.5), up, k);
+          ctx.globalAlpha = 1;
+        } else dot(rp[i - 1], color, 5 * k);
         dot(rp[i], color, 3 * k);
       }
       dot(rp[0], '#30c030', 6 * k);
