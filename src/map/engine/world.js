@@ -355,6 +355,9 @@ export class World {
       }
     }
     entries.push(...items.values());
+    // Monsters that spawn on the map (6d): picking one shows all of them.
+    const spawning = new Set((this.spawnPoints || []).map((sp) => sp.kind));
+    (this.monKinds || []).forEach((m, i) => { if (spawning.has(i)) entries.push({ kind: 'Monster', name: m.n, mon: i }); });
     for (const e of entries) e.lower = e.name.toLowerCase();
     this.searchEntries = entries;
   }

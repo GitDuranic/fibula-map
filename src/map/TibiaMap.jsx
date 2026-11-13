@@ -259,6 +259,39 @@ function visibleMonsters(world, v, left, top, right, bottom) {
   return out.sort((a, b) => a.f[1] - b.f[1] || a.f[0] - b.f[0]);
 }
 
+// Monster search (6d): every monster of the searched kind, on every floor and at every zoom, drawn bigger with a
+// gold ring, so they stand out; the ones on other floors fainter. Markers as at zoom 16-32 (with "3x"), split per
+// tile from MONSTERS_SPLIT as usual. [{ kind, p: [x, y, z], f: frame position, count, group, here }]
+const SEARCH_SCALE = 1.5, SEARCH_OTHER_FLOOR = 0.55;
+function searchedMonsters(world, v, kind, left, top, right, bottom) {
+  if (kind == null || !world.monMarkers) return [];
+  const fr = (x, y, z) => (v.z <= 7 && z <= 7 ? [x - (v.z - z), y - (v.z - z)] : [x, y]);
+  const out = [], m = 4;
+  const add = (x, y, z, count, group) => {
+    const f = fr(x, y, z);
+    if (f[0] >= left - m && f[0] <= right + m && f[1] >= top - m && f[1] <= bottom + m) out.push({ kind, p: [x, y, z], f, count, group, here: z === v.z });
+  };
+  if (v.zoom < MONSTERS_SPLIT) {
+    for (const mk of world.monMarkers) if (mk.kind === kind) add(mk.p[0], mk.p[1], mk.p[2], mk.count, mk.group);
+  } else {
+    for (const sp of world.spawnPoints) {
+      if (sp.kind !== kind) continue;
+      const spots = SPIRAL.filter(([dx, dy]) => Math.max(Math.abs(dx), Math.abs(dy)) <= sp.radius);
+      for (let i = 0; i < sp.amount; i++) { const [dx, dy] = spots[i % spots.length]; add(sp.p[0] + dx, sp.p[1] + dy, sp.p[2], 1, sp.group); }
+    }
+  }
+  // Other floors first, this floor on top; back to front.
+  return out.sort((a, b) => a.here - b.here || a.f[1] - b.f[1] || a.f[0] - b.f[0]);
+}
+// Where a searched monster is drawn: its outfit (x, y, w, h) at SEARCH_SCALE (at least 60 % of its game size), and
+// its ring.
+function searchedRect(kd, f, ox, oy, s, k) {
+  const sc = Math.max((s / 32) * SEARCH_SCALE, 0.6 * k); // zoomed far out: 60 % of the game size, so they don't crowd
+  const [w0, h0] = [kd.img[2], kd.img[3]];
+  const cx = ox + (f[0] + 0.5) * s, cy = oy + (f[1] + 0.5) * s;
+  return { x: Math.round(cx + (16 - w0 - kd.d[0]) * sc), y: Math.round(cy + (16 - h0 - kd.d[1]) * sc), w: Math.round(w0 * sc), h: Math.round(h0 * sc), sc, cx, cy, r: Math.max(10 * k, 18 * sc) };
+}
+
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
@@ -287,6 +320,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [item, setItem] = useState(null); // the item whose window is open: { id, fluid }
   const [door, setDoor] = useState(null); // the locked door whose window is open
   const [mon, setMon] = useState(null); // the monster window: { kind | 'all', group }
+  const monSearch = useRef(null); // the searched monster kind (6d), or null
   // Back (6c): where you were before each jump (search result, item to seller, boat trip): the view and the open
   // windows. The Back button and the browser's back key return there.
   const backStack = useRef([]);
@@ -453,7 +487,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     // The monsters of the spawn whose window is open get a white frame.
     if (world.monSheet) {
       const km = Math.max(1, Math.round(window.devicePixelRatio || 1)), fsm = Math.max(km, Math.round(s / 32));
-      const ms = visibleMonsters(world, v, left, top, right, bottom), msel = selectedMon.current;
+      const ms = visibleMonsters(world, v, left, top, right, bottom).filter((m) => m.kind !== monSearch.current), msel = selectedMon.current;
       for (const m of ms) {
         const kd2 = world.monKinds[m.kind];
         if (!kd2.img) continue;
@@ -474,6 +508,29 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         ctx.scale(fsm, fsm);
         drawText(ctx, world.font, t, 0, 0, '#ffffff');
         ctx.restore();
+      }
+      // The searched kind (6d): bigger, with a gold ring, on every floor (other floors fainter).
+      const found = searchedMonsters(world, v, monSearch.current, left, top, right, bottom);
+      for (const m of found) {
+        const kd2 = world.monKinds[m.kind];
+        if (!kd2.img) continue;
+        const r = searchedRect(kd2, m.f, ox, oy, s, km);
+        ctx.globalAlpha = m.here ? 1 : SEARCH_OTHER_FLOOR;
+        ctx.beginPath(); ctx.arc(r.cx, r.cy, r.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,215,0,0.22)'; ctx.fill();
+        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2 * km; ctx.stroke();
+        ctx.imageSmoothingEnabled = r.sc < 1;
+        ctx.drawImage(world.monSheet, kd2.img[0], kd2.img[1], kd2.img[2], kd2.img[3], r.x, r.y, r.w, r.h);
+        if (m.count > 1) {
+          const fsr = Math.max(km, Math.round(r.sc)), t = m.count + 'x', w = textWidth(world.font, t) * fsr;
+          ctx.imageSmoothingEnabled = false;
+          ctx.save();
+          ctx.translate(Math.round(r.cx + r.r - w), Math.round(r.cy + r.r - 10 * fsr));
+          ctx.scale(fsr, fsr);
+          drawText(ctx, world.font, t, 0, 0, '#ffffff');
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
       }
     }
 
@@ -684,6 +741,24 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     return hit;
   };
 
+  // The searched monster (6d) at canvas point p (inside its ring), or null. This floor's first, then the nearest.
+  const searchedAtPoint = (p) => {
+    const world = worldRef.current, c = canvasRef.current, v = view.current, s = anim.current.s, b = viewBox.current;
+    if (monSearch.current == null || !world?.monSheet || !c || !b) return null;
+    const ox = Math.round(c.width / 2 - v.x * s), oy = Math.round(c.height / 2 - v.y * s);
+    const k = Math.max(1, Math.round(window.devicePixelRatio || 1));
+    let best = null, bestD = Infinity;
+    for (const m of searchedMonsters(world, v, monSearch.current, b.left, b.top, b.right, b.bottom)) {
+      const kd2 = world.monKinds[m.kind];
+      if (!kd2.img) continue;
+      const r = searchedRect(kd2, m.f, ox, oy, s, k), d = Math.hypot(p.x - r.cx, p.y - r.cy);
+      if (d > r.r) continue;
+      const score = d - (m.here ? 1e6 : 0);
+      if (score < bestD) { bestD = score; best = m; }
+    }
+    return best;
+  };
+
   // The locked door at canvas point p (its tile), or null.
   const doorAtPoint = (p) => {
     const world = worldRef.current, b = viewBox.current;
@@ -883,6 +958,19 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const goBack = () => (syncUrl ? window.history.back() : restoreBack());
   // A jump that Back can undo.
   const jump = (p, opts) => { pushBack(); goTo(p, opts); };
+  // Monster search (6d): fit the view to every spawn of that kind, on the floor where most of them are.
+  const fitMonsters = (kind) => {
+    const world = worldRef.current, c = canvasRef.current;
+    const pts = world?.spawnPoints.filter((sp) => sp.kind === kind) || [];
+    if (!pts.length || !c) { redraw(); return; }
+    const xs = pts.map((sp) => sp.p[0]), ys = pts.map((sp) => sp.p[1]);
+    const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys), y2 = Math.max(...ys);
+    const fit = [...ZOOMS].reverse().find((zz) => zz <= MAIN_FROM && (x2 - x1 + 10) * zz <= c.width * 0.9 && (y2 - y1 + 10) * zz <= c.height * 0.9) ?? ZOOMS[0];
+    const perFloor = new Map();
+    for (const sp of pts) perFloor.set(sp.p[2], (perFloor.get(sp.p[2]) || 0) + sp.amount);
+    const z = [...perFloor].sort((a, b) => b[1] - a[1])[0][0];
+    jump({ x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2), z }, { zoom: fit, cut: fit >= MAIN_FROM && z <= 7 ? z : 0 });
+  };
 
   // Shows the whole route: centred, at the closest zoom where it fits, on the floor it starts on.
   const showRoute = useCallback((path) => {
@@ -1019,7 +1107,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       setHover(tileAt(p));
       const l = floorChangeAtPoint(p);
       setHoverLink(l);
-      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
+      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || searchedAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
       return;
     }
     setHoverLink(null);
@@ -1066,9 +1154,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (d && !d.moved) {
       // A click: open the NPC there, else the monster, else the locked door, else go to the floor a hole, stairs or
       // ladder leads to (no route planned), else close.
-      const p = toCanvas(e), n = npcAtPoint(p), m = !n && monsterAtPoint(p), dr = !n && !m && doorAtPoint(p);
-      const l = !n && !m && !dr && floorChangeAtPoint(p);
+      const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p), m = !n && !sm && monsterAtPoint(p);
+      const dr = !n && !sm && !m && doorAtPoint(p), l = !n && !sm && !m && !dr && floorChangeAtPoint(p);
       if (n) selectNpc(n);
+      else if (sm) {
+        // A searched monster: on another floor, go to it there (Back returns); then its window.
+        if (!sm.here) jump({ x: sm.p[0], y: sm.p[1], z: sm.p[2] }, { zoom: Math.max(view.current.zoom, MAIN_FROM) });
+        selectMonster({ kind: sm.kind, group: sm.group });
+      }
       else if (m) selectMonster({ kind: m.kind, group: m.group });
       else if (l) { setHoverLink(null); setFloor(l[5]); }
       else { selectNpc(null); selectMonster(null); selectDoor(dr || null); }
@@ -1138,6 +1231,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   // ---------- search ----------
   const onQuery = (text) => {
     setQuery(text);
+    if (!text.trim() && monSearch.current != null) { monSearch.current = null; redraw(); } // clearing the search ends it
     setResults(worldRef.current ? worldRef.current.search(text) : []);
     setActive(0);
   };
@@ -1146,6 +1240,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (!r) return;
     setResults([]);
     setQuery(r.name);
+    monSearch.current = r.kind === 'Monster' ? r.mon : null;
+    if (r.kind === 'Monster') { fitMonsters(r.mon); return; }
+    redraw();
     if (r.kind === 'Position') jump(r.pos);
     else if (r.kind === 'NPC') { jump({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
     else if (r.kind === 'Depot') jump({ x: r.place.p[0], y: r.place.p[1], z: r.place.p[2] });
