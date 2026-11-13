@@ -616,6 +616,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - **Route panel:** level (1–999), haste (none / Haste / Strong haste), "Boots of haste", speed shown. The time is in bold; the haste line shows casts and mana.
   - The settings are remembered in this browser (localStorage, `tm-char`). Without storage it still works, just not remembered.
   - **Default (user, 2026-11-13): level 8, no haste, no boots of haste** (was level 50; `CHAR_DEFAULT`). Saved settings still win: a browser that already saved others keeps them until they're changed.
+  - **Layout (user, 2026-11-13):** level and haste on their own rows, the level box 64 px wide, so its up/down arrows fit (they didn't next to the haste list).
 - Tested (Thais → Carlin, 1077 steps):
 
   | Character | Speed | Time | Haste |

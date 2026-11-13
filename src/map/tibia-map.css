@@ -173,9 +173,11 @@
 .tm-menu-at { position: absolute; z-index: 10; }
 
 /* route panel: character settings */
-.tm-route-char { display: flex; gap: 4px; align-items: center; }
+/* level and haste on their own rows (user: no room for the level box's up/down arrows next to haste) */
+.tm-route-char { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
 .tm-route-level { display: flex; align-items: center; gap: 4px; flex: none; }
-.tm-route-level .tm-input { width: 40px; }
+.tm-route-level .tm-input { width: 64px; }
+.tm-route-char .tm-select { flex: none; width: 100%; }
 .tm-select { flex: 1; min-width: 0; height: 18px; padding: 0 1px; }
 .tm-select option { background: #2b2b2b; color: var(--tm-text); }
 .tm-check { display: flex; align-items: center; gap: 4px; cursor: pointer; }
