@@ -227,7 +227,9 @@ function drawArrow(ctx, x, y, size, up, k) {
   ctx.fillStyle = up ? FLOOR_UP : FLOOR_DOWN; ctx.fill();
 }
 
-// Monsters (6b): only on the floor they spawn on, from MONSTERS_FROM. Zoomed out, the monsters of one kind spawning
+// Monsters (6b): where their floor is shown, from MONSTERS_FROM: underground only on their own floor; on the surface
+// on every surface floor that is drawn (floors 0-7 together, above the layer cut), shifted like that floor, as NPCs
+// (npcFrame). (User: monsters upstairs, e.g. dragons on floor 6 above Edron, must show.) Zoomed out, the monsters of one kind spawning
 // close together are one marker with a count ("3x"); from MONSTERS_SPLIT each one stands on its own tile, spread
 // over its spawn's radius from the centre outwards (the server picks random tiles in the radius; this is a stand-in).
 const MONSTERS_FROM = 16, MONSTERS_SPLIT = 64;
@@ -244,15 +246,17 @@ function visibleMonsters(world, v, left, top, right, bottom) {
   const out = [], inView = (x, y, m) => x >= left - m && x <= right + m && y >= top - m && y <= bottom + m;
   if (v.zoom < MONSTERS_SPLIT) {
     for (const mk of world.monMarkers) {
-      if (mk.p[2] === v.z && inView(mk.p[0], mk.p[1], 3)) out.push({ kind: mk.kind, f: [mk.p[0], mk.p[1]], count: mk.count, group: mk.group });
+      const f = npcFrame(mk, v.z, v.cut);
+      if (f && inView(f[0], f[1], 3)) out.push({ kind: mk.kind, f, count: mk.count, group: mk.group });
     }
   } else {
     for (const sp of world.spawnPoints) {
-      if (sp.p[2] !== v.z || !inView(sp.p[0], sp.p[1], sp.radius + 3)) continue;
+      const f = npcFrame(sp, v.z, v.cut);
+      if (!f || !inView(f[0], f[1], sp.radius + 3)) continue;
       const spots = SPIRAL.filter(([dx, dy]) => Math.max(Math.abs(dx), Math.abs(dy)) <= sp.radius);
       for (let i = 0; i < sp.amount; i++) {
         const [dx, dy] = spots[i % spots.length];
-        out.push({ kind: sp.kind, f: [sp.p[0] + dx, sp.p[1] + dy], count: 1, group: sp.group });
+        out.push({ kind: sp.kind, f: [f[0] + dx, f[1] + dy], count: 1, group: sp.group });
       }
     }
   }

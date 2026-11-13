@@ -367,7 +367,11 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - Seen in the browser: troll spawn → wooden shield (loot) → Willard in Edron (flew there) → Back: the troll spawn again, with the troll and wooden shield windows open.
 
 ### Slice 6b: monsters on the map (built 2026-11-13)
-- **Only on the floor they spawn on**, from zoom 16 (`MONSTERS_FROM`), drawn under the doors' keys and the NPCs, at the same scale as NPCs.
+- ~~Only on the floor they spawn on~~ → **where their floor is shown** (fixed after user feedback, 2026-11-13), from zoom 16 (`MONSTERS_FROM`), drawn under the doors' keys and the NPCs, at the same scale as NPCs.
+  - The user: "Some monsters are missing? I don't see the 2 dragons above Edron, did I say we shouldn't draw monsters that are upstairs?" They spawn on floor 6 (33100,31696 and 33089,31702), on the mountain.
+  - The first version drew only the floor being looked at. But on the surface the map draws floors 0–7 together, so 314 spawn points on floors 1–6 were missing.
+  - Now the NPCs' rule (`npcFrame`): underground only their own floor; on the surface every surface floor that is drawn (above the layer cut), shifted like that floor. So "only the floor they spawn on" means not through the ground, not hiding upper surface floors.
+  - Seen in the browser: both dragons on the mountain above Edron from floor 7 at zoom 16.
 - **Markers** (zoom 16–32):
   - Monsters of one kind in one spawn group, within 3 tiles of each other (chained), are one marker. It shows one outfit with "3x" in the client's outlined font (white) at the tile's bottom right, at the spawn point nearest their middle.
   - The count is all of them together (spawn amounts added up).
