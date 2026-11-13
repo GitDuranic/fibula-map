@@ -52,6 +52,7 @@ export function routerMain() {
     for (const [x, y, z, tx, ty, tz, k] of linksJson.links) {
       const kind = linksJson.kinds[k], to = [tx, ty, tz];
       if (kind === 'step') stepLinks.set(key(x, y, z), to);
+      else if (kind === 'teleport') continue; // used from slice 4b
       else {
         const kk = key(x, y, z);
         if (!useLinks.has(kk)) useLinks.set(kk, []);

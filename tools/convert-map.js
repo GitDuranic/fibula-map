@@ -10,7 +10,8 @@
 //   items.json            draw info and name for every item on the map or traded by an NPC (keyed by client id),
 //                         plus fluid names by fluid type
 //   walk.bin, links.json  router data: per tile 0 (blocked) or ground speed / 2, in map.json chunk order;
-//                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig)
+//                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig, teleport);
+//                         passages [[NPC, destination, price, min level, x,y,z, tx,ty,tz]] (boats, carpets, Oracle)
 //   places.json           [{ n name, k 'town' | 'depot', p [x,y,z] }] towns from the map's town list (temple), depots
 //   npcs.json, npcs.png   NPCs: [{ n name, p [x,y,z], img [x,y,w,h] in npcs.png (outfit standing, coloured),
 //                         d displacement, sells/buys [[client id, price(, fluid type)]], travel [[name, price, x,y,z]] }]
@@ -65,6 +66,7 @@ const lockerSids = new Set([...itemInfo.server].filter(([, it]) => it.name === '
 const OTBM = { TILE_AREA: 4, TILE: 5, ITEM: 6, TOWN: 13, HOUSETILE: 14 };
 const towns = []; // { name, temple: [x, y, z] } from the map's town list
 const lockers = []; // [x, y, z]
+const teleports = []; // [x, y, z, to x, to y, to z]: items with a teleport destination (magic forcefields)
 const floors = Array.from({ length: 16 }, () => new Map());
 const usedItems = new Set();
 const missing = new Map();
@@ -113,7 +115,9 @@ log('Reading map');
           if (attr === 15 || attr === 12) count = r.u8();
           else if (attr === 4 || attr === 5 || attr === 10 || attr === 22) r.u16();
           else if (attr === 14) r.u8();
-          else break; // other attributes don't matter for drawing
+          else if (attr === 6 || attr === 7) r.str(); // text, description
+          else if (attr === 8) teleports.push([...pos, r.u16(), r.u16(), r.u8()]); // teleport destination
+          else break; // other attributes don't matter
         }
         addItem(sid, count);
         return false; // skip container contents
@@ -174,7 +178,14 @@ for (let z = 0; z < 16; z++) {
   }
 }
 fs.writeFileSync(path.join(OUT, 'walk.bin'), Buffer.concat(walkBytes.map((b) => Buffer.from(b))));
-fs.writeFileSync(path.join(OUT, 'links.json'), JSON.stringify({ kinds: LINK_KINDS, links: walk.links }));
+// Magic forcefields: stepping onto one moves you to its destination. Destination 0,0,0 (scripted, or broken) or
+// not on the map: left out.
+const badTeleports = [];
+for (const [x, y, z, tx, ty, tz] of teleports) {
+  if (tileAt(tx, ty, tz)) walk.links.push([x, y, z, tx, ty, tz, LINK_KINDS.indexOf('teleport')]);
+  else badTeleports.push(`${x},${y},${z} -> ${tx},${ty},${tz}`);
+}
+if (badTeleports.length) log(`Teleports without a destination on the map, left out: ${badTeleports.length} (${badTeleports.slice(0, 8).join('; ')}${badTeleports.length > 8 ? '; ...' : ''})`);
 {
   const byKind = LINK_KINDS.map((k, i) => `${k} ${walk.links.filter((l) => l[6] === i).length}`).join(', ');
   const walkable = [...speeds.values()].reduce((a, b) => a + b, 0);
@@ -259,6 +270,20 @@ writePng(path.join(OUT, 'npcs.png'), npcSheetW, npcSheetH, npcSheet);
 fs.writeFileSync(path.join(OUT, 'npcs.json'), JSON.stringify(npcsOut));
 log(`${npcsOut.length} NPCs, ${npcsOut.filter((n) => n.sells.length || n.buys.length).length} traders, ${npcsOut.filter((n) => n.travel.length).length} with travel`);
 if (droppedTravel.length) log(`Passages to places not on this map, left out: ${droppedTravel.join(', ')}`);
+
+// ---------- links.json: floor changes and teleports, plus NPC passages ----------
+// passages: [[NPC name, destination name, price, min level, x, y, z (the NPC), to x, to y, to z]]: boats and
+// carpets (talk to the NPC, pay, arrive), and the Oracle's one-way trips from Rookgaard (level 8, free).
+const passages = [];
+npcList.forEach((n, i) => {
+  for (const [name, price, tx, ty, tz] of npcsOut[i].travel) passages.push([n.name, name, price, 0, n.x, n.y, n.z, tx, ty, tz]);
+  for (const t of n.oracle) {
+    if (tileAt(...t.to)) passages.push([n.name, t.name, t.price, t.level, n.x, n.y, n.z, ...t.to]);
+    else droppedTravel.push(`${n.name} -> ${t.name}`);
+  }
+});
+fs.writeFileSync(path.join(OUT, 'links.json'), JSON.stringify({ kinds: LINK_KINDS, links: walk.links, passages }));
+log(`Passages: ${passages.length} (${new Set(passages.map((p) => p[0])).size} NPCs), of which ${passages.filter((p) => p[3]).length} need a level`);
 
 // ---------- sprite atlases ----------
 log(`Packing sprites for ${usedItems.size} items`);

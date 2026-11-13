@@ -94,15 +94,28 @@ export function parseBehaviour(text) {
   return { sells: [...sells.values()], buys: [...buys.values()], travel };
 }
 
+// The Oracle's one-way trips (Rookgaard to the mainland): the town is picked by a Data value on topic 1, the
+// "yes" on topic 3 with that Data teleports. Returns [{ name, price: 0, level, to }] (level from its greeting).
+export function parseOracle(text) {
+  const level = +(/Level>=(\d+)/.exec(text)?.[1] || 0);
+  const towns = new Map();
+  for (const m of text.matchAll(/Topic=1,"([^"]+)"[^\n]*->\s*Data=(\d+)/g)) towns.set(+m[2], titleCase(m[1]));
+  const out = [];
+  for (const m of text.matchAll(/Topic=3,Data=(\d+),"yes"[^\n]*Teleport\((\d+),(\d+),(\d+)\)/g)) {
+    if (towns.has(+m[1])) out.push({ name: towns.get(+m[1]), price: 0, level, to: [+m[2], +m[3], +m[4]] });
+  }
+  return out;
+}
+
 // ---------- all NPCs ----------
-// Returns [{ name, x, y, z, dir, look, sells, buys, travel }] (offers still in server ids).
+// Returns [{ name, x, y, z, dir, look, sells, buys, travel, oracle }] (offers still in server ids).
 export function loadNpcs({ spawnFile, npcDir, log = () => {} }) {
   const spawn = fs.readFileSync(spawnFile, 'latin1');
   const out = [], missing = [];
   for (const m of spawn.matchAll(/<tvpspawn\s+([^>]*?)\/>/g)) {
     const a = Object.fromEntries([...m[1].matchAll(/(\w+)="([^"]*)"/g)].map((x) => [x[1], x[2]]));
     if (!a.npcname) continue;
-    const npc = { name: titleCase(a.npcname), x: +a.centerx, y: +a.centery, z: +a.centerz, dir: +(a.direction ?? 2), look: null, sells: [], buys: [], travel: [] };
+    const npc = { name: titleCase(a.npcname), x: +a.centerx, y: +a.centery, z: +a.centerz, dir: +(a.direction ?? 2), look: null, sells: [], buys: [], travel: [], oracle: [] };
     const xmlFile = path.join(npcDir, `${a.npcname}.xml`);
     if (fs.existsSync(xmlFile)) {
       const xml = fs.readFileSync(xmlFile, 'latin1');
@@ -112,7 +125,11 @@ export function loadNpcs({ spawnFile, npcDir, log = () => {} }) {
       if (look) npc.look = Object.fromEntries([...look[1].matchAll(/(\w+)="(\d+)"/g)].map((x) => [x[1], +x[2]]));
       const behaviour = /behavior="([^"]*)"/.exec(xml)?.[1];
       const bFile = behaviour && path.join(npcDir, 'behavior', behaviour);
-      if (bFile && fs.existsSync(bFile)) Object.assign(npc, parseBehaviour(fs.readFileSync(bFile, 'latin1')));
+      if (bFile && fs.existsSync(bFile)) {
+        const text = fs.readFileSync(bFile, 'latin1');
+        Object.assign(npc, parseBehaviour(text));
+        npc.oracle = parseOracle(text); // the Oracle's one-way trips (empty for everyone else)
+      }
     } else missing.push(a.npcname);
     out.push(npc);
   }

@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const LINK_KINDS = ['step', 'ladder', 'grate', 'rope', 'dig'];
+export const LINK_KINDS = ['step', 'ladder', 'grate', 'rope', 'dig', 'teleport'];
 const LADDERS_UP = new Set([1386, 3678]); // teleport.lua: used to go up
 const GRATES_DOWN = new Set([430]); // teleport.lua: used to go down
 

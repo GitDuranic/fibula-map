@@ -218,9 +218,27 @@ Agree each slice before building it, then build one at a time.
   - The panel lists the route in legs ("Walk to Captain Bluebear, Thais → boat to Carlin, 110 gp → walk …") with total time and gold.
   - On the map a passage is drawn as a jump (an arc) between the two harbours.
 
-**Open questions for the user:** quest discount, what "best route" means, time per passage, the Oracle.
+**Decided with the user (2026-11-13):**
+- **No quest discount.** The cheaper price is the grand postman rank from the Postman Missions (Kevin Postner, `QuestValue(250)`), which very likely came after 7.1. Routes use the normal price. To check again when Ryndean's 7.1 NPC files arrive.
+- **Two routes: fastest and cheapest.** The panel shows both when they differ.
+
+- **2 seconds per passage** for talking to the NPC (players type the combo fast), on top of the walk to the NPC.
+- **The Oracle** is used only when the character's level is 8 or higher (the level setting in the route panel).
 
 ## Decisions made while building
+
+### Slice 4a: passage data (built 2026-11-13)
+- **Forcefields:** the converter now reads the map's item attributes for text (6, 7) and the teleport destination (8).
+  - 64 items have one: 27 become `teleport` links (stepped onto, like stairs), and 37 go to 0,0,0 and are left out (the converter lists them).
+- **Passages** are a separate list in links.json, `passages: [[NPC, destination, price, min level, NPC x,y,z, to x,y,z]]`, because they carry a price and a level.
+  - That's 47 in all: boats and carpets from 16 NPCs (their trips to places not on the 7.1 map are left out), plus the Oracle's 4 one-way trips (level 8, free).
+  - Prices are the normal ones; the quest lines are still ignored (see above).
+- **The Oracle** has its own small parser (`parseOracle`): the town comes from a Data value on topic 1, and the "yes" on topic 3 with that Data teleports. The level comes from its greeting (`Level>=8`).
+- **Debug view** (`?debug=walk`):
+  - Teleport tiles are purple ("T", with an arrow when the floor changes).
+  - Teleports and passages are drawn as a line to where they go: purple for teleports, green for passages, dashed when the other end is on another floor, with a dot at the arrival.
+  - Next to the NPC there's a label per trip (destination, price, level).
+- The router skips teleport links until 4b.
 
 ### Slice 3c: run times (built 2026-11-13)
 - **Speed** (TVP source, checked): base = 70 + (level − 1).

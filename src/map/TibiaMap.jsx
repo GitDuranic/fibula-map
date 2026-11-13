@@ -187,13 +187,42 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         const t = world.tile(x, y, v.z), sx = ox + x * s, sy = oy + y * s;
         if (t && !world.speedAt(x, y, v.z)) { ctx.fillStyle = 'rgba(255,0,0,0.35)'; ctx.fillRect(sx, sy, s, s); }
         for (const l of world.walk.linksAt.get(`${x},${y},${v.z}`) || []) {
-          const upward = l[5] < l[2];
-          ctx.fillStyle = upward ? 'rgba(255,160,0,0.8)' : 'rgba(0,120,255,0.8)';
+          const kind = world.walk.kinds[l[6]], upward = l[5] < l[2];
+          // Teleports (purple) can stay on the same floor: an arrow for the floor, else none.
+          ctx.fillStyle = kind === 'teleport' ? 'rgba(170,0,255,0.8)' : upward ? 'rgba(255,160,0,0.8)' : 'rgba(0,120,255,0.8)';
           ctx.fillRect(sx + k0, sy + k0, s - 2 * k0, s - 2 * k0);
           ctx.fillStyle = '#fff';
-          ctx.fillText((upward ? '↑' : '↓') + world.walk.kinds[l[6]][0].toUpperCase(), sx + s / 2, sy + s / 2);
+          ctx.fillText((l[5] === l[2] ? '' : upward ? '↑' : '↓') + kind[0].toUpperCase(), sx + s / 2, sy + s / 2);
         }
       }
+      // Teleports and NPC passages: a line to where they go (dashed when the destination is on another floor),
+      // the NPC end labelled with the destination, price and level.
+      const lines = [
+        ...world.walk.links.filter((l) => world.walk.kinds[l[6]] === 'teleport').map((l) => ({ a: l.slice(0, 3), b: l.slice(3, 6), c: '#a0f', t: '' })),
+        ...world.walk.passages.map((p) => ({ a: p.slice(4, 7), b: p.slice(7, 10), c: '#0c4', t: `${p[1]} ${p[2]} gp${p[3] ? `, level ${p[3]}` : ''}` })),
+      ];
+      const byNpc = new Map();
+      ctx.lineWidth = 2 * k0;
+      for (const { a, b, c, t } of lines) {
+        if (a[2] !== v.z && b[2] !== v.z) continue;
+        const ax = ox + (a[0] + 0.5) * s, ay = oy + (a[1] + 0.5) * s, bx = ox + (b[0] + 0.5) * s, by = oy + (b[1] + 0.5) * s;
+        ctx.strokeStyle = c;
+        ctx.setLineDash(a[2] === b[2] ? [] : [6 * k0, 4 * k0]);
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        if (b[2] === v.z) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(bx, by, s / 4, 0, 2 * Math.PI); ctx.fill(); }
+        if (t && a[2] === v.z) { const k = `${a}`; byNpc.set(k, [...(byNpc.get(k) || []), t]); }
+      }
+      ctx.setLineDash([]);
+      ctx.textAlign = 'left';
+      for (const [k, list] of byNpc) {
+        const [x, y] = k.split(',').map(Number);
+        list.forEach((t, i) => {
+          const tx = ox + (x + 1) * s, ty = oy + y * s + i * (s / 3 + 4);
+          ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(tx, ty - s / 6 - 2, ctx.measureText(t).width + 6, s / 3 + 4);
+          ctx.fillStyle = '#7f7'; ctx.fillText(t, tx + 3, ty);
+        });
+      }
+      ctx.textAlign = 'center';
     }
 
     // NPCs over everything (roofs too): outfit, then the name above it in the client's outlined font, green like

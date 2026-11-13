@@ -233,7 +233,9 @@ export class World {
       if (!linksAt.has(k)) linksAt.set(k, []);
       linksAt.get(k).push(l);
     }
-    this.walk = { bytes: new Uint8Array(bin), offset, kinds: links.kinds, links: links.links, linksAt };
+    // NPC passages (boats, carpets, the Oracle): [NPC, destination, price, min level, x, y, z, tx, ty, tz].
+    const passages = links.passages || [];
+    this.walk = { bytes: new Uint8Array(bin), offset, kinds: links.kinds, links: links.links, linksAt, passages };
     return this.walk;
   }
 
