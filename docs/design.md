@@ -341,6 +341,20 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 
 ## Decisions made while building
 
+### Slice 6c: from loot to the seller, and Back (built 2026-11-13)
+- **From loot to the seller** came with 6b: a loot item opens its item window (sold by / bought by, best price first). Clicking an NPC there flies to them and opens their window.
+- **Back:**
+  - Before each **jump**, the map remembers where you are: the exact view (position, floor, zoom, layer cut) and the open windows (NPC, monster, locked door, item).
+  - Jumps are: picking a search result (place, NPC, depot, position), an NPC in an item window, and a boat trip in an NPC window. Panning, zooming, clicking things on the map and fitting a route are not jumps.
+  - The **Back** button (next to Route above the search) returns to the last place remembered, with its windows. It's greyed out when there's nothing to go back to. Up to 50 places are kept.
+  - **The browser's back key does the same** when the map keeps its view in the URL (`syncUrl`):
+    - Each jump marks the current history entry (`tmBack`) and adds a new one.
+    - Going back to a marked entry restores that place.
+    - The hash updates keep that mark (`replaceState` with the current state).
+    - The Back button then simply goes back in the browser's history, so both stay in step.
+  - Embedded without the URL (Ryndean's site, `syncUrl` off), only the button works, from its own list.
+- Seen in the browser: troll spawn → wooden shield (loot) → Willard in Edron (flew there) → Back: the troll spawn again, with the troll and wooden shield windows open.
+
 ### Slice 6b: monsters on the map (built 2026-11-13)
 - **Only on the floor they spawn on**, from zoom 16 (`MONSTERS_FROM`), drawn under the doors' keys and the NPCs, at the same scale as NPCs.
 - **Markers** (zoom 16–32):

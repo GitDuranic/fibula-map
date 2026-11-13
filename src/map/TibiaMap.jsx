@@ -287,6 +287,13 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [item, setItem] = useState(null); // the item whose window is open: { id, fluid }
   const [door, setDoor] = useState(null); // the locked door whose window is open
   const [mon, setMon] = useState(null); // the monster window: { kind | 'all', group }
+  // Back (6c): where you were before each jump (search result, item to seller, boat trip): the view and the open
+  // windows. The Back button and the browser's back key return there.
+  const backStack = useRef([]);
+  const restoreBackRef = useRef(null); // restoreBack, for the popstate listener
+  const [backCount, setBackCount] = useState(0);
+  const itemRef = useRef(null);
+  itemRef.current = item;
   // Unlocked doors (see doorUnit), remembered in this browser (a convenience; it works without storage too).
   const [doors, setDoorsState] = useState(() => {
     try { const d = JSON.parse(window.localStorage.getItem('tm-doors') || '{}'); return { all: !!d.all, open: Array.isArray(d.open) ? d.open : [] }; }
@@ -699,7 +706,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     clearTimeout(hashTimer.current);
     hashTimer.current = setTimeout(() => {
       const h = `#${Math.floor(v.x)},${Math.floor(v.y)},${v.z},${v.zoom}`;
-      if (window.location.hash !== h) window.history.replaceState(null, '', h);
+      if (window.location.hash !== h) window.history.replaceState(window.history.state, '', h); // keeps the Back marker
     }, 250);
   }, [redraw, syncUrl]);
 
@@ -734,7 +741,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       viewChanged();
     };
     window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    // Back to an entry marked by pushBack: restore that place and its windows.
+    const onPop = (e) => { if (e.state?.tmBack && backStack.current.length) restoreBackRef.current(); };
+    window.addEventListener('popstate', onPop);
+    return () => { window.removeEventListener('hashchange', onHash); window.removeEventListener('popstate', onPop); };
   }, [syncUrl, viewChanged]);
 
   // Canvas size follows the element, in device pixels.
@@ -843,6 +853,37 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   }, [viewChanged]);
 
   // ---------- route ----------
+  // Back (6c). pushBack: remember where you are now (before a jump). With the URL in sync, the current history entry
+  // is marked and a new one added, so the browser's back key comes back here too.
+  const pushBack = () => {
+    const st = backStack.current;
+    st.push({ view: { ...view.current }, npc: selected.current, mon: selectedMon.current, door: selectedDoor.current, item: itemRef.current });
+    if (st.length > 50) st.shift();
+    setBackCount(st.length);
+    if (syncUrl) {
+      window.history.replaceState({ ...(window.history.state || {}), tmBack: true }, '', window.location.hash);
+      window.history.pushState({}, '', window.location.hash);
+    }
+  };
+  // Returns to the last place remembered: the exact view and the windows that were open.
+  const restoreBack = () => {
+    const sn = backStack.current.pop();
+    setBackCount(backStack.current.length);
+    if (!sn) return;
+    flight.current = null;
+    Object.assign(view.current, sn.view);
+    anim.current = { s: sn.view.zoom, anchor: null };
+    selected.current = sn.npc; setNpc(sn.npc);
+    selectedMon.current = sn.mon; setMon(sn.mon);
+    selectedDoor.current = sn.door; setDoor(sn.door);
+    setItem(sn.item);
+    viewChanged();
+  };
+  restoreBackRef.current = restoreBack;
+  const goBack = () => (syncUrl ? window.history.back() : restoreBack());
+  // A jump that Back can undo.
+  const jump = (p, opts) => { pushBack(); goTo(p, opts); };
+
   // Shows the whole route: centred, at the closest zoom where it fits, on the floor it starts on.
   const showRoute = useCallback((path) => {
     const c = canvasRef.current;
@@ -1105,14 +1146,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (!r) return;
     setResults([]);
     setQuery(r.name);
-    if (r.kind === 'Position') goTo(r.pos);
-    else if (r.kind === 'NPC') { goTo({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
-    else if (r.kind === 'Depot') goTo({ x: r.place.p[0], y: r.place.p[1], z: r.place.p[2] });
+    if (r.kind === 'Position') jump(r.pos);
+    else if (r.kind === 'NPC') { jump({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
+    else if (r.kind === 'Depot') jump({ x: r.place.p[0], y: r.place.p[1], z: r.place.p[2] });
     else if (r.kind === 'Item') { selectNpc(null); selectDoor(null); setItem(r.item); }
     else {
       // A town or place: an overview with the roofs on, from its temple (the surface, unless it's underground).
       const [x, y, z] = r.place.p;
-      goTo({ x, y, z: z > 7 ? z : 7 }, { zoom: 16, cut: 0 });
+      jump({ x, y, z: z > 7 ? z : 7 }, { zoom: 16, cut: 0 });
     }
   };
   const onSearchKey = (e) => {
@@ -1180,7 +1221,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         <form className="tm-panel tm-goto" onSubmit={onSearch} role="search">
           <div className="tm-search-head">
             <label htmlFor="tm-search">Search</label>
-            <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
+            <span className="tm-search-btns">
+              <button type="button" className="tm-btn" onClick={goBack} disabled={!backCount} title="Back to where you were (or the browser's back key)">Back</button>
+              <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
+            </span>
           </div>
           <input
             id="tm-search" className="tm-input" value={query} placeholder="Town, NPC, item or x, y, z"
@@ -1226,14 +1270,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         )}
         {npc && world && (
           <NpcWindow
-            world={world} npc={npc} onClose={() => selectNpc(null)} onTravel={(t) => goTo({ x: t[2], y: t[3], z: t[4] })}
+            world={world} npc={npc} onClose={() => selectNpc(null)} onTravel={(t) => jump({ x: t[2], y: t[3], z: t[4] })}
             onRoute={() => updateRoute({ to: { label: npc.n, pos: npc.p } })}
           />
         )}
         {item && world && (
           <ItemWindow
             world={world} item={item} onClose={() => setItem(null)}
-            onNpc={(n) => { goTo({ x: n.p[0], y: n.p[1], z: n.p[2] }); selectNpc(n); }}
+            onNpc={(n) => { jump({ x: n.p[0], y: n.p[1], z: n.p[2] }); selectNpc(n); }}
           />
         )}
       </div>
