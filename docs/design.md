@@ -124,7 +124,7 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
 - **Pattern-Z ground looks:** on odd floors (e.g. 7) the grass/edge grounds show their second pattern-Z set (rougher, textured stone); on even floors the first (smooth stone). Is this second set the correct 7.1 look, or should the map always use one set? Ask the user / Ryndean, who made the 7.1 dat. The house planner uses the same `z % pz` rule and the same dat, so it can also show black squares on these items (272 etc.) — the same fallback is needed there.
 - **7.1 data (answered 2026-11-12):** Ryndean has 7.1 NPC and monster data and will hand it over; we don't have it yet. Until then we build against the TVP files in the same formats as stand-ins (`npc/behavior/*.npc`, `monster/monsters/*.xml`, `spawns.dat`), and the converters must take a data folder as input so the 7.1 set can be dropped in. **7.1 map received (2026-11-12):** `C:git	ibia assets	ibia71-tvp-converted` holds `Tibia71.otbm` (a real 7.1 map converted to TVP item ids, saved with Remere's), `Tibia71-house.xml`, `Tibia71-spawn.xml` and an NPC port report. NPC positions were moved over from a TVP 7.4 fork: 259 kept, 6 nudged (worth checking), 70 dropped (no such area in 7.1, e.g. Ankrahmun/Port Hope, or no standable tile), Dalbrect excluded on request. The converter uses this map by default (`--map`); items.otb still comes from TVP. Result: 5.5M tiles, 1650 items, all with sprites, 26 MB of chunks.
 - **Ryndean's overlay**: what is it, and how could it know the player's live position? Plan for now: the map can export a route as a list of `x,y,z` positions, so an overlay can draw it in the real game later. To ask Ryndean.
-- Which passages are locked behind a quest in 7.6? Make a list from the `.npc` conditions plus TibiaWiki.
+- ~~Which passages are locked behind a quest?~~ Answered 2026-11-13: 7.1 has no quest or level doors; the user chose locked doors with keys instead (slice 4c–4e).
 - Where does the "balanced" sell option sit between gold and time (e.g. gold per minute)?
 - Mana and recasts of haste on long routes: show them or not?
 - Can the house planner and the map share client components (as a shared package or a copy)? Remember the Ryndean sync.
@@ -135,10 +135,14 @@ Agree each slice before building it, then build one at a time.
 1. **Map viewer.** A converter turns `map.otbm` into sprite chunks plus overview images for far zoom. A viewer with Google Maps-style pan, zoom and floors, a position readout and shareable links.
 2. Places and NPC pins + search (town, NPC, coordinates).
 3. Walking router (one floor, then floor changes) + run time with level and speed settings.
-4. Boats, carpets, teleports + quest checkboxes.
-5. Loot seller, usable without the map: search, backpack, quick entry, monster categories, NPC list + receipt. Because the map is optional here, this slice could also come before slices 2–4.
-6. Sell route optimisation (max gold, fastest, balanced), shown in the NPC list and, when it's open, on the map.
-7. Map pins, current position, spawn layer, route export for the overlay.
+4. Boats, carpets, teleports + ~~quest checkboxes~~ locked doors with keys (built).
+5. **Routes across floors** (added 2026-11-13): the route shows the step onto holes and stairs; route lines on other floors; seeing through the ground along an underground route; a preview of the floor above or below when hovering a hole or stairs.
+6. **Monsters** (added 2026-11-13): spawns on the map, monster window (HP, XP, loot with drop chances), from loot to the sellers, a Back button, monster search.
+7. Loot seller, usable without the map: search, backpack, quick entry, monster categories, NPC list + receipt. Because the map is optional here, this slice could also come before slices 5–6.
+8. Sell route optimisation (max gold, fastest, balanced), shown in the NPC list and, when it's open, on the map.
+9. Map pins, current position, route export for the overlay. (The spawn layer moved to slice 6.)
+
+Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (the loot seller was 5).
 
 ## Slice 2 plan: places, NPCs and search (proposed 2026-11-12, to agree with the user)
 
@@ -248,6 +252,81 @@ Agree each slice before building it, then build one at a time.
   - A tick "Open all locked doors".
   - Remembered in this browser.
 - **4e. Routes:** locked doors block routes until unlocked (or all opened). Doors with an unknown key work the same way, labelled "key unknown".
+
+## Slice 5 plan: routes across floors (asked for 2026-11-13, sub-slices to agree)
+
+**What the user asked for**
+- **The step onto the hole, stairs or ladder.**
+  - Today the route line stops on the tile before a hole or stairs and then jumps to where you land. So you can't see *which* hole to take, and sometimes two holes are next to each other.
+  - The route must always show the step onto the hole, stairs, ramp or grate itself. For things used from next to them (ladders, rope spots), it shows the tile that is used.
+- **Route lines on other floors:**
+  - Above the ground (floors 0–7), the yellow line may show on all floors, as now.
+  - Underground, the line shows at most **2 floors below** the current floor, more see-through the further away the floor is.
+- **Seeing where you go underground** (an experiment):
+  - Where the route goes down, the floor you're on becomes see-through *along the path*, so you can see the floor underneath with the route on it.
+  - At most 2 floors deep, each one fainter, like the route line.
+- **Hover preview without a route:**
+  - Hovering a hole, stairs, ladder or other floor change shows the floor it leads to (below or above) around that spot, in the same see-through way.
+  - Clicking it goes to that floor.
+
+**Sub-slices (proposed)**
+- **5a. The step onto floor changes.** The router keeps the link tile in the path, without changing the time (the step onto it is the move to the other floor). The line goes onto the hole or stairs. For things used from next to them, a short line marks the tile that is used.
+- **5b. Route lines on other floors.** Above the ground: all floors (as now). Underground: up to 2 floors below the current one, fading (e.g. 55 % and 30 %).
+- **5c. See-through along the route.** A band along the path (e.g. 3 tiles on each side) where the floor drawn on top becomes see-through and up to 2 floors below show through, fainter with depth, with their part of the route.
+- **5d. Hover preview and click to change floor.** The same see-through drawing in a small area around a floor change under the mouse; a click goes to the floor it leads to (keeping this-floor-only).
+
+**Open questions**
+- How wide should the see-through band along the route be (3 tiles on each side?), and how see-through should the top floor be?
+- How big should the hover preview be (e.g. 7×7 tiles around the hole or stairs)?
+- Going *up* from underground: show the floor above along the path too, or only going down?
+- Should a click on a hole or stairs still open an NPC or locked door when one is there? (Proposal: NPC and door first, then the floor change.)
+
+## Slice 6 plan: monsters (asked for 2026-11-13, sub-slices to agree)
+
+**What the user asked for**
+- **Spawns on the map.** Click a monster to see its HP, XP and loot (with drop chances).
+  - From an item in the loot you see where it can be sold, and you can fly to the seller.
+  - A **Back** button returns to where you were.
+- **A whole spawn.** Where a spawn has different monsters, a user-friendly way to see all of them and all the loot you can get there.
+- **Floors:**
+  - Monsters show **only on the floor they spawn on**.
+  - NPCs stay drawn over roofs, but **not through the ground**: an underground NPC isn't drawn on the surface.
+- **Search:**
+  - Monsters can be searched. All monsters of that kind are drawn **bigger**, and the view zooms to fit just them.
+  - While searched, they show even when they're on another floor. Clicking one goes to its floor.
+
+**What the data gives us** (checked 2026-11-13)
+- **Spawns:** the 7.1 spawn file has 3,941 monster entries: centre x, y, z, monster name, amount, radius, spawn time.
+  - Example: "dwarf guard, amount 3, radius 1" at 32587,31927,1.
+- **Monsters:** TVP has 158 monster files (`data/monster/monsters/*.xml`, 7.6 stand-ins until Ryndean's 7.1 data arrives): name, experience, health, outfit (look type + colours), corpse and **loot with drop chances**.
+  - Chances are out of 100,000, e.g. rotworm gold coin 30000 = 30 %, katana 300 = 0.3 %.
+  - Loot can be nested in containers (bags inside the corpse).
+- **TibiaWiki** (`tibiawiki/creatures.json`, 2,846 entries): only the name and the version a creature was added in, **no drop chances**. So the chances come from the TVP files.
+  - The "implemented" version can flag monsters that didn't exist in 7.1.
+  - If wiki drop chances are wanted, the wiki loot statistics would need to be fetched separately; to ask.
+
+**Sub-slices (proposed)**
+- **6a. Data.** The converter writes monsters.json and the outfits (as for NPCs).
+  - monsters.json: name, HP, XP, outfit and loot (item, max count, chance) for each kind; spawns as [x, y, z, kind, amount, radius].
+  - Spawn points close together on the same floor become one **spawn group**, e.g. within 10 tiles.
+- **6b. On the map.**
+  - Monsters are drawn on their own floor only, standing still, at their spawn.
+  - Clicking one opens a **monster window**: HP, XP, loot with drop chances, sorted by chance.
+  - Clicking a mixed spawn group (a spawn button or the group's outline) opens a **spawn window**: every kind in the group with amounts, and all the loot you can get there.
+  - The NPC rule: underground NPCs aren't drawn on the surface.
+- **6c. From loot to the seller, and Back.**
+  - An item in the loot opens the item window (who buys it, for how much). Clicking a seller flies there.
+  - A **Back** button (and the browser's back key) returns to the previous view and window: a history of view + open window.
+- **6d. Monster search.**
+  - Monsters in the search. Picking one draws every monster of that kind bigger, on every floor, and zooms to fit them all.
+  - Clicking one goes to its floor. Clearing the search ends it.
+
+**Open questions**
+- How to draw a spawn of 3: three monsters spread over the spawn's radius, or one monster? (The user doesn't want text on the map, so no "×3".)
+- Drop chances: are the TVP (7.6) chances good enough for now, or should they come from TibiaWiki?
+- How close together should spawn points be to count as one spawn group (10 tiles on the same floor?)
+- From which zoom should monsters show? NPCs show from zoom 4. 3,941 spawns would crowd the map zoomed out, so maybe from 16.
+- Order: monsters (6) before or after routes across floors (5), and before the loot seller (7)? The monster loot data helps the loot seller.
 
 ## Decisions made while building
 
