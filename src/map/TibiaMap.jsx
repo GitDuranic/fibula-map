@@ -377,7 +377,21 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     setCharState(c);
     try { window.localStorage.setItem('tm-char', JSON.stringify(c)); } catch { /* storage blocked: fine */ }
   };
-  const [menu, setMenu] = useState(null); // the right-click menu: { x, y (CSS px in the map), tile: [x,y,z] }
+  const [menu, setMenu] = useState(null); // the right-click menu: { x, y (CSS px in the map), tile: [x,y,z], adding }
+  const [locName, setLocName] = useState(''); // the name being typed for "Add location here"
+  const [locNote, setLocNote] = useState(null); // a failed save, shown under the search
+  // Named locations (the user's own, dev only): add or remove a name on a square through the dev server, then search
+  // them right away.
+  const saveLocation = async (change) => {
+    try {
+      const res = await fetch('/__custom-places', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(change) });
+      const list = await res.json();
+      if (!res.ok || !Array.isArray(list)) throw new Error(list?.error || res.status);
+      worldRef.current?.setCustomPlaces(list);
+      if (query) setResults(worldRef.current.search(query));
+      setLocNote(null);
+    } catch (e) { setLocNote(`Could not save the location: ${e.message || e}`); }
+  };
   const flight = useRef(null); // a fly-to in progress: { fx, fy, tx, ty, t0, dur }
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   const uiScale = Math.max(1, Math.round(dpr)); // whole screen pixels per client pixel in the side panel
@@ -1328,7 +1342,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     redraw();
     if (r.kind === 'Position') jump(r.pos);
     else if (r.kind === 'NPC') { jump({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
-    else if (r.kind === 'Depot') jump({ x: r.place.p[0], y: r.place.p[1], z: r.place.p[2] });
+    else if (r.kind === 'Depot' || r.kind === 'Location') jump({ x: r.place.p[0], y: r.place.p[1], z: r.place.p[2] });
     else if (r.kind === 'Item') { selectNpc(null); selectDoor(null); setItem(r.item); }
     else {
       // A town or place: an overview with the roofs on, from its temple (the surface, unless it's underground).
@@ -1369,12 +1383,23 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             <div className="tm-menu-catcher" onPointerDown={() => setMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMenu(null); }} />
             <div className="tm-menu-at" style={{ left: menu.x, top: menu.y }}>
             <div className="tm-menu" style={{ zoom: uiScale / dpr }}>
-              {[
+              {menu.adding ? (
+                // A name for this square: Enter or Add saves it, Escape cancels.
+                <form className="tm-menu-add" onSubmit={(e) => { e.preventDefault(); if (locName.trim()) saveLocation({ add: { n: locName.trim(), p: menu.tile } }); setMenu(null); }}>
+                  <input
+                    className="tm-input" autoFocus value={locName} maxLength={60} placeholder="Name of this location"
+                    onChange={(e) => setLocName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') setMenu(null); }}
+                  />
+                  <button type="submit" className="tm-btn" disabled={!locName.trim()}>Add</button>
+                </form>
+              ) : [
                 ['Route from here', () => updateRoute({ from: { label: menu.tile.join(', '), pos: menu.tile } })],
                 ['Route to here', () => updateRoute({ to: { label: menu.tile.join(', '), pos: menu.tile } })],
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
-              ].map(([label, act]) => (
-                <button type="button" key={label} className="tm-menu-item" onClick={() => { setMenu(null); act(); }}>{label}</button>
+                ...(world?.customEditable ? [['Add location here', () => { setLocName(''); setMenu({ ...menu, adding: true }); }, true]] : []),
+                ...(world?.customEditable ? world.customAt(...menu.tile).map((n) => [`Remove '${n}'`, () => saveLocation({ remove: { n, p: menu.tile } })]) : []),
+              ].map(([label, act, keepOpen]) => (
+                <button type="button" key={label} className="tm-menu-item" onClick={() => { if (!keepOpen) setMenu(null); act(); }}>{label}</button>
               ))}
             </div>
             </div>
@@ -1426,6 +1451,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             </div>
           )}
         </form>
+        {locNote && <div className="tm-panel tm-error">{locNote}</div>}
         {route.open && world && (
           <RoutePanel
             world={world} route={route} char={char} onChar={setChar}

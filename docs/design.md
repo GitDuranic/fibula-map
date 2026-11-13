@@ -393,6 +393,18 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 
 ## Decisions made while building
 
+### Named locations (built 2026-11-13, user)
+- **What the user asked:** add searchable locations by right-clicking → "Add location here" and typing a name; more than one name per square; the names are searchable. "Later on we can remove the function to add locations … I just want to use this to mark some locations with new names."
+- **Stored in the repo** (`tools/data/custom-places.json`, `[{ n, p }]`), so the names stay when the adding goes. The dev server has a small endpoint for it (`/__custom-places` in vite.config.js: GET the list, POST `{ add }` or `{ remove }`); the file is kept out of Vite's file watching.
+- **Right-click menu:**
+  - "Add location here" opens a name field in the menu (Enter or Add saves, Escape cancels; up to 60 characters).
+  - Each name already on that square shows as "Remove '…'" (for typos).
+  - Only when the dev server answers, so on a built site (Ryndean's) the menu doesn't offer it.
+- **Search:** the names are "Location" results; picking one flies to the square (a jump, Back returns). New names are searchable at once.
+- **The converter** adds them to places.json (kind `custom`), so they're searchable without the dev server too. In development the live list from the dev server replaces those.
+- A failed save shows as a line under the search, not over the map.
+- Seen in the browser: two names on one square in the Thais temple, both found in the search, both removed again (the file is empty).
+
 ### Slice 10b–10c: quest chests on the map (built 2026-11-13)
 - **10b, data** (`tools/lib/quests.js`, quests.json `[{ n, v, reward, chests: [{ p, id, items: [[id, count, key?]] }] }]`):
   - The converter's pass over the 7.6 map (for key numbers) also notes every item with an action id 1000–2000: TVP's quest spots (220).

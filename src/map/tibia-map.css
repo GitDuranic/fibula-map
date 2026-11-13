@@ -208,3 +208,7 @@
 .tm-loot.tm-active { background: rgba(255, 255, 255, .14); color: #fff; }
 .tm-muted { margin-top: 4px; color: #8a8a8a; }
 .tm-search-btns { display: flex; gap: 4px; }
+
+/* right-click menu: naming a location */
+.tm-menu-add { display: flex; gap: 4px; padding: 2px; }
+.tm-menu-add .tm-input { width: 150px; }

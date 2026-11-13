@@ -72,6 +72,16 @@ export class World {
     this.npcAt = new Map(npcs.map((n) => [n.p.join(','), n]));
     // Places: { n name, k 'town' | 'place' | 'depot', p [x,y,z] } (towns at their temple).
     this.places = await loadJson(`${this.base}/places.json`);
+    // Locations the user named (kind 'custom'): in development the live list from the dev server, which can also
+    // add and remove them (customEditable); otherwise the ones the converter put into places.json.
+    this.customEditable = false;
+    try {
+      const res = await fetch('/__custom-places');
+      if (res.ok && (res.headers.get('content-type') || '').includes('json')) {
+        const list = await res.json();
+        if (Array.isArray(list)) { this.customEditable = true; this.setCustomPlaces(list, false); }
+      }
+    } catch { /* no dev server: the built list only */ }
     // Locked doors: { p [x,y,z], id (door), open (the open door), key (number, 0 = unknown), keyId (key item) }.
     // Older data without doors.json: no locked doors.
     const doors = await loadJson(`${this.base}/doors.json`).catch(() => []);
@@ -91,6 +101,19 @@ export class World {
       for (const [level, list] of Object.entries(levels)) for (const [bx, by] of list) this.ovExists.add(`${set}:${level}:${bx}:${by}`);
     }
     this.floors = Object.keys(map.chunks).map(Number).sort((a, b) => a - b);
+  }
+
+  // ---------- locations the user named ----------
+
+  // Replaces the named locations ([{ n, p }]) and, unless told not to, rebuilds the search.
+  setCustomPlaces(list, rebuild = true) {
+    this.places = this.places.filter((p) => p.k !== 'custom').concat(list.map((c) => ({ n: c.n, k: 'custom', p: c.p })));
+    if (rebuild) this.buildSearch();
+  }
+
+  // The names the user gave square (x, y, z).
+  customAt(x, y, z) {
+    return this.places.filter((p) => p.k === 'custom' && p.p[0] === x && p.p[1] === y && p.p[2] === z).map((p) => p.n);
   }
 
   // ---------- quest chests (slice 10) ----------
@@ -374,7 +397,7 @@ export class World {
   // One list of everything that can be searched: places, depots, NPCs and the items NPCs trade.
   buildSearch() {
     const entries = [];
-    const label = { town: 'Town', place: 'Place', depot: 'Depot' };
+    const label = { town: 'Town', place: 'Place', depot: 'Depot', custom: 'Location' };
     for (const p of this.places) entries.push({ kind: label[p.k], name: p.n, place: p });
     for (const n of this.npcs) entries.push({ kind: 'NPC', name: n.n, npc: n });
     const items = new Map();

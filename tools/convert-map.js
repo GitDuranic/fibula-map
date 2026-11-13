@@ -344,6 +344,13 @@ for (const g of groups) {
   placesOut.push({ n: i > 1 ? `${town} depot ${i}` : `${town} depot`, k: 'depot', p: at });
 }
 const depots = groups;
+// Locations the user named on the map (tools/data/custom-places.json, added with the dev server): kind 'custom'.
+{
+  let custom = [];
+  try { custom = JSON.parse(fs.readFileSync('tools/data/custom-places.json', 'utf8')); } catch { /* none */ }
+  for (const c of custom) placesOut.push({ n: c.n, k: 'custom', p: c.p });
+  log(`Named locations: ${custom.length}`);
+}
 fs.writeFileSync(path.join(OUT, 'places.json'), JSON.stringify(placesOut));
 log(`Places: ${townsHere.length} towns (of ${towns.length} in the town list), ${depots.length} depots (${lockers.length} lockers)`);
 
