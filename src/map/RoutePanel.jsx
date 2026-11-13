@@ -149,6 +149,7 @@ export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, o
               ))}
             </div>
           )}
+          {!route.busy && route.cheapBusy && <div className="tm-route-note">Looking for a cheaper way...</div>}
           {!route.busy && r && (
             <>
               <div className="tm-route-time">{fmtTime(time)}{r.gold ? `, ${r.gold} gp` : ''}</div>
