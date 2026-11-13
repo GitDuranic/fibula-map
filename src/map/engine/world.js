@@ -72,6 +72,12 @@ export class World {
     this.npcAt = new Map(npcs.map((n) => [n.p.join(','), n]));
     // Places: { n name, k 'town' | 'place' | 'depot', p [x,y,z] } (towns at their temple).
     this.places = await loadJson(`${this.base}/places.json`);
+    // Locked doors: { p [x,y,z], id (door), open (the open door), key (number, 0 = unknown), keyId (key item) }.
+    // Older data without doors.json: no locked doors.
+    const doors = await loadJson(`${this.base}/doors.json`).catch(() => []);
+    this.doors = doors.map(([x, y, z, id, open, key, keyId]) => ({ p: [x, y, z], id, open, key, keyId }));
+    this.doorAt = new Map(this.doors.map((d) => [d.p.join(','), d]));
+    this.isDoorOpen = () => false; // set by the map (unlocked doors, or all opened)
     this.buildSearch();
     this.map = map;
     this.CHUNK = map.chunk;
@@ -188,8 +194,11 @@ export class World {
       const d = z - zz;
       for (let sy = 0; sy < C + OVERHANG; sy++) {
         for (let sx = 0; sx < C + OVERHANG; sx++) {
-          const t = this.tile(x0 + sx + d, y0 + sy + d, zz);
+          let t = this.tile(x0 + sx + d, y0 + sy + d, zz);
           if (!t || !t.items.length) continue;
+          // An unlocked door is drawn open.
+          const door = this.doorAt.get(`${t.x},${t.y},${t.z}`);
+          if (door && this.isDoorOpen(door)) t = { ...t, items: t.items.map((it) => (it.id === door.id ? { id: door.open } : it)) };
           drawTile(this.defs, t, sx * TILE, sy * TILE, drawSprite);
         }
       }
@@ -202,6 +211,25 @@ export class World {
       this.canvases.delete(k2); this.cachedPixels -= v.pixels;
     }
     return canvas;
+  }
+
+  // An item drawn once as a 32x32 canvas, kept (key icons on doors).
+  iconCanvas(id) {
+    this.icons ||= new Map();
+    let c = this.icons.get(id);
+    if (!c) {
+      c = document.createElement('canvas');
+      c.width = c.height = TILE;
+      this.drawIcon(c.getContext('2d'), id);
+      this.icons.set(id, c);
+    }
+    return c;
+  }
+
+  // Doors were unlocked or locked: the chunk pictures are drawn again (rare, so all of them).
+  doorsChanged() {
+    this.canvases.clear();
+    this.cachedPixels = 0;
   }
 
   // Draws an item as a 32x32 icon (bottom-right anchored, like the client's inventory slots).

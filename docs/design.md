@@ -77,7 +77,11 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
   - floor changes: stairs, ladders, holes, rope spots, shovel spots
   - boats and carpets, with prices from the NPC `Teleport(x,y,z)` lines and `Price=` in `data/npc/behavior/*.npc`
   - map teleporters and magic fields
-- **Passages locked behind a quest** are shown as checkboxes ("I have done …"). Routes only use the passages the player has ticked.
+- ~~Passages locked behind a quest are shown as checkboxes~~ → replaced by **locked doors with keys** (2026-11-13, user):
+  - Locked doors block routes by default.
+  - Each one shows the key it needs (icon, name, key number) and can be unlocked by clicking it. It then looks open, with the key still shown.
+  - A tick opens all locked doors at once.
+  - 7.1 has no quest or level doors.
 - **Shortest path only.** Routes don't avoid monsters or danger; time is the only cost.
 
 ### Run times (formulas from the TVP source)
@@ -225,7 +229,46 @@ Agree each slice before building it, then build one at a time.
 - **2 seconds per passage** for talking to the NPC (players type the combo fast), on top of the walk to the NPC.
 - **The Oracle** is used only when the character's level is 8 or higher (the level setting in the route panel).
 
+## Slice 4c–4e plan: locked doors and keys (agreed with the user 2026-11-13)
+
+**What the data gives us** (scanned 2026-11-13)
+- The 7.1 map has 309 locked doors, but only 4 carry a key number (3 on Rookgaard, 1 near Venore). The numbers seem to have been lost when the map was converted to TVP format.
+- **The TVP 7.6 map** has numbers on 109 of its 379 locked doors. 101 of those are at exactly the spot of a 7.1 locked door (65 different keys), so about 105 doors get a known key.
+  - The other ~200 doors have no number in either map. Only Ryndean's original 7.1 files could fill them in.
+  - 9 numbered 7.6 doors aren't locked doors on the 7.1 map and are left out.
+- Keys (wooden, copper, silver, golden, …) carry the number. A door only has the number, so a key's look and name come from keys with that number lying in chests on either map. Otherwise it's a plain key, "Key 3801".
+- Unlocking: a locked door turns into the open door (server id + 2, TVP doors.lua).
+
+**Sub-slices**
+- **4c. Data:** the converter adds each locked door with its key number (from 7.1, else 7.6 at the same spot) and the matching key's look and name.
+- **4d. Map:**
+  - Locked doors show the key's icon.
+  - Clicking one gives a small window with the key's icon, name and number, and an Unlock/Lock button.
+  - An unlocked door is drawn open, with the key still shown.
+  - A tick "Open all locked doors".
+  - Remembered in this browser.
+- **4e. Routes:** locked doors block routes until unlocked (or all opened). Doors with an unknown key work the same way, labelled "key unknown".
+
 ## Decisions made while building
+
+### Slice 4c–4e: locked doors and keys (built 2026-11-13)
+- **4c, data** (`tools/lib/doors.js`, doors.json `[[x, y, z, door id, open door id, key number, key id]]`, client ids):
+  - The converter reads all item attributes (TVP item.h: action id 4, key number 23, keyhole 24, …) and looks inside containers too, for keys in chests.
+  - Keys on the 7.1 map carry their number as an **action id**; on the 7.6 map as a key number. Both are read.
+  - Result: 309 locked doors; key number known for 101 (4 from 7.1, 97 from the 7.6 map at the same spot), 65 different keys.
+  - Only 28 of those doors have a key of known look (a key with that number lies on a map). The rest, and doors with no number, show a **copper key**.
+  - Reading the 7.6 map for this takes about 2 s.
+- **4d, map:**
+  - The key's icon is drawn on each locked door from zoom 16, at 0.8 of a tile (faint when the number is unknown). Note: key sprites are small, so the icon is easy to miss.
+  - Clicking a door opens a "Locked door" window: the key's icon, name and number ("Key unknown" without one), the position, Unlock/Lock, and the "Open all locked doors" tick. The tick is also in the route panel.
+  - **A key opens every door with its number:** unlocking a door with a known number unlocks all doors with that key (the button says how many). A door without a number is unlocked on its own.
+  - An unlocked door is drawn as the open door (server id + 2), with the key still on it; all chunk pictures are drawn again (rare).
+  - The state (`{ all, open: ['k25', 'p32100,31569,9', …] }`) is remembered in this browser (`tm-doors`).
+- **4e, routes:**
+  - Locked doors block unless unlocked or all opened. Unlocking, locking or the tick searches the route again **without moving the view**; a level change across 8 does the same now.
+  - When there's no route, the search runs again with all doors open. If that finds one, the panel says which locked doors are in the way ("key 25", or "a door at x, y, z (key unknown)").
+- Tested in Node and in the browser: Thais temple → the room behind the key-25 door (32357,32195,7) has no route while locked ("key 25" in the way), a 59-step route once unlocked, and the door is drawn open.
+- **Fixed on the way:** stopping the dev server's background task only stopped `npx`, and the old Vite kept port 5180 (the new one moved to 5181 and doors.json wasn't served). The server is now started with `--strictPort`, and the old node process stopped by port.
 
 ### Slice 4b: routes with passages (built 2026-11-13)
 - **Forcefields:** stepping onto one is one step on the forcefield's own ground (diagonal ×3 as usual), and then you're at its destination.

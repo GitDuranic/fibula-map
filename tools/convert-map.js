@@ -9,6 +9,7 @@
 // Outputs (in <out>/):
 //   items.json            draw info and name for every item on the map or traded by an NPC (keyed by client id),
 //                         plus fluid names by fluid type
+//   doors.json            locked doors [[x,y,z, door id, open door id, key number (0 unknown), key id]] (client ids)
 //   walk.bin, links.json  router data: per tile 0 (blocked) or ground speed / 2, in map.json chunk order;
 //                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig, teleport);
 //                         passages [[NPC, destination, price, min level, x,y,z, tx,ty,tz]] (boats, carpets, Oracle)
@@ -30,6 +31,7 @@ import path from 'node:path';
 import { parseDat } from './lib/dat.js';
 import { openSpr, readPic, blit } from './lib/spr.js';
 import { walkNodes, Reader, parseOtb } from './lib/nodefile.js';
+import { doorLists, readItemAttrs, scanDoorsAndKeys } from './lib/doors.js';
 import { writePng } from './lib/png.js';
 import sharp from 'sharp';
 import { drawTile, TILE as TILE32 } from '../src/map/engine/render.js';
@@ -41,6 +43,8 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (
 const ASSETS = args.assets || 'C:/git/tibia assets';
 const DATA = args.data || path.join(ASSETS, 'TVP-main/TVP-main/data');
 const MAP = args.map || 'C:/git/tibia assets/tibia71-tvp-converted/Tibia71.otbm'; // 7.1 map in TVP item ids
+// The TVP 7.6 map: only for key numbers on locked doors, which the converted 7.1 map mostly lacks.
+const MAP76 = args.map76 || path.join(DATA, 'world/map.otbm');
 const SPAWN = args.spawn || 'C:/git/tibia assets/tibia71-tvp-converted/Tibia71-spawn.xml'; // 7.1 NPC positions
 // The data is built in a separate folder and swapped in at the end, so a running map never sees it half-built
 // (the old way deleted the folder first, and a page opened during a convert showed nothing but grey).
@@ -67,6 +71,9 @@ const OTBM = { TILE_AREA: 4, TILE: 5, ITEM: 6, TOWN: 13, HOUSETILE: 14 };
 const towns = []; // { name, temple: [x, y, z] } from the map's town list
 const lockers = []; // [x, y, z]
 const teleports = []; // [x, y, z, to x, to y, to z]: items with a teleport destination (magic forcefields)
+// Locked doors and keys (see tools/lib/doors.js): doors [{ pos, sid, num }], keys Map(key number -> key server id).
+const DOOR_LISTS = doorLists(DATA);
+const lockedDoors = [], keys71 = new Map();
 const floors = Array.from({ length: 16 }, () => new Map());
 const usedItems = new Set();
 const missing = new Map();
@@ -94,7 +101,7 @@ log('Reading map');
         while (r.left > 0) {
           const attr = r.u8();
           if (attr === 3) r.u32();
-          else if (attr === 9) addItem(r.u16());
+          else if (attr === 9) { const sid = r.u16(); if (DOOR_LISTS.locked.has(sid)) lockedDoors.push({ pos, sid, num: 0 }); addItem(sid); }
           else break;
         }
         const ck = `${Math.floor(x / CHUNK)},${Math.floor(y / CHUNK)}`;
@@ -107,20 +114,19 @@ log('Reading map');
         return true;
       }
       case OTBM.ITEM: {
-        if (!tile || (node.parent?.type !== OTBM.TILE && node.parent?.type !== OTBM.HOUSETILE)) return false;
+        if (!tile) return false;
         const sid = r.u16();
-        let count = null;
-        while (r.left > 0) {
-          const attr = r.u8();
-          if (attr === 15 || attr === 12) count = r.u8();
-          else if (attr === 4 || attr === 5 || attr === 10 || attr === 22) r.u16();
-          else if (attr === 14) r.u8();
-          else if (attr === 6 || attr === 7) r.str(); // text, description
-          else if (attr === 8) teleports.push([...pos, r.u16(), r.u16(), r.u8()]); // teleport destination
-          else break; // other attributes don't matter
+        const a = readItemAttrs(r);
+        // Inside a container: only keys matter (their number tells which key a locked door needs).
+        if (node.parent?.type !== OTBM.TILE && node.parent?.type !== OTBM.HOUSETILE) {
+          if (DOOR_LISTS.keys.has(sid) && (a.keyNumber || a.actionId) && !keys71.has(a.keyNumber || a.actionId)) keys71.set(a.keyNumber || a.actionId, sid);
+          return true;
         }
-        addItem(sid, count);
-        return false; // skip container contents
+        if (a.tele) teleports.push([...pos, ...a.tele]);
+        if (DOOR_LISTS.locked.has(sid)) lockedDoors.push({ pos, sid, num: a.keyhole || a.actionId || 0 });
+        if (DOOR_LISTS.keys.has(sid) && (a.keyNumber || a.actionId) && !keys71.has(a.keyNumber || a.actionId)) keys71.set(a.keyNumber || a.actionId, sid);
+        addItem(sid, a.count);
+        return true; // look inside containers too (keys in chests)
       }
       case OTBM.TOWN: { r.u32(); const name = r.str(); towns.push({ name, temple: [r.u16(), r.u16(), r.u8()] }); return false; }
       default: return true;
@@ -197,6 +203,32 @@ if (badTeleports.length) log(`Teleports without a destination on the map, left o
   const byKind = LINK_KINDS.map((k, i) => `${k} ${walk.links.filter((l) => l[6] === i).length}`).join(', ');
   const walkable = [...speeds.values()].reduce((a, b) => a + b, 0);
   log(`Walk: ${walkable} walkable tiles, ground speeds ${[...speeds.keys()].sort((a, b) => a - b).join('/')}; links: ${byKind}; ${walk.skipped()} without a destination; ${walkCounts.doors} door ids open`);
+}
+
+// ---------- locked doors (keys) ----------
+// doors.json: [[x, y, z, door client id, open door client id, key number (0 = unknown), key client id]].
+// The key number comes from the 7.1 map, else from the TVP 7.6 map at the same spot. The key's look and name come
+// from a key with that number lying on either map, else a plain copper key.
+log('Reading key numbers from the 7.6 map');
+const map76 = scanDoorsAndKeys(MAP76, DOOR_LISTS);
+const PLAIN_KEY = 2089; // copper key
+const keySid = (num) => keys71.get(num) || map76.keys.get(num) || PLAIN_KEY;
+let from71 = 0, from76 = 0;
+const doorsOut = [];
+for (const d of lockedDoors) {
+  let num = d.num;
+  if (num) from71++;
+  else if ((num = map76.holes.get(d.pos.join(',')) || 0)) from76++;
+  const cid = toClient(d.sid), open = toClient(d.sid + 2), key = toClient(num ? keySid(num) : PLAIN_KEY);
+  if (!cid || !open || !key) continue;
+  usedItems.add(open); usedItems.add(key);
+  doorsOut.push([...d.pos, cid, open, num, key]);
+}
+fs.writeFileSync(path.join(OUT, 'doors.json'), JSON.stringify(doorsOut));
+{
+  const nums = doorsOut.filter((d) => d[5]);
+  const typed = nums.filter((d) => keys71.has(d[5]) || map76.keys.has(d[5])).length;
+  log(`Locked doors: ${doorsOut.length}, key number known for ${nums.length} (${from71} from 7.1, ${from76} from 7.6; ${new Set(nums.map((d) => d[5])).size} keys, ${typed} doors with a key of known look)`);
 }
 
 // ---------- NPCs ----------

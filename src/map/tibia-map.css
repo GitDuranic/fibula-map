@@ -193,3 +193,11 @@
 .tm-route-legs li { margin: 1px 0; }
 .tm-leg-npc { color: #7fd8ff; }
 .tm-leg-npc b { color: #fff; font-weight: normal; }
+
+/* door window: the key a locked door needs */
+.tm-door { flex: none; }
+.tm-door .tm-window-body { display: flex; flex-direction: column; gap: 4px; }
+.tm-door-key { align-items: center; }
+.tm-door-text { display: flex; flex-direction: column; min-width: 0; }
+.tm-door-num, .tm-door-pos { color: #8a8a8a; }
+.tm-route-locked { margin-top: 2px; color: #c0c0c0; }

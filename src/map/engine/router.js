@@ -15,6 +15,8 @@
 // again for another speed without searching again (routeTime).
 //
 // Two routes are searched: the fastest, and the cheapest (least gold, then fastest), shown when they differ.
+// Locked doors block unless unlocked (by key number, or the door itself when its number isn't known) or all opened.
+// When that leaves no route, the search is done again with all doors open, to tell which locked doors are in the way.
 
 export const PASSAGE_MS = 2000; // talking to the NPC (user: players type the combo in about 2 seconds)
 export const TALK_RANGE = 3;
@@ -82,10 +84,11 @@ export function routerMain() {
   };
 
   async function load(base) {
-    const [bin, linksJson, map] = await Promise.all([
+    const [bin, linksJson, map, doors] = await Promise.all([
       fetch(`${base}/walk.bin`).then((r) => r.arrayBuffer()),
       fetch(`${base}/links.json`).then((r) => r.json()),
       fetch(`${base}/map.json`).then((r) => r.json()),
+      fetch(`${base}/doors.json`).then((r) => r.json()).catch(() => []), // older data: no locked doors
     ]);
     const offset = new Map();
     let i = 0;
@@ -101,7 +104,9 @@ export function routerMain() {
       }
     }
     const teleports = linksJson.links.filter((l) => linksJson.kinds[l[6]] === 'teleport');
-    W = { bytes: new Uint8Array(bin), offset, stepLinks, useLinks, teleports, passages: linksJson.passages || [] };
+    // Locked doors by tile: [key number (0 = unknown), x, y, z].
+    const lockedAt = new Map(doors.map(([x, y, z, , , num]) => [key(x, y, z), [num, x, y, z]]));
+    W = { bytes: new Uint8Array(bin), offset, stepLinks, useLinks, teleports, passages: linksJson.passages || [], lockedAt };
   }
 
   // A binary min-heap of [priority, key].
@@ -135,7 +140,8 @@ export function routerMain() {
 
   // A* from `from` to `to` ([x, y, z]) for a character with `speed` (client speed value) and `level`.
   // cheap: least gold first, then fastest. Returns { path, steps, gold, expanded } or { error }.
-  function route(from, to, speed, level, cheap) {
+  // locked(tileKey): is there a locked door here that is still locked?
+  function route(from, to, speed, level, cheap, locked) {
     const stepTime = (ground, diagonal) => { const t = 50 * Math.floor((50 + Math.floor(1000 * ground / speed) - 1) / 50); return diagonal ? 3 * t : t; };
     const minStep = stepTime(90, false); // the fastest ground: keeps the estimate below the real time
     const goal = key(...to);
@@ -214,7 +220,7 @@ export function routerMain() {
           }
           continue;
         }
-        if (ground) relax(nk, cost + stepTime(ground, diag), k, diag ? 'diagonal' : 'walk', nx, ny, ground);
+        if (ground && !locked(nk)) relax(nk, cost + stepTime(ground, diag), k, diag ? 'diagonal' : 'walk', nx, ny, ground);
       }
       // Ladders, grates, rope spots, loose stone piles on this tile or next to it.
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
@@ -236,7 +242,7 @@ export function routerMain() {
   }
 
   self.onmessage = async (e) => {
-    const { id, type, base, from, to, speed, level } = e.data;
+    const { id, type, base, from, to, speed, level, doors = { all: false, open: [] } } = e.data;
     try {
       if (type === 'load') { await load(base); self.postMessage({ id, ok: true }); return; }
       if (!W) throw new Error('Walk data not loaded');
@@ -254,12 +260,31 @@ export function routerMain() {
       if (!a) { self.postMessage({ id, error: 'The start is not near a tile you can walk on.' }); return; }
       if (!b) { self.postMessage({ id, error: 'The destination is not near a tile you can walk on.' }); return; }
       const t0 = performance.now();
-      const fast = route(a, b, speed, level, false);
-      if (fast.error) { self.postMessage({ id, ...fast, ms: Math.round(performance.now() - t0) }); return; }
+      const open = new Set(doors.open);
+      const unit = ([num, x, y, z]) => (num ? `k${num}` : `p${x},${y},${z}`);
+      const locked = (k) => { const d = !doors.all && W.lockedAt.get(k); return !!d && !open.has(unit(d)); };
+      const fast = route(a, b, speed, level, false, locked);
+      if (fast.error) {
+        // Would it go with all doors open? Then tell which locked doors are in the way.
+        let lockedOnPath;
+        if (!doors.all) {
+          const any = route(a, b, speed, level, false, () => false);
+          if (any.path) {
+            const seen = new Map();
+            for (const [x, y, z] of any.path) {
+              const d = W.lockedAt.get(key(x, y, z));
+              if (d && locked(key(x, y, z)) && !seen.has(unit(d))) seen.set(unit(d), { key: d[0], p: d.slice(1) });
+            }
+            lockedOnPath = [...seen.values()];
+          }
+        }
+        self.postMessage({ id, ...fast, locked: lockedOnPath, ms: Math.round(performance.now() - t0) });
+        return;
+      }
       const routes = [{ name: 'Fastest', ...fast }];
       // The cheapest route, when the fastest one costs gold and there may be a cheaper way.
       if (fast.gold > 0) {
-        const cheap = route(a, b, speed, level, true);
+        const cheap = route(a, b, speed, level, true, locked);
         if (cheap.path && cheap.gold < fast.gold) routes.push({ name: 'Cheapest', ...cheap });
       }
       self.postMessage({ id, routes, ms: Math.round(performance.now() - t0) });
@@ -282,7 +307,8 @@ export function createRouter(base) {
   return {
     // from, to: [x, y, z]; speed: the character's speed (client value); level: for the Oracle.
     // Resolves to { routes: [{ name: 'Fastest' | 'Cheapest', path, steps, gold }] } or { error }.
-    route: async (from, to, speed, level) => { await ready; return ask({ type: 'route', from, to, speed, level }); },
+    // doors: { all, open: [unit] } (see the map's doorUnit). Also { error, locked: [{ key, p }] } when locked doors are in the way.
+    route: async (from, to, speed, level, doors) => { await ready; return ask({ type: 'route', from, to, speed, level, doors }); },
     terminate: () => worker.terminate(),
   };
 }

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
+import DoorWindow from './DoorWindow.jsx';
 import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf } from './RoutePanel.jsx';
 import { createRouter } from './engine/router.js';
@@ -68,6 +69,23 @@ function visibleNpcs(world, v, left, top, right, bottom) {
   return out.sort((a, b) => a.f[1] - b.f[1] || a.f[0] - b.f[0]);
 }
 
+// Locked doors: what unlocking works on. A key opens every door with its number; a door without a known number
+// is unlocked on its own. The state: { all: open every locked door (the tick), open: [unit, ...] }.
+const doorUnit = (d) => (d.key ? `k${d.key}` : `p${d.p.join(',')}`);
+const doorOpen = (st, d) => st.all || st.open.includes(doorUnit(d));
+// Key icons on locked doors from this zoom.
+const KEYS_FROM = 16;
+// The locked doors to draw for view v: [{ d, f: frame position }] (placed like NPCs, see npcFrame).
+function visibleDoors(world, v, left, top, right, bottom) {
+  if (v.zoom < KEYS_FROM || !world.doors) return [];
+  const out = [];
+  for (const d of world.doors) {
+    const f = npcFrame(d, v.z, v.cut);
+    if (f && f[0] >= left - 1 && f[0] <= right + 1 && f[1] >= top - 1 && f[1] <= bottom + 1) out.push({ d, f });
+  }
+  return out;
+}
+
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
@@ -81,6 +99,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const frame = useRef(0);
   const viewBox = useRef(null); // the tile area on screen, from the last draw
   const selected = useRef(null); // the NPC whose window is open (drawn with a frame)
+  const selectedDoor = useRef(null); // the locked door whose window is open (drawn with a frame)
   const [npc, setNpc] = useState(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
@@ -90,6 +109,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [results, setResults] = useState([]);
   const [active, setActive] = useState(0); // highlighted search result
   const [item, setItem] = useState(null); // the item whose window is open: { id, fluid }
+  const [door, setDoor] = useState(null); // the locked door whose window is open
+  // Unlocked doors (see doorUnit), remembered in this browser (a convenience; it works without storage too).
+  const [doors, setDoorsState] = useState(() => {
+    try { const d = JSON.parse(window.localStorage.getItem('tm-doors') || '{}'); return { all: !!d.all, open: Array.isArray(d.open) ? d.open : [] }; }
+    catch { return { all: false, open: [] }; }
+  });
+  const doorsRef = useRef(doors);
+  doorsRef.current = doors;
   // The route: { open, from, to: { label, pos: [x,y,z] }, result: { routes: [{ name, path, steps, gold }] } | { error },
   // pick: which of the routes is shown (fastest / cheapest), busy }.
   const [route, setRoute] = useState({ open: false, from: null, to: null, result: null, pick: 0, busy: false });
@@ -224,6 +251,21 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         });
       }
       ctx.textAlign = 'center';
+    }
+
+    // Locked doors: the key they need, over the door (faint when its number isn't known); a white frame on the
+    // selected one. An unlocked door is drawn open by the World, its key stays.
+    const kd = Math.max(1, Math.round(window.devicePixelRatio || 1));
+    for (const { d, f } of visibleDoors(world, v, left, top, right, bottom)) {
+      const icon = world.iconCanvas(d.keyId), size = Math.round(s * 0.8);
+      ctx.imageSmoothingEnabled = size < 32;
+      ctx.globalAlpha = d.key ? 1 : 0.6;
+      ctx.drawImage(icon, Math.round(ox + f[0] * s + (s - size) / 2), Math.round(oy + f[1] * s + (s - size) / 2), size, size);
+      ctx.globalAlpha = 1;
+      if (d === selectedDoor.current) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = kd;
+        ctx.strokeRect(ox + f[0] * s + kd / 2, oy + f[1] * s + kd / 2, s - kd, s - kd);
+      }
     }
 
     // NPCs over everything (roofs too): outfit, then the name above it in the client's outlined font, green like
@@ -367,6 +409,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     return hit;
   };
 
+  // The locked door at canvas point p (its tile), or null.
+  const doorAtPoint = (p) => {
+    const world = worldRef.current, b = viewBox.current;
+    if (!world?.doors || !b) return null;
+    const t = tileAt(p);
+    return visibleDoors(world, view.current, b.left, b.top, b.right, b.bottom).find(({ f }) => f[0] === t.x && f[1] === t.y)?.d || null;
+  };
+
   const redraw = useCallback(() => {
     if (!frame.current) frame.current = requestAnimationFrame(draw);
   }, [draw]);
@@ -397,6 +447,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       const v = view.current;
       if (!world.floors.includes(v.z)) v.z = 7;
       if (DEBUG_WALK) world.loadWalk().then(() => redraw());
+      world.isDoorOpen = (d) => doorOpen(doorsRef.current, d);
       setReady(true);
       viewChanged();
     }, (e) => { if (worldRef.current === world) setError(e.message); });
@@ -535,8 +586,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   }, [goTo]);
 
   // Sets the start and/or destination (each { label, pos } or null) and finds the route once both are set.
+  // keepView: search again without moving the view (doors unlocked, level changed).
   const routeSeq = useRef(0);
-  const updateRoute = useCallback((change) => {
+  const updateRoute = useCallback((change, keepView = false) => {
     setRoute((old) => {
       const r = { ...old, ...change, open: true };
       routePath.current = null;
@@ -545,12 +597,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         r.busy = true; r.result = null;
         router.current ||= createRouter(dataUrl);
         const speed = speedOf(charRef.current); // the time shown is worked out again when the settings change
-        router.current.route(r.from.pos, r.to.pos, speed, Number(charRef.current.level) || 1).then((res) => {
+        router.current.route(r.from.pos, r.to.pos, speed, Number(charRef.current.level) || 1, doorsRef.current).then((res) => {
           if (seq !== routeSeq.current) return; // a newer request
           const path = res.routes?.[0].path || null;
           routePath.current = path;
           setRoute((cur) => ({ ...cur, busy: false, result: res, pick: 0 }));
-          if (path) showRoute(path); else redraw();
+          if (path && !keepView) showRoute(path); else redraw();
         });
       } else { r.busy = false; r.result = null; }
       redraw();
@@ -570,17 +622,37 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const oracleLevel = Number(char.level) >= 8;
   const routeRef = useRef(route);
   routeRef.current = route;
+  // ... and when doors are unlocked or locked.
+  const doorsKey = `${doors.all}:${doors.open.join(';')}`;
   useEffect(() => {
-    if (routeRef.current.from && routeRef.current.to) updateRoute({});
-  }, [oracleLevel, updateRoute]);
+    if (routeRef.current.from && routeRef.current.to) updateRoute({}, true);
+  }, [oracleLevel, doorsKey, updateRoute]);
   const clearRoute = () => { routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
 
   const selectNpc = useCallback((n) => {
     selected.current = n;
     setNpc(n);
-    if (n) setItem(null);
+    if (n) { setItem(null); selectedDoor.current = null; setDoor(null); }
     redraw();
   }, [redraw]);
+  const selectDoor = useCallback((d) => {
+    selectedDoor.current = d;
+    setDoor(d);
+    if (d) { setItem(null); selected.current = null; setNpc(null); }
+    redraw();
+  }, [redraw]);
+  // Unlocking and locking: the doors are drawn again (open or closed) and the route searched again.
+  const setDoors = (st) => {
+    doorsRef.current = st;
+    setDoorsState(st);
+    try { window.localStorage.setItem('tm-doors', JSON.stringify(st)); } catch { /* storage blocked: fine */ }
+    worldRef.current?.doorsChanged();
+    redraw();
+  };
+  const toggleDoor = (d) => {
+    const u = doorUnit(d), st = doorsRef.current;
+    setDoors({ ...st, open: st.open.includes(u) ? st.open.filter((x) => x !== u) : [...st.open, u] });
+  };
 
   // ---------- pointer: drag to pan (with a little glide), wheel/pinch to zoom ----------
   const pointers = useRef(new Map());
@@ -613,7 +685,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const p = toCanvas(e);
     if (!pointers.current.has(e.pointerId)) {
       setHover(tileAt(p));
-      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) ? 'pointer' : '';
+      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || doorAtPoint(p) ? 'pointer' : '';
       return;
     }
     pointers.current.set(e.pointerId, p);
@@ -656,7 +728,13 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       return;
     }
     drag.current = null;
-    if (d && !d.moved) { selectNpc(npcAtPoint(toCanvas(e))); return; } // a click: open the NPC there, or close
+    if (d && !d.moved) {
+      // A click: open the NPC there, else the locked door there, else close.
+      const p = toCanvas(e), n = npcAtPoint(p);
+      if (n) selectNpc(n);
+      else { selectNpc(null); selectDoor(doorAtPoint(p)); }
+      return;
+    }
     if (d && performance.now() - d.t < 80) {
       // Glide on after a flick, slowing down.
       let { vx, vy } = d, t = performance.now();
@@ -732,7 +810,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (r.kind === 'Position') goTo(r.pos);
     else if (r.kind === 'NPC') { goTo({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
     else if (r.kind === 'Depot') goTo({ x: r.place.p[0], y: r.place.p[1], z: r.place.p[2] });
-    else if (r.kind === 'Item') { selectNpc(null); setItem(r.item); }
+    else if (r.kind === 'Item') { selectNpc(null); selectDoor(null); setItem(r.item); }
     else {
       // A town or place: an overview with the roofs on, from its temple (the surface, unless it's underground).
       const [x, y, z] = r.place.p;
@@ -832,7 +910,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             onFrom={(pt) => updateRoute({ from: pt })} onTo={(pt) => updateRoute({ to: pt })}
             onSwap={() => updateRoute({ from: route.to, to: route.from })}
             onShow={() => showRoute(route.result?.routes?.[route.pick]?.path)} onPick={pickRoute}
-            onClose={clearRoute}
+            onClose={clearRoute} doorsAll={doors.all} onDoorsAll={(all) => setDoors({ ...doors, all })}
+          />
+        )}
+        {door && world && (
+          <DoorWindow
+            world={world} door={door} open={doorOpen(doors, door)} all={doors.all}
+            same={door.key ? world.doors.filter((x) => x.key === door.key).length : 1}
+            onToggle={() => toggleDoor(door)} onAll={(all) => setDoors({ ...doors, all })} onClose={() => selectDoor(null)}
           />
         )}
         {npc && world && (

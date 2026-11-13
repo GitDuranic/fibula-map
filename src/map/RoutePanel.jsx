@@ -87,7 +87,7 @@ function legText(l) {
   return <>Walk {plural(l.steps, 'step')}{extra.length ? `, ${extra.join(', ')}` : ''} ({fmtTime(l.time)})</>;
 }
 
-export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, onSwap, onClose, onShow, onPick }) {
+export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, onSwap, onClose, onShow, onPick, doorsAll, onDoorsAll }) {
   const routes = route.result?.routes || [];
   const r = routes[route.pick] || routes[0];
   const speed = speedOf(char);
@@ -121,6 +121,9 @@ export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, o
           <input type="checkbox" checked={char.boh} onChange={(e) => onChar({ ...char, boh: e.target.checked })} /> Boots of haste
           <span className="tm-speed">speed {speed}</span>
         </label>
+        <label className="tm-check" title="Locked doors block routes; unlock them one by one by clicking them on the map, or all at once here">
+          <input type="checkbox" checked={doorsAll} onChange={(e) => onDoorsAll(e.target.checked)} /> Open all locked doors
+        </label>
         <div className="tm-route-actions">
           <button type="button" className="tm-btn" onClick={onSwap} disabled={!route.from && !route.to} title="Swap start and destination">Swap</button>
           <button type="button" className="tm-btn" onClick={onShow} disabled={!r} title="Show the whole route">Show</button>
@@ -128,6 +131,12 @@ export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, o
         <div className="tm-route-result">
           {route.busy && 'Finding the way...'}
           {!route.busy && route.result?.error && <span className="tm-error">{route.result.error}</span>}
+          {!route.busy && route.result?.locked && (
+            <div className="tm-route-locked">
+              Locked doors are in the way: {route.result.locked.map((d) => (d.key ? `key ${d.key}` : `a door at ${d.p.join(', ')} (key unknown)`)).join(', ')}.
+              Unlock them on the map, or tick "Open all locked doors".
+            </div>
+          )}
           {!route.busy && routes.length > 1 && (
             <div className="tm-route-choice" role="tablist">
               {routes.map((x, i) => (
