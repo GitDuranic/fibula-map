@@ -1,0 +1,7 @@
+# Game data: never touch line endings (binary files, and text files the converter reads byte for byte).
+assets/** -text
+*.otbm binary
+*.otb binary
+*.spr binary
+*.dat binary
+*.pic binary

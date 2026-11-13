@@ -2,10 +2,14 @@
 //
 // Usage: node tools/convert-map.js [--assets "<dir>"] [--data "<server data dir>"] [--map "<map.otbm>"] [--spawn "<spawn.xml>"] [--out public/map-data]
 //
-// Inputs:
-//   <assets>/Tibia.dat, Tibia.spr                    client files (7.6 format, 7.1 item data)
-//   <data>/items/items.otb                           TVP item list (server id -> client id)
-//   <map>                                            the 7.1 map (default: tibia71-tvp-converted/Tibia71.otbm, TVP item ids)
+// Inputs (all in the repo by default, see the README):
+//   <assets>/Tibia.dat, Tibia.spr, Tibia.pic         client files (7.6 format, 7.1 item data)     default assets/client
+//   <data>/items/items.otb, items.xml, global.lua,   TVP data: item list, door/key ids, NPCs,        default assets/tvp-data
+//     npc/, monster/, scripts/actions/map/quests.lua,  monsters, quest chests, the 7.6 map (key numbers, quest spots)
+//     world/map.otbm
+//   <map>                                            the 7.1 map (TVP item ids)                    default assets/map71/Tibia71.otbm
+//   <spawn>                                          7.1 NPC and monster spawns                    default assets/map71/Tibia71-spawn.xml
+//   tools/data/wikiquests.json, custom-places.json   TibiaWiki quests; the user's named locations
 // Outputs (in <out>/):
 //   items.json            draw info and name for every item on the map or traded by an NPC (keyed by client id),
 //                         plus fluid names by fluid type
@@ -44,12 +48,13 @@ import { loadMonsters, spawnGroups } from './lib/monsters.js';
 import { walkRules, buildWalk, LINK_KINDS } from './lib/walk.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
-const ASSETS = args.assets || 'C:/git/tibia assets';
-const DATA = args.data || path.join(ASSETS, 'TVP-main/TVP-main/data');
-const MAP = args.map || 'C:/git/tibia assets/tibia71-tvp-converted/Tibia71.otbm'; // 7.1 map in TVP item ids
+// The input files are in the repo (assets/, see the README); each can be pointed elsewhere with its option.
+const ASSETS = args.assets || 'assets/client'; // Tibia.dat, Tibia.spr, Tibia.pic
+const DATA = args.data || 'assets/tvp-data'; // the parts of TVP's data folder the converter reads
+const MAP = args.map || 'assets/map71/Tibia71.otbm'; // 7.1 map in TVP item ids
 // The TVP 7.6 map: only for key numbers on locked doors, which the converted 7.1 map mostly lacks.
 const MAP76 = args.map76 || path.join(DATA, 'world/map.otbm');
-const SPAWN = args.spawn || 'C:/git/tibia assets/tibia71-tvp-converted/Tibia71-spawn.xml'; // 7.1 NPC positions
+const SPAWN = args.spawn || 'assets/map71/Tibia71-spawn.xml'; // 7.1 NPC and monster spawns
 // The data is built in a separate folder and swapped in at the end, so a running map never sees it half-built
 // (the old way deleted the folder first, and a page opened during a convert showed nothing but grey).
 const FINAL_OUT = args.out || 'public/map-data';
