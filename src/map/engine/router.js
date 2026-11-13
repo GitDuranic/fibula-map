@@ -11,6 +11,9 @@
 //   one step time on the tile you land on; a loose stone pile is dug first and then stepped into (two steps);
 // - an NPC passage (boat, carpet, the Oracle): from any tile within 3 of the NPC on its floor (TVP npcbehavior.cpp,
 //   areInRange<3, 3>), PASSAGE_MS for talking, then you're at the destination. It costs its price in gold.
+// The tile of a floor change is kept in the path as its own entry, without time of its own (5a): 'onto' for
+// stairs, holes and forcefields (you step onto it, then you're on the other floor), 'use' for ladders, grates,
+// rope spots and stone piles used from the tile next to them. So the route shows which hole or ladder to take.
 // Each tile on the path carries what sets its time (ground speeds, or the passage), so the time can be worked out
 // again for another speed without searching again (routeTime).
 //
@@ -28,9 +31,9 @@ export function stepTime(ground, speed, diagonal = false) {
 }
 
 // The time of one path entry ([x, y, z, how, ground, ground2, passage]) for a speed.
-// how: 'start' | 'walk' | 'diagonal' | 'npc' | link kind.
+// how: 'start' | 'walk' | 'diagonal' | 'npc' | 'onto' | 'use' | link kind.
 function entryTime([, , , how, ground, ground2], speed) {
-  if (how === 'start') return 0;
+  if (how === 'start' || how === 'onto' || how === 'use') return 0; // the move is counted on the landing entry
   if (how === 'npc') return PASSAGE_MS;
   let t = stepTime(ground, speed, how === 'diagonal');
   if (how === 'dig') t += stepTime(ground2, speed); // dig the pile, step into the hole, land below
@@ -60,6 +63,7 @@ export function routeLegs(path, speed) {
     }
     if (!walk) legs.push((walk = { kind: 'walk', from: prev.slice(0, 3), to: null, steps: 0, floors: 0, teleports: 0, time: 0 }));
     walk.to = e.slice(0, 3);
+    if (e[3] === 'onto' || e[3] === 'use') continue; // part of the next move
     walk.steps++;
     walk.time += entryTime(e, speed);
     if (e[3] === 'teleport') walk.teleports++;
@@ -176,11 +180,12 @@ export function routerMain() {
     heap.push(h(from[0], from[1]), start);
     const coords = (k) => { const x = k % 65536, r = (k - x) / 65536, y = r % 65536; return [x, y, (r - y) / 65536]; };
     let expanded = 0;
-    const relax = (k, cost, prev, how, x, y, ground, ground2, passage) => {
+    // via: the floor change's own tile (stairs, hole, ladder, ...), kept in the path; viaHow 'onto' | 'use'.
+    const relax = (k, cost, prev, how, x, y, ground, ground2, passage, via, viaHow) => {
       const old = g.get(k);
       if (old !== undefined && old <= cost) return;
       g.set(k, cost);
-      came.set(k, [prev, how, ground, ground2, passage]);
+      came.set(k, [prev, how, ground, ground2, passage, via, viaHow]);
       heap.push(cost + h(x, y), k);
     };
     const groundAt = (x, y, z) => speedAt(x, y, z) || 100; // a landing tile without walk data: plain ground
@@ -196,10 +201,12 @@ export function routerMain() {
           const [px, py, pz] = coords(c), cf = came.get(c);
           if (cf?.[4]) gold += cf[4][2];
           path.push(cf ? [px, py, pz, cf[1], cf[2], cf[3], cf[4]] : [px, py, pz, 'start']);
+          // The floor change's tile, between the tile before and where you land (unless you stand on it already).
+          if (cf?.[5] && !(cf[0] !== undefined && cf[0] === key(...cf[5]))) path.push([...cf[5], cf[6]]);
           c = cf?.[0];
         }
         path.reverse();
-        return { path, steps: path.filter((e) => e[3] !== 'start' && e[3] !== 'npc').length, gold, expanded };
+        return { path, steps: path.filter((e) => !['start', 'npc', 'onto', 'use'].includes(e[3])).length, gold, expanded };
       }
       if (++expanded > 6000000) return { error: 'No route found (searched too far).' };
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
@@ -212,11 +219,11 @@ export function routerMain() {
           if (kind === 'teleport') {
             // One step onto the forcefield (its own ground), and you're at its destination.
             const gt = ground || 100;
-            relax(key(...dest), cost + stepTime(gt, diag), k, 'teleport', dest[0], dest[1], gt);
+            relax(key(...dest), cost + stepTime(gt, diag), k, 'teleport', dest[0], dest[1], gt, 0, null, [nx, ny, z], 'onto');
           } else {
             // Stairs, ramp or hole: stepping on it is one move to the other floor.
             const gd = groundAt(...dest);
-            relax(key(...dest), cost + stepTime(gd, false), k, 'step', dest[0], dest[1], gd);
+            relax(key(...dest), cost + stepTime(gd, false), k, 'step', dest[0], dest[1], gd, 0, null, [nx, ny, z], 'onto');
           }
           continue;
         }
@@ -229,8 +236,8 @@ export function routerMain() {
           if (kind === 'dig') {
             // Dig the pile, step into the hole (its ground), land below.
             const gp = groundAt(x + dx, y + dy, z);
-            relax(key(...dest), cost + stepTime(gp, false) + stepTime(gd, false), k, kind, dest[0], dest[1], gp, gd);
-          } else relax(key(...dest), cost + stepTime(gd, false), k, kind, dest[0], dest[1], gd);
+            relax(key(...dest), cost + stepTime(gp, false) + stepTime(gd, false), k, kind, dest[0], dest[1], gp, gd, null, [x + dx, y + dy, z], 'use');
+          } else relax(key(...dest), cost + stepTime(gd, false), k, kind, dest[0], dest[1], gd, 0, null, [x + dx, y + dy, z], 'use');
         }
       }
       // Boats, carpets and the Oracle: talk, pay, arrive.

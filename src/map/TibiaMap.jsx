@@ -305,10 +305,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (rp && rp.length > 1) {
       const fr = ([x, y, z]) => (v.z <= 7 && z <= 7 ? [x - (v.z - z), y - (v.z - z)] : [x, y]);
       const at = (pt) => { const f = fr(pt); return [ox + (f[0] + 0.5) * s, oy + (f[1] + 0.5) * s]; };
-      const runs = [];
+      // Runs of tiles walked on one floor. The line goes onto stairs, holes and forcefields ('onto'); a ladder, grate
+      // or rope spot used from next to it ('use') gets a short dashed line from where you stand.
+      const runs = [], uses = [];
       let run = [rp[0]];
       for (let i = 1; i < rp.length; i++) {
-        if (rp[i][3] === 'walk' || rp[i][3] === 'diagonal') run.push(rp[i]);
+        const how = rp[i][3];
+        if (how === 'walk' || how === 'diagonal' || how === 'onto') run.push(rp[i]);
+        else if (how === 'use') uses.push([rp[i - 1], rp[i]]);
         else { runs.push(run); run = [rp[i]]; }
       }
       runs.push(run);
@@ -328,6 +332,13 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             ctx.strokeStyle = 'rgba(255,215,0,0.55)'; ctx.lineWidth = 2 * k; ctx.stroke();
           }
         }
+      }
+      for (const [a, b] of uses) {
+        const here = a[2] === v.z, [ax, ay] = at(a), [bx, by] = at(b);
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
+        ctx.setLineDash([3 * k, 3 * k]);
+        if (here) { ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 4 * k; ctx.stroke(); }
+        ctx.strokeStyle = here ? '#ffd700' : 'rgba(255,215,0,0.55)'; ctx.lineWidth = 2 * k; ctx.stroke();
       }
       ctx.setLineDash([]);
       const dot = (pt, color, r) => {
@@ -353,8 +364,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       ctx.setLineDash([]);
       for (let i = 1; i < rp.length; i++) {
         const how = rp[i][3];
-        if (how === 'walk' || how === 'diagonal') continue;
+        if (how === 'walk' || how === 'diagonal' || how === 'onto' || how === 'use') continue;
         const up = rp[i][2] < rp[i - 1][2];
+        // rp[i - 1] is the stairs, hole or ladder itself (5a), so the big dot sits on it.
         // Where you change floor (orange up, blue down), take a forcefield (purple) or a passage (light blue),
         // and a smaller dot where you arrive.
         const color = how === 'npc' ? '#7fd8ff' : how === 'teleport' ? '#b040ff' : up ? '#ffa000' : '#3080ff';

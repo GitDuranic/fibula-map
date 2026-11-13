@@ -341,6 +341,18 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 
 ## Decisions made while building
 
+### Slice 5a: the step onto floor changes (built 2026-11-13)
+- **The router keeps the floor change's own tile in the path**, as an entry without time of its own. The time is still counted on the landing entry, so run times don't change (Thais temple → depot: 67 steps, 24 s, as before).
+  - `onto`: stairs, ramps, holes and forcefields, which you step onto.
+  - `use`: ladders, grates, rope spots and stone piles, used from the tile next to them. Left out when you already stand on it.
+- **On the map:**
+  - The yellow line goes onto the stairs or hole, so you can see which one to take.
+  - A used ladder or rope spot gets a short dashed line from where you stand.
+  - The floor-change dot (orange up, blue down, purple forcefield) sits on the stairs, hole or ladder itself.
+- The step counts and the legs in the panel don't count these entries (they're part of the move to the other floor).
+- Seen in the browser: the Thais depot stairs.
+- Found on the way, not changed: from the Thais temple the route goes up the depot stairs and straight back down to get past them (two steps, a real way in the map data).
+
 ### Slice 4c–4e: locked doors and keys (built 2026-11-13)
 - **4c, data** (`tools/lib/doors.js`, doors.json `[[x, y, z, door id, open door id, key number, key id]]`, client ids):
   - The converter reads all item attributes (TVP item.h: action id 4, key number 23, keyhole 24, …) and looks inside containers too, for keys in chests.
