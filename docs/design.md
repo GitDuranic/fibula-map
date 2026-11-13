@@ -352,6 +352,12 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - The user: "the main path on the main layer should always be the most visible … the layer underneath shows over, which is fine when you're a bit away from the path but … it's more confusing than it was."
   - Now nothing shows through around the route on the current floor: clear within 1 tile of it (`SEE_CLEAR`), back to the full band at 3 tiles (`SEE_CLEAR_EDGE`). The band is multiplied by (1 − that).
   - Seen on floor 10 near 32622,31935: the holes on the path show as holes again (before, the floor 9/11 stairs drawn over them hid them), and the corridors of the other floors still show further from the path.
+- **Changed after user feedback (2026-11-13): only the way ahead.**
+  - The user: "we know a 'to' and 'from' … you only see the layers of the direction ahead of you."
+  - A stretch of the route on another floor now only shows through when the route has already been on the floor you're looking at before it. You see where you're going, not where you came from.
+  - Example, Thais → Kazordoon going down at 33310,31997: from floor 9 you see 10 and 11 ahead, no longer 8 behind.
+  - If the route visits a floor twice, everything after the first visit counts as ahead.
+  - The route lines on other floors (5b) are unchanged; this is only the see-through.
 - **To tune with the user:** the band width, the fade, the clear zone and the strength per floor (all constants at the top of `seeThrough` in TibiaMap.jsx).
 
 ### Slice 5b: route lines on other floors (built 2026-11-13)

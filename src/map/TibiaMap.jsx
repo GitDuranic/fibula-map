@@ -114,9 +114,13 @@ const seeAlpha = (d) => (d <= SEE_BAND ? 1 : d >= SEE_EDGE ? 0 : SEE_FADE * (1 -
 function seeThrough(ctx, world, v, rp, g, budget, offRef) {
   const { ox, oy, s, W, H, left, top, right, bottom, C, ts } = g;
   const floors = new Map(); // floor -> route tiles on it
+  // Only the way ahead (user): a stretch on another floor shows through only when the route has already been on
+  // this floor before it, so you see where you're going, not where you came from.
+  let been = false;
   for (const e of rp) {
     const z = e[2], dz = Math.abs(z - v.z);
-    if (!dz || dz > 2) continue;
+    if (!dz) { been = true; continue; }
+    if (!been || dz > 2) continue;
     // A floor above that is already drawn (the surface with its upper floors, below the layer cut) needs nothing.
     if (z < v.z && v.z <= 7 && z >= v.cut) continue;
     if (!floors.has(z)) floors.set(z, []);
