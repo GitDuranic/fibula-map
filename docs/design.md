@@ -405,7 +405,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - The hovered tile itself stays clear, so you still see the hole or stairs you point at.
   - A floor above that is already drawn (the surface at zoom 16, with its roofs) gets no preview.
 - **Clicking it goes to that floor** (the floor buttons' rule: zoomed in, this floor only). An NPC or locked door on the tile comes first, as proposed. The cursor is a pointer over floor changes.
-- **With a route planned** there's no hover preview or click to another floor: the see-through along the route (5c) is what shows then.
+- ~~With a route planned there's no hover preview or click to another floor.~~ **Changed (user, 2026-11-13): also with a route.** The hover preview (see-through and arrow) is drawn on top of the see-through along the route (5c), and a click still goes to that floor. Seen in the browser: on the Thais depot route, hovering the stairs shows floor 6 with the orange up arrow.
 - **Code:**
   - The see-through drawing is now one function for a floor in a band (`seeBand`), used by `seeThrough` (route) and `seePreview` (hover).
   - The World loads only links.json (160 KB) for this (`loadLinks`, `floorChangeAt`), when the map has loaded; `loadWalk` (debug view) reuses it.
@@ -533,6 +533,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - **Haste** (TVP spells; the user's choice: always on): Haste 60 s, 60 mana (magic level 4, every vocation); Strong haste 42.5 s, 100 mana (magic level 8, sorcerers and druids). Casts = ceil(time / duration), shown with the mana.
 - **Route panel:** level (1–999), haste (none / Haste / Strong haste), "Boots of haste", speed shown. The time is in bold; the haste line shows casts and mana.
   - The settings are remembered in this browser (localStorage, `tm-char`). Without storage it still works, just not remembered.
+  - **Default (user, 2026-11-13): level 8, no haste, no boots of haste** (was level 50; `CHAR_DEFAULT`). Saved settings still win: a browser that already saved others keeps them until they're changed.
 - Tested (Thais → Carlin, 1077 steps):
 
   | Character | Speed | Time | Haste |

@@ -296,6 +296,9 @@ function searchedRect(kd, f, ox, oy, s, k) {
   return { x: Math.round(cx + (16 - w0 - kd.d[0]) * sc), y: Math.round(cy + (16 - h0 - kd.d[1]) * sc), w: Math.round(w0 * sc), h: Math.round(h0 * sc), sc, cx, cy, r: Math.max(10 * k, 18 * sc) };
 }
 
+// The character's settings before the user changes them (user, 2026-11-13).
+const CHAR_DEFAULT = { level: 8, haste: 'none', boh: false };
+
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
@@ -344,11 +347,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [route, setRoute] = useState({ open: false, from: null, to: null, result: null, pick: 0, busy: false });
   const routePath = useRef(null); // the shown route's tiles, for drawing: [[x, y, z, how, ...]]
   const router = useRef(null); // the route finder (a web worker, made on first use)
-  // The character for run times: level, haste ('none' | 'haste' | 'strong'), boots of haste. Remembered in this
-  // browser (a convenience; it works without storage too).
+  // The character for run times: level, haste ('none' | 'haste' | 'strong'), boots of haste. Default (user): level 8,
+  // no haste, no boots of haste. Changes are remembered in this browser (a convenience; it works without storage too).
   const [char, setCharState] = useState(() => {
-    try { return { level: 50, haste: 'none', boh: false, ...JSON.parse(window.localStorage.getItem('tm-char') || '{}') }; }
-    catch { return { level: 50, haste: 'none', boh: false }; }
+    try { return { ...CHAR_DEFAULT, ...JSON.parse(window.localStorage.getItem('tm-char') || '{}') }; }
+    catch { return { ...CHAR_DEFAULT }; }
   });
   const charRef = useRef(char);
   const setChar = (c) => {
@@ -428,12 +431,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       // See-through along the route (5c): the floors above and below where the route goes show through.
       const g = { ox, oy, s, W, H, left, top, right, bottom, C, ts };
       if (routePath.current) seeThrough(ctx, world, v, routePath.current, g, budget, offRef);
-      // Hover preview without a route (5d): where the hole, stairs or ladder under the mouse leads.
-      else if (hoverLink.current && hoverLink.current[2] === v.z && !(hoverLink.current[5] < v.z && v.z <= 7 && hoverLink.current[5] >= v.cut)) {
+      // Hover preview (5d): where the hole, stairs or ladder under the mouse leads, also with a route (user), on top.
+      if (hoverLink.current && hoverLink.current[2] === v.z && !(hoverLink.current[5] < v.z && v.z <= 7 && hoverLink.current[5] >= v.cut)) {
         seePreview(ctx, world, v, hoverLink.current, g, budget, offRef); // (a floor above that is already drawn: nothing to add)
       }
       // The hovered floor change gets an arrow: up or down.
-      if (!routePath.current && hoverLink.current && hoverLink.current[2] === v.z) {
+      if (hoverLink.current && hoverLink.current[2] === v.z) {
         const l = hoverLink.current, kk = Math.max(1, Math.round(window.devicePixelRatio || 1));
         drawArrow(ctx, ox + (l[0] + 0.5) * s, oy + (l[1] + 0.5) * s, Math.max(12 * kk, s * 0.6), l[5] < l[2], kk);
       }
@@ -1090,11 +1093,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     }
   };
 
-  // The floor change at canvas point p, for the hover preview and a click to that floor: only without a route,
+  // The floor change at canvas point p, for the hover preview and a click to that floor (with or without a route),
   // zoomed in far enough to see the sprites. Null otherwise.
   const floorChangeAtPoint = (p) => {
     const world = worldRef.current, v = view.current;
-    if (!world?.links || routePath.current || v.zoom < SPRITES_FROM) return null;
+    if (!world?.links || v.zoom < SPRITES_FROM) return null;
     const t = tileAt(p);
     const l = world.floorChangeAt(t.x, t.y, v.z);
     return l && world.floors.includes(l[5]) ? l : null;
@@ -1157,7 +1160,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     drag.current = null;
     if (d && !d.moved) {
       // A click: open the NPC there, else the monster, else the locked door, else go to the floor a hole, stairs or
-      // ladder leads to (no route planned), else close.
+      // ladder leads to, else close.
       const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p), m = !n && !sm && monsterAtPoint(p);
       const dr = !n && !sm && !m && doorAtPoint(p), l = !n && !sm && !m && !dr && floorChangeAtPoint(p);
       if (n) selectNpc(n);
