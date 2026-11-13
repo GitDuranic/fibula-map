@@ -141,6 +141,7 @@ Agree each slice before building it, then build one at a time.
 7. Loot seller, usable without the map: search, backpack, quick entry, monster categories, NPC list + receipt. Because the map is optional here, this slice could also come before slices 5–6.
 8. Sell route optimisation (max gold, fastest, balanced), shown in the NPC list and, when it's open, on the map.
 9. Map pins, current position, route export for the overlay. (The spawn layer moved to slice 6.)
+10. **Chests and quests** (asked for 2026-11-13, see its plan; order not agreed yet): what's in chests, and quests marked with their name.
 
 Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (the loot seller was 5).
 
@@ -338,6 +339,38 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - How close together counts as one spawn group, and as "close together" for the count: 10 tiles on the same floor for the group; same kind within the spawn's radius for the count.
 - The zoom where counts split into single monsters: 64 to start with.
 - Which loot to list when the TVP list doesn't match 7.1 (it's a 7.6 stand-in): the TVP items, until Ryndean's 7.1 monster files arrive.
+
+## Slice 10 plan: chests and quests (asked for 2026-11-13, to agree with the user)
+
+**What the user asked for:** "fill chests around the world with what spawns in them, and mark quests (use wiki for 7.1 data) with their quest name".
+
+**What the data gives us** (scanned 2026-11-13)
+- **The 7.1 map** (converted) has almost nothing:
+  - Only 259 containers hold items, and those are decoration: 215 bookcases with books, 15 chests (keys, a scale armor, books, gold), drawers, dead humans, barrels.
+  - No container has an action or unique id, so there are no quest markers.
+  - At many quest spots the chest itself seems lost in the conversion, while its reward lies on the floor (e.g. a copper key on a dirt floor where the 7.6 map has a quest chest).
+- **TVP 7.6** (`data/scripts/actions/map/quests.lua`): 222 quest chests by action id (1000–2000), each with its reward: items, keys with numbers, bags with contents, books with text. The Annihilator's 4 rewards are separate.
+  - 216 of them are placed on the 7.6 map: chests, boxes, dead humans, piles of bones, coffins, dead trees, and so on.
+  - Against the 7.1 map:
+
+    | On the 7.1 map | Quest spots |
+    |---|---|
+    | The same item on the same tile | 53 |
+    | The same item on a neighbouring tile | 16 |
+    | The tile exists, with other items (sometimes the reward lying there) | 110 |
+    | No tile (areas not in 7.1) | 37 |
+
+  - The rewards are 7.6 stand-ins and may differ in 7.1.
+- **Quest names:** neither the map nor TVP has them. They would come from TibiaWiki: its quest pages give the name, the version it came in, the location (often with map coordinates) and the reward.
+  - The wiki refuses the fetch tool but can be read in the browser.
+  - Matching a quest to a chest would be by position and reward.
+
+**Open questions for the user**
+- Which chests: only **quest chests** (rewards), or also ordinary containers with items (bookcases with books, drawers)?
+- Of the 222 TVP quest chests, only the ~69 that match the 7.1 map are sure. Should the other ~110, where the tile exists but the chest is gone, show too (marked "7.6 data"), or not at all, like the drop chances?
+- Quest names from TibiaWiki: only quests that came in 7.1 or earlier. That means reading many wiki pages in the browser; OK?
+- How should a quest show on the map: its name as a label (like town names), a chest icon, or both? From which zoom?
+- Order: before or after the loot seller (slice 7)?
 
 ## Decisions made while building
 
