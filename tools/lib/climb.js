@@ -8,6 +8,9 @@
 // blocking items.
 
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // north, east, south, west: you face one of these
+// Up only facing north or west, down only facing east or south, with the spell and with parcels (user, 2026-11-15;
+// TVP allows every direction).
+const UP_DIR = (dx, dy) => dy < 0 || dx < 0, DOWN_DIR = (dx, dy) => dy > 0 || dx > 0;
 export const CLIMB_SPELL = 1, CLIMB_PARCELS = 2; // bits in a climb's "ways"
 
 // tileInfo(x, y, z) -> undefined (no tile) or { ground, block, fixedBlock, change, height }:
@@ -27,7 +30,7 @@ export function buildClimbs({ tiles, tileInfo, walkable }) {
     for (const [dx, dy] of DIRS) {
       const fx = x + dx, fy = y + dy;
       // Up (not from floor 8 to 7): open air above you, ground in front of you one floor up.
-      if (z !== 8 && z > 0 && lands(fx, fy, z - 1)) {
+      if (UP_DIR(dx, dy) && z !== 8 && z > 0 && lands(fx, fy, z - 1)) {
         let ways = 0;
         if (open(above, 'fixedBlock')) ways |= CLIMB_SPELL;
         if (open(above, 'block') && !tileInfo(fx, fy, z - 1).height) ways |= CLIMB_PARCELS;
@@ -35,7 +38,7 @@ export function buildClimbs({ tiles, tileInfo, walkable }) {
       }
       // Down (not from floor 7 to 8): open air in front of you, ground below it. With parcels they're thrown down
       // onto that tile first, so it must take items: walkable is enough here.
-      if (z !== 7 && z < 15 && open(tileInfo(fx, fy, z), 'block') && lands(fx, fy, z + 1)) {
+      if (DOWN_DIR(dx, dy) && z !== 7 && z < 15 && open(tileInfo(fx, fy, z), 'block') && lands(fx, fy, z + 1)) {
         out.push([x, y, z, fx, fy, z + 1, CLIMB_SPELL | CLIMB_PARCELS]);
       }
     }
