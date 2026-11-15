@@ -33,10 +33,18 @@
 .tm-info { display: flex; flex-direction: column; gap: 3px; justify-content: flex-end; min-width: 0; }
 .tm-pos { white-space: nowrap; }
 
-/* the client's minimap controls (Tibia.pic): rose, zoom out | floor up, zoom in | floor down */
-.tm-nav { display: grid; grid-template-columns: 20px 20px; column-gap: 3px; row-gap: 1px; flex: none; }
-.tm-gbtn, .tm-rose { padding: 0; border: 0; cursor: pointer; flex: none; background-image: var(--tm-gui); background-repeat: no-repeat; background-color: transparent; image-rendering: pixelated; }
-.tm-rose { grid-column: span 2; margin-bottom: 2px; width: 43px; height: 43px; background-position: -131px -137px; }
+/* minimap at the top of the panel (where the client has it, in place of the compass rose), in an inset field;
+   its size is set in TibiaMap.jsx (MINI_W, MINI_H), inside the border */
+.tm-mini-panel { flex-direction: column; gap: 5px; }
+.tm .tm-mini {
+  display: block; flex: none; box-sizing: content-box; background: #000; cursor: pointer; touch-action: none;
+  border: 1px solid; border-color: var(--tm-slot-dark) var(--tm-slot-light) var(--tm-slot-light) var(--tm-slot-dark);
+}
+.tm-mini-row { display: flex; gap: 6px; }
+
+/* the client's minimap buttons (Tibia.pic) under it: zoom out | floor up, zoom in | floor down */
+.tm-nav { display: grid; grid-template-columns: 20px 20px; column-gap: 3px; row-gap: 1px; flex: none; align-content: end; }
+.tm-gbtn { padding: 0; border: 0; cursor: pointer; flex: none; background-image: var(--tm-gui); background-repeat: no-repeat; background-color: transparent; image-rendering: pixelated; }
 .tm-gbtn { width: 20px; height: 20px; }
 .tm-gbtn-zoomin { background-position: -1px -98px; }
 .tm-gbtn-zoomin:active:not(:disabled) { background-position: -1px -119px; }

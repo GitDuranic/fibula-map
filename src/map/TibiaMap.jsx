@@ -318,9 +318,53 @@ const CHAR_DEFAULT = { level: 8, haste: 'none', boh: false };
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
 
+// Minimap: at the top of the side panel, where the client has it, in place of the compass rose. Size in client
+// pixels (inside its 1px border). Like the client's, it shows the map's floor only, one automap colour per tile
+// (minimap/ in the map data), and follows the map's zoom: at zoom 32 it has 1 client pixel per tile (the client's
+// own minimap scale), and further out it stops once the whole world fits.
+const MINI_W = 158, MINI_H = 158;
+const MINI_PER_TILE = 32; // map zoom (screen pixels per tile) for 1 client pixel per tile on the minimap
+
+// Draws the minimap: the floor shown on the map, centred on the map's centre (but not past the world's edge), and
+// the map's view as a white frame. Returns where it drew the world ({ ox, oy, sm }: canvas origin and canvas
+// pixels per tile), for clicks and drags on it.
+function drawMini(mc, world, v, s, box) {
+  const k = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  const ctx = mc.getContext('2d'), W = mc.width, H = mc.height, b = world.bounds;
+  const bw = b.x2 + 1 - b.x1, bh = b.y2 + 1 - b.y1;
+  const sm = Math.max((s * k) / MINI_PER_TILE, Math.min(W / bw, H / bh));
+  const centre = (len, lo, hi, c) => (hi - lo <= len ? (lo + hi) / 2 : Math.max(lo + len / 2, Math.min(hi - len / 2, c)));
+  const cx = centre(W / sm, b.x1, b.x2 + 1, v.x), cy = centre(H / sm, b.y1, b.y2 + 1, v.y);
+  const ox = Math.round(W / 2 - cx * sm), oy = Math.round(H / 2 - cy * sm);
+  const left = -ox / sm, top = -oy / sm, right = left + W / sm, bottom = top + H / sm;
+
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+  // The floor's automap colours, 1 px per tile in each image: sharp squares when zoomed in, smoothed when shrunk.
+  const S = world.map.minimap?.size || 256; // tiles per image
+  ctx.imageSmoothingEnabled = sm < 1;
+  for (let my = Math.floor(top / S); my <= Math.floor(bottom / S); my++) {
+    for (let mx = Math.floor(left / S); mx <= Math.floor(right / S); mx++) {
+      const img = world.minimap(v.z, mx, my);
+      if (img) ctx.drawImage(img, ox + mx * S * sm, oy + my * S * sm, S * sm, S * sm);
+    }
+  }
+  // The map's view.
+  if (box) {
+    const x1 = Math.round(ox + box.left * sm), y1 = Math.round(oy + box.top * sm);
+    const x2 = Math.round(ox + box.right * sm), y2 = Math.round(oy + box.bottom * sm);
+    ctx.lineWidth = k;
+    ctx.strokeStyle = '#ffffff';
+    ctx.strokeRect(x1 + k / 2, y1 + k / 2, Math.max(k, x2 - x1 - k), Math.max(k, y2 - y1 - k));
+  }
+  return { ox, oy, sm };
+}
+
 export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncUrl = true }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
+  const miniRef = useRef(null); // the minimap canvas
+  const mini = useRef(null); // where the minimap drew the world last: { ox, oy, sm }
   const worldRef = useRef(null);
   // x, y = centre in tiles (fractional); z; zoom = target step; cut = top layer drawn (floors above it are left out, 0 = all)
   const view = useRef(withCut({ ...START, ...(syncUrl && readHash()) }));
@@ -784,6 +828,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         ctx.restore();
       }
     }
+    // The minimap follows every change of the map (and gets its images the same way).
+    if (miniRef.current) mini.current = drawMini(miniRef.current, world, v, s, viewBox.current);
     if (more) frame.current = requestAnimationFrame(draw);
   }, []);
 
@@ -1353,13 +1399,44 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
   };
 
-  // The client's compass rose: click a direction to move the view half a screen that way.
-  const onRose = (e) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
-    const c = canvasRef.current, ang = Math.atan2(dy, dx);
-    const ux = Math.round(Math.cos(ang)), uy = Math.round(Math.sin(ang));
-    panBy(-ux * c.width / 2, -uy * c.height / 2);
+  // The minimap: a click moves the map there (same floor and zoom), a drag pulls the map along like dragging the map
+  // itself (faster, as the minimap is further out). Hovering shows the position under the mouse.
+  const miniDrag = useRef(null);
+  const miniPoint = (e) => {
+    const c = miniRef.current, r = c.getBoundingClientRect(), k = c.width / r.width;
+    return { x: (e.clientX - r.left) * k, y: (e.clientY - r.top) * k };
+  };
+  const miniTile = (p) => {
+    const m = mini.current;
+    return { x: Math.floor((p.x - m.ox) / m.sm), y: Math.floor((p.y - m.oy) / m.sm), z: view.current.z };
+  };
+  const onMiniDown = (e) => {
+    if ((e.button !== 0 && e.pointerType === 'mouse') || !mini.current) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    cancelAnimationFrame(glide.current);
+    const p = miniPoint(e);
+    miniDrag.current = { start: p, last: p, moved: false };
+  };
+  const onMiniMove = (e) => {
+    if (!mini.current) return;
+    const p = miniPoint(e), d = miniDrag.current;
+    setHover(miniTile(p));
+    if (!d) return;
+    if (!d.moved && Math.hypot(p.x - d.start.x, p.y - d.start.y) < 3 * Math.max(1, Math.round(window.devicePixelRatio || 1))) return;
+    d.moved = true;
+    const v = view.current, sm = mini.current.sm;
+    flight.current = null;
+    anim.current.anchor = null;
+    v.x -= (p.x - d.last.x) / sm; v.y -= (p.y - d.last.y) / sm;
+    d.last = p;
+    viewChanged();
+  };
+  const onMiniUp = (e) => {
+    const d = miniDrag.current;
+    miniDrag.current = null;
+    if (!d || d.moved || e.type === 'pointercancel' || !mini.current) return;
+    const v = view.current;
+    goTo(miniTile(miniPoint(e)), { zoom: v.zoom, cut: v.cut });
   };
 
   // ---------- search ----------
@@ -1449,20 +1526,27 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         )}
       </div>
       <div className="tm-side" style={{ zoom: uiScale / dpr }}>
-        <div className="tm-panel">
-          <div className="tm-nav">
-            <button type="button" className="tm-rose" onClick={onRose} title="Move the view (or use the arrow keys)" aria-label="Move the view" />
-            <button type="button" className="tm-gbtn tm-gbtn-zoomout" onClick={() => zoomBy(-1)} disabled={ui.zoom === ZOOMS[0]} title="Zoom out (-)" aria-label="Zoom out" />
-            <button type="button" className="tm-gbtn tm-gbtn-up" onClick={() => setFloor(ui.z - 1)} disabled={!world?.floors?.includes(ui.z - 1)} title="Floor up (Page Up)" aria-label="Floor up" />
-            <button type="button" className="tm-gbtn tm-gbtn-zoomin" onClick={() => zoomBy(1)} disabled={ui.zoom === ZOOMS[ZOOMS.length - 1]} title="Zoom in (+)" aria-label="Zoom in" />
-            <button type="button" className="tm-gbtn tm-gbtn-down" onClick={() => setFloor(ui.z + 1)} disabled={!world?.floors?.includes(ui.z + 1)} title="Floor down (Page Down)" aria-label="Floor down" />
-          </div>
-          <div className="tm-info">
-            <div>Floor {ui.z}{ui.z === 7 ? ' (ground)' : ui.z < 7 ? ` (+${7 - ui.z})` : ` (-${ui.z - 7})`}</div>
-            <div title="Ctrl + mouse wheel (or Ctrl + +/-): take layers off and go underground, or come back up">
-              {ui.z > 7 || ui.cut >= ui.z ? 'This floor only' : ui.cut ? `Layers from floor ${ui.cut}` : 'All layers'}
+        <div className="tm-panel tm-mini-panel">
+          <canvas
+            ref={miniRef} className="tm-mini" width={MINI_W * uiScale} height={MINI_H * uiScale} style={{ width: MINI_W, height: MINI_H }}
+            title="Minimap: click to go there, drag to move the map"
+            onPointerDown={onMiniDown} onPointerMove={onMiniMove} onPointerUp={onMiniUp} onPointerCancel={onMiniUp}
+            onPointerLeave={() => setHover(null)}
+          />
+          <div className="tm-mini-row">
+            <div className="tm-nav">
+              <button type="button" className="tm-gbtn tm-gbtn-zoomout" onClick={() => zoomBy(-1)} disabled={ui.zoom === ZOOMS[0]} title="Zoom out (-)" aria-label="Zoom out" />
+              <button type="button" className="tm-gbtn tm-gbtn-up" onClick={() => setFloor(ui.z - 1)} disabled={!world?.floors?.includes(ui.z - 1)} title="Floor up (Page Up)" aria-label="Floor up" />
+              <button type="button" className="tm-gbtn tm-gbtn-zoomin" onClick={() => zoomBy(1)} disabled={ui.zoom === ZOOMS[ZOOMS.length - 1]} title="Zoom in (+)" aria-label="Zoom in" />
+              <button type="button" className="tm-gbtn tm-gbtn-down" onClick={() => setFloor(ui.z + 1)} disabled={!world?.floors?.includes(ui.z + 1)} title="Floor down (Page Down)" aria-label="Floor down" />
             </div>
-            <div className="tm-pos">{hover ? `${hover.x}, ${hover.y}, ${hover.z}` : ' '}</div>
+            <div className="tm-info">
+              <div>Floor {ui.z}{ui.z === 7 ? ' (ground)' : ui.z < 7 ? ` (+${7 - ui.z})` : ` (-${ui.z - 7})`}</div>
+              <div title="Ctrl + mouse wheel (or Ctrl + +/-): take layers off and go underground, or come back up">
+                {ui.z > 7 || ui.cut >= ui.z ? 'This floor only' : ui.cut ? `Layers from floor ${ui.cut}` : 'All layers'}
+              </div>
+              <div className="tm-pos">{hover ? `${hover.x}, ${hover.y}, ${hover.z}` : ' '}</div>
+            </div>
           </div>
         </div>
         <form className="tm-panel tm-goto" onSubmit={onSearch} role="search">
