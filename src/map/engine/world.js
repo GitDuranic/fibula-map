@@ -35,6 +35,7 @@ export class World {
     this.canvases = new Map(); // key -> { canvas, pixels }
     this.cachedPixels = 0;
     this.overviews = new Map(); // "set:level:bx:by" -> Image | 'loading' | 'missing'
+    this.minis = new Map(); // "z:mx:my" -> Image | 'loading' | 'missing'
   }
 
   async load() {
@@ -96,6 +97,8 @@ export class World {
     this.bounds = map.bounds;
     this.exists = new Set();
     for (const [z, list] of Object.entries(map.chunks)) for (const [cx, cy] of list) this.exists.add(`${z}:${cx}:${cy}`);
+    this.miniExists = new Set(); // minimap images (older map data has none: the minimap then stays black)
+    for (const [z, list] of Object.entries(map.minimap?.floors || {})) for (const [mx, my] of list) this.miniExists.add(`${z}:${mx}:${my}`);
     this.ovExists = new Set();
     for (const [set, levels] of Object.entries(map.overview.sets)) {
       for (const [level, list] of Object.entries(levels)) for (const [bx, by] of list) this.ovExists.add(`${set}:${level}:${bx}:${by}`);
@@ -483,6 +486,21 @@ export class World {
     loadImage(`${this.base}/overview/${set}/${level}/${bx}_${by}.webp`).then(
       (img) => { this.overviews.set(k, img); this.onChange(); },
       () => { this.overviews.set(k, 'missing'); },
+    );
+    return null;
+  }
+
+  // A minimap image (floor z only, in the client's automap colours, 1 px per tile, map.minimap.size square),
+  // or null while loading / when there is none.
+  minimap(z, mx, my) {
+    const k = `${z}:${mx}:${my}`;
+    const m = this.minis.get(k);
+    if (m !== undefined) return typeof m === 'string' ? null : m;
+    if (!this.miniExists.has(k)) { this.minis.set(k, 'missing'); return null; }
+    this.minis.set(k, 'loading');
+    loadImage(`${this.base}/minimap/${z}/${mx}_${my}.png`).then(
+      (img) => { this.minis.set(k, img); this.onChange(); },
+      () => { this.minis.set(k, 'missing'); },
     );
     return null;
   }
