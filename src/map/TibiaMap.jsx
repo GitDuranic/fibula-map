@@ -177,19 +177,29 @@ function seeBand(ctx, world, v, z, tiles, keep, g, budget, offRef) {
   ctx.globalAlpha = 1;
 }
 
+// Only the way ahead (user): a stretch on another floor shows (see-through and its route line) only when the route
+// has already been on floor vz before it, so you see where you're going, not where you came from; and only up to
+// SEE_CHANGES floor changes after leaving this floor (down, down again: shown; back up after that: not yet). Back on
+// this floor, the count starts again. { ahead: per path entry 1 = this floor or ahead, onRoute: the route is on vz }
+function routeAhead(rp, vz) {
+  const ahead = new Uint8Array(rp.length);
+  let been = false, changes = 0;
+  for (let i = 0; i < rp.length; i++) {
+    const z = rp[i][2];
+    if (z === vz) { been = true; changes = 0; ahead[i] = 1; continue; }
+    if (i > 0 && z !== rp[i - 1][2]) changes++;
+    ahead[i] = been && changes <= SEE_CHANGES ? 1 : 0;
+  }
+  return { ahead, onRoute: been };
+}
+
 // See-through along the route (5c): the floors ahead on the route, in a band along it.
 function seeThrough(ctx, world, v, rp, g, budget, offRef) {
   const floors = new Map(); // floor -> route tiles on it
-  // Only the way ahead (user): a stretch on another floor shows through only when the route has already been on
-  // this floor before it, so you see where you're going, not where you came from; and only up to SEE_CHANGES
-  // floor changes after leaving this floor (down, down again: shown; back up after that: not yet). Back on this
-  // floor, the count starts again.
-  let been = false, changes = 0;
+  const { ahead } = routeAhead(rp, v.z);
   for (let i = 0; i < rp.length; i++) {
     const e = rp[i], z = e[2], dz = Math.abs(z - v.z);
-    if (!dz) { been = true; changes = 0; continue; }
-    if (i > 0 && z !== rp[i - 1][2]) changes++;
-    if (!been || changes > SEE_CHANGES || dz > 2) continue;
+    if (!dz || !ahead[i] || dz > 2) continue;
     // A floor above that is already drawn (the surface with its upper floors, below the layer cut) needs nothing.
     if (z < v.z && v.z <= 7 && z >= v.cut) continue;
     if (!floors.has(z)) floors.set(z, []);
@@ -724,25 +734,29 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (rp && rp.length > 1) {
       const fr = ([x, y, z]) => (v.z <= 7 && z <= 7 ? [x - (v.z - z), y - (v.z - z)] : [x, y]);
       const at = (pt) => { const f = fr(pt); return [ox + (f[0] + 0.5) * s, oy + (f[1] + 0.5) * s]; };
-      const alpha = (z) => routeAlpha(z, v.z);
-      // Runs of tiles walked on one floor. The line goes onto stairs, holes and forcefields ('onto'); a ladder, grate
-      // or rope spot used from next to it ('use') gets a short dashed line from where you stand.
+      // How visible path entry i is: by its floor (routeAlpha), and on other floors only the way ahead (routeAhead,
+      // user 2026-11-15: going down the Demona hole, the surface part behind you still showed). When the route
+      // doesn't touch the floor you're looking at, all of it shows as before. The end dot always shows.
+      const { ahead, onRoute } = routeAhead(rp, v.z);
+      const alpha = (i) => (!onRoute || ahead[i] ? routeAlpha(rp[i][2], v.z) : 0);
+      // Runs of tiles walked on one floor (path indices). The line goes onto stairs, holes and forcefields ('onto'); a
+      // ladder, grate or rope spot used from next to it ('use') gets a short dashed line from where you stand.
       const runs = [], uses = [];
-      let run = [rp[0]];
+      let run = [0];
       for (let i = 1; i < rp.length; i++) {
         const how = rp[i][3];
-        if (how === 'walk' || how === 'diagonal' || how === 'onto') run.push(rp[i]);
-        else if (how === 'use') uses.push([rp[i - 1], rp[i]]);
-        else { runs.push(run); run = [rp[i]]; }
+        if (how === 'walk' || how === 'diagonal' || how === 'onto') run.push(i);
+        else if (how === 'use') uses.push(i);
+        else { runs.push(run); run = [i]; }
       }
       runs.push(run);
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       for (const pass of [0, 1]) {
         for (const r of runs) {
-          const here = r[0][2] === v.z, a = alpha(r[0][2]);
+          const here = rp[r[0]][2] === v.z, a = alpha(r[0]);
           if (r.length < 2 || !a || here !== (pass === 1)) continue;
           ctx.beginPath();
-          r.forEach((pt, i) => { const [x, y] = at(pt); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+          r.forEach((pi, i) => { const [x, y] = at(rp[pi]); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
           if (here) {
             ctx.setLineDash([]);
             ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 5 * k; ctx.stroke();
@@ -755,8 +769,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           }
         }
       }
-      for (const [a, b] of uses) {
-        const here = a[2] === v.z, al = alpha(a[2]), [ax, ay] = at(a), [bx, by] = at(b);
+      for (const ui of uses) {
+        const a = rp[ui - 1], b = rp[ui];
+        const here = a[2] === v.z, al = alpha(ui - 1), [ax, ay] = at(a), [bx, by] = at(b);
         if (!al) continue;
         ctx.globalAlpha = al;
         ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
@@ -767,10 +782,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       }
       ctx.setLineDash([]);
       // A dot on its floor's visibility (none on floors not shown).
-      const dot = (pt, color, r) => {
-        const a = alpha(pt[2]);
+      const dot = (pi, color, r, a = alpha(pi)) => {
         if (!a) return;
-        const [x, y] = at(pt);
+        const [x, y] = at(rp[pi]);
         ctx.globalAlpha = a;
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fillStyle = '#000'; ctx.fill();
@@ -782,7 +796,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       // the right of the direction of travel, solid when it starts or ends on this floor.
       for (let i = 1; i < rp.length; i++) {
         if (rp[i][3] !== 'npc') continue;
-        const a = Math.max(alpha(rp[i - 1][2]), alpha(rp[i][2]));
+        const a = Math.max(alpha(i - 1), alpha(i));
         if (!a) continue;
         const [ax, ay] = at(rp[i - 1]), [bx, by] = at(rp[i]);
         const mx = (ax + bx) / 2, my = (ay + by) / 2, bend = 0.25;
@@ -805,17 +819,18 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         // and a smaller dot where you arrive.
         const color = how === 'npc' ? '#7fd8ff' : how === 'teleport' ? '#b040ff' : up ? FLOOR_UP : FLOOR_DOWN;
         // A floor change gets an arrow (up or down) instead of the big dot.
-        const a = alpha(rp[i - 1][2]);
+        const a = alpha(i - 1);
         if (rp[i][2] !== rp[i - 1][2] && a) {
           const [x, y] = at(rp[i - 1]);
           ctx.globalAlpha = a;
           drawArrow(ctx, x, y, Math.max(12 * k, s * 0.5), up, k);
           ctx.globalAlpha = 1;
-        } else dot(rp[i - 1], color, 5 * k);
-        dot(rp[i], color, 3 * k);
+        } else if (rp[i][2] === rp[i - 1][2]) dot(i - 1, color, 5 * k);
+        dot(i, color, 3 * k);
       }
-      dot(rp[0], '#30c030', 6 * k);
-      dot(rp[rp.length - 1], '#e03030', 6 * k);
+      dot(0, '#30c030', 6 * k);
+      const last = rp.length - 1;
+      dot(last, '#e03030', 6 * k, routeAlpha(rp[last][2], v.z));
     }
 
     // Town names over the zoomed-out map (gone once the sprites show), centred on the temple, white in the
