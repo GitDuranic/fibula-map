@@ -228,12 +228,14 @@ function drawArrow(ctx, x, y, size, up, k) {
   ctx.fillStyle = up ? FLOOR_UP : FLOOR_DOWN; ctx.fill();
 }
 
-// Monsters (6b): where their floor is shown, from MONSTERS_FROM: underground only on their own floor; on the surface
-// on every surface floor that is drawn (floors 0-7 together, above the layer cut), shifted like that floor, as NPCs
-// (npcFrame). (User: monsters upstairs, e.g. dragons on floor 6 above Edron, must show.) Zoomed out, the monsters of one kind spawning
+// Monsters (6b): from MONSTERS_FROM, only the ones on the floor you are on, on the surface too (unlike NPCs, which
+// show from every surface floor drawn). User 2026-11-15: at Darashia's minotaurs you couldn't tell which floor a
+// monster was on; this replaces the earlier "dragons on floor 6 above Edron must show": go up a floor, or search for
+// them (searchedMonsters shows every floor). Zoomed out, the monsters of one kind spawning
 // close together are one marker with a count ("3x"); from MONSTERS_SPLIT each one stands on its own tile, spread
 // over its spawn's radius from the centre outwards (the server picks random tiles in the radius; this is a stand-in).
 const MONSTERS_FROM = 16, MONSTERS_SPLIT = 64;
+const monFrame = (m, z) => (m.p[2] === z ? [m.p[0], m.p[1]] : null);
 const SPIRAL = (() => {
   const out = [];
   for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) out.push([dx, dy]);
@@ -247,12 +249,12 @@ function visibleMonsters(world, v, left, top, right, bottom) {
   const out = [], inView = (x, y, m) => x >= left - m && x <= right + m && y >= top - m && y <= bottom + m;
   if (v.zoom < MONSTERS_SPLIT) {
     for (const mk of world.monMarkers) {
-      const f = npcFrame(mk, v.z, v.cut);
+      const f = monFrame(mk, v.z);
       if (f && inView(f[0], f[1], 3)) out.push({ kind: mk.kind, f, count: mk.count, group: mk.group });
     }
   } else {
     for (const sp of world.spawnPoints) {
-      const f = npcFrame(sp, v.z, v.cut);
+      const f = monFrame(sp, v.z);
       if (!f || !inView(f[0], f[1], sp.radius + 3)) continue;
       const spots = SPIRAL.filter(([dx, dy]) => Math.max(Math.abs(dx), Math.abs(dy)) <= sp.radius);
       for (let i = 0; i < sp.amount; i++) {
