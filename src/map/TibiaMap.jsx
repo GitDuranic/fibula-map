@@ -234,8 +234,16 @@ function drawArrow(ctx, x, y, size, up, k) {
 // them (searchedMonsters shows every floor). Zoomed out, the monsters of one kind spawning
 // close together are one marker with a count ("3x"); from MONSTERS_SPLIT each one stands on its own tile, spread
 // over its spawn's radius from the centre outwards (the server picks random tiles in the radius; this is a stand-in).
+// "The floor you are on" is the top floor drawn: on the surface Ctrl + wheel puts layers back (floors above, drawn
+// shifted up-left) without changing v.z, and then the monsters of that top layer show (user 2026-11-15: stairs
+// worked, the wheel didn't). With all layers (cut 0, the zoomed-out overview) it stays the view's own floor.
 const MONSTERS_FROM = 16, MONSTERS_SPLIT = 64;
-const monFrame = (m, z) => (m.p[2] === z ? [m.p[0], m.p[1]] : null);
+function monsterFloor(world, v, left, top, right, bottom) {
+  if (v.z > 7 || !v.cut || v.cut >= v.z) return v.z;
+  const above = world.layersIn(v.z, Math.floor(left), Math.floor(top), Math.floor(right), Math.floor(bottom));
+  return above.find((zz) => zz >= v.cut) ?? v.z;
+}
+const monFrame = (m, v, mz) => (m.p[2] === mz ? npcFrame(m, v.z, v.cut) : null);
 const SPIRAL = (() => {
   const out = [];
   for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) out.push([dx, dy]);
@@ -247,14 +255,15 @@ const SPIRAL = (() => {
 function visibleMonsters(world, v, left, top, right, bottom) {
   if (v.zoom < MONSTERS_FROM || !world.monMarkers) return [];
   const out = [], inView = (x, y, m) => x >= left - m && x <= right + m && y >= top - m && y <= bottom + m;
+  const mz = monsterFloor(world, v, left, top, right, bottom);
   if (v.zoom < MONSTERS_SPLIT) {
     for (const mk of world.monMarkers) {
-      const f = monFrame(mk, v.z);
+      const f = monFrame(mk, v, mz);
       if (f && inView(f[0], f[1], 3)) out.push({ kind: mk.kind, f, count: mk.count, group: mk.group });
     }
   } else {
     for (const sp of world.spawnPoints) {
-      const f = monFrame(sp, v.z);
+      const f = monFrame(sp, v, mz);
       if (!f || !inView(f[0], f[1], sp.radius + 3)) continue;
       const spots = SPIRAL.filter(([dx, dy]) => Math.max(Math.abs(dx), Math.abs(dy)) <= sp.radius);
       for (let i = 0; i < sp.amount; i++) {
