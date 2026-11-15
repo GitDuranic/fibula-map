@@ -94,6 +94,9 @@ function visibleDoors(world, v, left, top, right, bottom) {
 // other surface floors (0-7) at 0.55, as before. Underground floors, and everything seen from underground: up to
 // 2 floors away, 0.55 and 0.3; further away not drawn.
 const ROUTE_FADE = [1, 0.55, 0.3];
+// Experiment (user 2026-11-15, "maybe that feature is just not worth it"): false = the route only on the floor you're
+// looking at, no see-through band (5c) and no lines/dots on other floors (5b). true brings both back.
+const ROUTE_OTHER_FLOORS = false;
 function routeAlpha(z, vz) {
   if (z === vz) return 1;
   if (z <= 7 && vz <= 7) return ROUTE_FADE[1];
@@ -527,7 +530,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       }
       // See-through along the route (5c): the floors above and below where the route goes show through.
       const g = { ox, oy, s, W, H, left, top, right, bottom, C, ts };
-      if (routePath.current) seeThrough(ctx, world, v, routePath.current, g, budget, offRef);
+      if (routePath.current && ROUTE_OTHER_FLOORS) seeThrough(ctx, world, v, routePath.current, g, budget, offRef);
       // Hover preview (5d): where the hole, stairs or ladder under the mouse leads, also with a route (user), on top.
       const hl = hoverLink.current, hoverTele = hl && world.isTeleport(hl);
       if (hl && !hoverTele && hl[2] === v.z && !(hl[5] < v.z && v.z <= 7 && hl[5] >= v.cut)) {
@@ -738,7 +741,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       // user 2026-11-15: going down the Demona hole, the surface part behind you still showed). When the route
       // doesn't touch the floor you're looking at, all of it shows as before. The end dot always shows.
       const { ahead, onRoute } = routeAhead(rp, v.z);
-      const alpha = (i) => (!onRoute || ahead[i] ? routeAlpha(rp[i][2], v.z) : 0);
+      const alpha = (i) => (!ROUTE_OTHER_FLOORS ? +(rp[i][2] === v.z) : !onRoute || ahead[i] ? routeAlpha(rp[i][2], v.z) : 0);
       // Runs of tiles walked on one floor (path indices). The line goes onto stairs, holes and forcefields ('onto'); a
       // ladder, grate or rope spot used from next to it ('use') gets a short dashed line from where you stand.
       const runs = [], uses = [];
@@ -830,7 +833,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       }
       dot(0, '#30c030', 6 * k);
       const last = rp.length - 1;
-      dot(last, '#e03030', 6 * k, routeAlpha(rp[last][2], v.z));
+      dot(last, '#e03030', 6 * k, ROUTE_OTHER_FLOORS ? routeAlpha(rp[last][2], v.z) : alpha(last));
     }
 
     // Town names over the zoomed-out map (gone once the sprites show), centred on the temple, white in the
