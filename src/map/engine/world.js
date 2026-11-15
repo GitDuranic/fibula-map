@@ -362,7 +362,14 @@ export class World {
         linksAt.get(k).push(l);
       }
       // NPC passages (boats, carpets, the Oracle): [NPC, destination, price, min level, x, y, z, tx, ty, tz].
-      this.links = { kinds: links.kinds, links: links.links, linksAt, passages: links.passages || [] };
+      // Climbs and drops (exani hur, 3 parcels; slice 11): "x,y,z" -> [[x, y, z, tx, ty, tz, ways]], for ?debug=walk.
+      const climbsAt = new Map();
+      for (const c of links.climbs || []) {
+        const k = `${c[0]},${c[1]},${c[2]}`;
+        if (!climbsAt.has(k)) climbsAt.set(k, []);
+        climbsAt.get(k).push(c);
+      }
+      this.links = { kinds: links.kinds, links: links.links, linksAt, climbsAt, passages: links.passages || [] };
       return this.links;
     });
     return this.linksPromise;

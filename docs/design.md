@@ -144,6 +144,8 @@ Agree each slice before building it, then build one at a time.
 9. Map pins, current position, route export for the overlay. (The spawn layer moved to slice 6.)
 10. **Chests and quests** (asked for 2026-11-13, see its plan; order not agreed yet): what's in chests, and quests marked with their name.
 
+11. **Climbing and dropping** (asked for 2026-11-15, built): routes can go a floor up or down with exani hur up/down or 3 parcels, as an option per character.
+
 Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (the loot seller was 5).
 
 ## Slice 2 plan: places, NPCs and search (proposed 2026-11-12, to agree with the user)
@@ -393,6 +395,25 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - Clicking it opens a quest window: name, version, what's in this chest (items open their item window), and the quest's whole reward as the wiki gives it.
 
 ## Decisions made while building
+
+### Slice 11: climbing and dropping with exani hur and parcels (built 2026-11-15)
+- **Asked by the user:** some places can be reached a floor up or down with 3 parcels or exani hur up / exani hur down. The user corrected me that parcels also work **down**: throw them onto the tile below and walk into the open air.
+- **Worked out once, not at every search (user's choice):** the map doesn't change, the check looks at three floors and four directions for every tile, and few tiles qualify. With a list, the spots can also be shown and corrected. The converter (`tools/lib/climb.js`) writes them to `links.json` as `climbs: [[x,y,z, tx,ty,tz, ways]]` (ways: 1 = the spell, 2 = parcels). The router loads them as extra moves from the tile you stand on.
+- **Rules, from the TVP server** (`data/scripts/spells/support/levitate.lua`; `src/game.cpp` internalMoveCreature for the parcels; height = items.otb flag 1<<3, e.g. parcels and boxes). You face north, east, south or west (not diagonally). "Open air" means no tile, or a tile without a ground item and without blocking items:
+  - **Exani hur up:** open air above you (immovable blockers count), and the tile in front of you one floor up has ground, isn't blocked and isn't a floor change. Not from floor 8 to 7.
+  - **Exani hur down:** open air in front of you on your floor, and the tile below that has ground, isn't blocked and isn't a floor change. Not from floor 7 to 8.
+  - **Parcels up:** 3 height items on your tile, open air above you (any blocker counts), and the tile in front one floor up has ground, isn't blocked and **has no height item itself**. Not from floor 8.
+  - **Parcels down:** open air in front of you, and the tile below it has 3 height items (you throw them down first) and isn't blocked. Not from floor 7.
+- **Kept simple on purpose:** the tile you stand on and the landing tile must be walkable in the router's sense (nothing blocking, also no moveable crate; the spell would ignore those). Walkable is taken to mean parcels can be put there. Landing on a floor change is left out (the server would do it for parcels down, then move you on).
+- **The 7.1 map** (2026-11-15): 5880 climbs up and 5880 drops (each drop is a climb backwards). Only 2 work with the spell alone and none with parcels alone. Per floor: 0:14 1:107 2:205 3:318 4:728 5:1645 6:4169 7:3046 8:76 9:164 10:88 11:52 12:87 13:275 14:513 15:273.
+- **Route panel:** two ticks under the boots of haste: "Exani hur (levitate)" and "3 parcels". Both are **off by default** so existing routes don't change, and they're remembered with the other character settings (`tm-char`). Changing them searches again.
+  - With both ticked, the spell is used (it's faster).
+  - The panel shows "Exani hur: N casts, 50·N mana" and "Parcels: 3 each time, 3·N in all (they stay behind)". The legs say "2× exani hur" / "1× parcels".
+  - Level, magic level and premium aren't checked: TVP has magic level 3 and premium, and the 7.1 values aren't known. The tick is the player's own call.
+- **Time (rough guesses, to tune with the user):** one step on the landing tile, as with every floor change, plus 1 s to say the spell or 2 s to put the parcels down (`CLIMB_MS` in `router.js`). Parcels cost no gold in the router; the parcel count is shown instead.
+- **On the map:** a climb is a floor change like the others: the up/down arrow on the tile you stand on and a dot where you land.
+- **`?debug=walk`:** a bar on the tile's edge you face, orange for up and blue for down. Solid means the spell works there; an outline means parcels only.
+- **"Not connected"** (the walking-area graph) takes climbs into account only when the character has them ticked.
 
 ### Minimap (built 2026-11-15, asked for by Ryndean)
 - **Where:** at the top of the side panel, where the client has its minimap. It **replaces the compass rose**: dragging the map does the same job, and the arrow keys still pan. The zoom and floor buttons stay under it as before, with the floor and layer lines beside them.

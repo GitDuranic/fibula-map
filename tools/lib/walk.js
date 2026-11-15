@@ -15,7 +15,7 @@ function luaTable(text, name) {
   return m ? [...m[1].matchAll(/\d+/g)].map((x) => +x[0]) : [];
 }
 
-// Per client id: { block, door, change: 'down'|'north'|'south'|'east'|'west'|null, use: link kind or null }.
+// Per client id: { block, moveable, height, door, change: 'down'|'north'|'south'|'east'|'west'|null, use: link kind or null }.
 export function walkRules({ dataDir, itemInfo, dat }) {
   const global = fs.readFileSync(path.join(dataDir, 'global.lua'), 'latin1');
   const doors = new Set(['openDoors', 'closedDoors', 'lockedDoors', 'openExtraDoors', 'closedExtraDoors', 'openHouseDoors',
@@ -39,7 +39,9 @@ export function walkRules({ dataDir, itemInfo, dat }) {
     const door = doors.has(sid);
     // items.otb flag 1 = blocks movement ("block solid"). Doors count as open (user: ignore doors).
     const block = !!(flags & 1) && !door;
-    if (block || door || change || use || t.flags.GROUND !== undefined) rules.set(cid, { block, door, change, use, ground: t.flags.GROUND });
+    // For climbing (tools/lib/climb.js): items.otb flag 1<<3 = has height (parcels, boxes, ...), 1<<6 = moveable.
+    const height = !!(flags & 8), moveable = !!(flags & 64);
+    if (block || door || change || use || height || t.flags.GROUND !== undefined) rules.set(cid, { block, moveable, height, door, change, use, ground: t.flags.GROUND });
   }
   return { rules, counts: { doors: doors.size, ropeSpots: ropeSpots.size, digSpots: digSpots.size } };
 }

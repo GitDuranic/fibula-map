@@ -1,6 +1,6 @@
 // The route panel in the side panel: From / To fields (using the search) and the route found.
 import React, { useState } from 'react';
-import { routeTime, routeLegs } from './engine/router.js';
+import { routeTime, routeLegs, LEVITATE_MANA, CLIMB_SPELL, CLIMB_PARCELS } from './engine/router.js';
 
 // The character's speed (the client's speed value), from the TVP server (see the design doc, run times):
 // base = 70 + (level - 1); haste adds base * 30 / 100, strong haste base * 70 / 100 (whole numbers);
@@ -12,6 +12,9 @@ export function speedOf({ level, haste, boh }) {
 }
 // Haste spells (TVP data/scripts/spells/support): how long they last and what they cost.
 export const HASTE = { haste: { name: 'Haste', ms: 60000, mana: 60 }, strong: { name: 'Strong haste', ms: 42500, mana: 100 } };
+
+// What the character may climb and drop with (the router's "climb" option): exani hur and/or 3 parcels.
+export const climbOf = (c) => (c.levitate ? CLIMB_SPELL : 0) | (c.parcels ? CLIMB_PARCELS : 0);
 
 // A place for a route (from a search result): { label, pos: [x, y, z] }, or null for results without a spot.
 export function routePoint(r) {
@@ -83,7 +86,8 @@ const gp = (n) => (n ? `${n} gp` : 'free');
 // One leg of the route: a walk, or a passage with an NPC.
 function legText(l) {
   if (l.kind === 'npc') return <><b>{l.npc}</b>: to {l.dest}, {gp(l.price)}</>;
-  const extra = [l.floors && plural(l.floors, 'floor change'), l.teleports && plural(l.teleports, 'forcefield')].filter(Boolean);
+  const extra = [l.floors && plural(l.floors, 'floor change'), l.teleports && plural(l.teleports, 'forcefield'),
+    l.levitate && `${l.levitate}× exani hur`, l.parcels && `${l.parcels}× parcels`].filter(Boolean);
   return <>Walk {plural(l.steps, 'step')}{extra.length ? `, ${extra.join(', ')}` : ''} ({fmtTime(l.time)})</>;
 }
 
@@ -95,6 +99,8 @@ export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, o
   const spell = HASTE[char.haste];
   const casts = spell && time ? Math.ceil(time / spell.ms) : 0; // recast the moment it runs out (user's choice)
   const legs = r ? routeLegs(r.path, speed) : [];
+  const levitates = r ? r.path.filter((e) => e[3] === 'levitate').length : 0;
+  const parcelClimbs = r ? r.path.filter((e) => e[3] === 'parcels').length : 0;
   return (
     <div className="tm-panel tm-route">
       <div className="tm-window-title">
@@ -120,6 +126,12 @@ export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, o
         <label className="tm-check">
           <input type="checkbox" checked={char.boh} onChange={(e) => onChar({ ...char, boh: e.target.checked })} /> Boots of haste
           <span className="tm-speed">speed {speed}</span>
+        </label>
+        <label className="tm-check" title="Go a floor up or down with exani hur up / exani hur down, 50 mana each">
+          <input type="checkbox" checked={!!char.levitate} onChange={(e) => onChar({ ...char, levitate: e.target.checked })} /> Exani hur (levitate)
+        </label>
+        <label className="tm-check" title="Climb with 3 parcels under you, or drop down onto 3 parcels thrown down first">
+          <input type="checkbox" checked={!!char.parcels} onChange={(e) => onChar({ ...char, parcels: e.target.checked })} /> 3 parcels
         </label>
         <label className="tm-check" title="Locked doors block routes; unlock them one by one by clicking them on the map, or all at once here">
           <input type="checkbox" checked={doorsAll} onChange={(e) => onDoorsAll(e.target.checked)} /> Open all locked doors
@@ -154,6 +166,8 @@ export default function RoutePanel({ world, route, char, onChar, onFrom, onTo, o
             <>
               <div className="tm-route-time">{fmtTime(time)}{r.gold ? `, ${r.gold} gp` : ''}</div>
               {spell && <div>{spell.name}: {plural(casts, 'cast')}, {casts * spell.mana} mana</div>}
+              {levitates > 0 && <div>Exani hur: {plural(levitates, 'cast')}, {levitates * LEVITATE_MANA} mana</div>}
+              {parcelClimbs > 0 && <div>Parcels: 3 each time, {3 * parcelClimbs} in all (they stay behind)</div>}
               <ol className="tm-route-legs">
                 {legs.map((l, i) => <li key={i} className={l.kind === 'npc' ? 'tm-leg-npc' : undefined}>{legText(l)}</li>)}
               </ol>

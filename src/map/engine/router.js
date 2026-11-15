@@ -9,6 +9,9 @@
 // - stepping onto a magic forcefield ("teleport" link): one step onto the forcefield, then you're at its destination;
 // - ladders, sewer grates and rope spots ("use" links, used from the tile or a neighbour) move you the same way:
 //   one step time on the tile you land on; a loose stone pile is dug first and then stepped into (two steps);
+// - a climb or drop (slice 11): exani hur up/down from the tile you stand on, or walking off / into open air with
+//   3 parcels; one step time on the tile you land on, plus CLIMB_MS for saying the spell or putting the parcels
+//   down. Only when the character has them (route option "climb": bit 1 = the spell, bit 2 = parcels);
 // - an NPC passage (boat, carpet, the Oracle): from any tile within 3 of the NPC on its floor (TVP npcbehavior.cpp,
 //   areInRange<3, 3>), PASSAGE_MS for talking, then you're at the destination. It costs its price in gold.
 // The tile of a floor change is kept in the path as its own entry, without time of its own (5a): 'onto' for
@@ -24,6 +27,11 @@
 
 export const PASSAGE_MS = 2000; // talking to the NPC (user: players type the combo in about 2 seconds)
 export const TALK_RANGE = 3;
+// Climbing (slice 11): the extra time of one climb or drop, on top of the step onto the landing tile. Rough guesses,
+// to tune with the user: saying "exani hur up", or putting 3 parcels down (or throwing them down first).
+export const CLIMB_MS = { levitate: 1000, parcels: 2000 };
+export const LEVITATE_MANA = 50; // TVP levitate.lua
+export const CLIMB_SPELL = 1, CLIMB_PARCELS = 2; // the route option "climb", and the ways bits in links.json
 
 // The server's step time: 50 * ceil(1000 * ground / speed / 50) ms, 3x for a diagonal step.
 export function stepTime(ground, speed, diagonal = false) {
@@ -36,6 +44,7 @@ export function stepTime(ground, speed, diagonal = false) {
 function entryTime([, , , how, ground, ground2], speed) {
   if (how === 'start' || how === 'onto' || how === 'use') return 0; // the move is counted on the landing entry
   if (how === 'npc') return PASSAGE_MS;
+  if (how === 'levitate' || how === 'parcels') return CLIMB_MS[how] + stepTime(ground, speed);
   let t = stepTime(ground, speed, how === 'diagonal');
   if (how === 'dig') t += stepTime(ground2, speed); // dig the pile, step into the hole, land below
   return t;
@@ -49,7 +58,7 @@ export function routeTime(path, speed) {
 }
 
 // The route in legs, for the panel: walking parts and passages, in order.
-// [{ kind: 'walk', from, to, steps, floors (floor changes), teleports, time }
+// [{ kind: 'walk', from, to, steps, floors (floor changes), teleports, levitate, parcels (climbs), time }
 //  | { kind: 'npc', npc, dest, price, from, to, time }]   (from/to: [x, y, z])
 export function routeLegs(path, speed) {
   const legs = [];
@@ -62,12 +71,13 @@ export function routeLegs(path, speed) {
       legs.push({ kind: 'npc', npc, dest, price, from: prev.slice(0, 3), to: e.slice(0, 3), time: PASSAGE_MS });
       continue;
     }
-    if (!walk) legs.push((walk = { kind: 'walk', from: prev.slice(0, 3), to: null, steps: 0, floors: 0, teleports: 0, time: 0 }));
+    if (!walk) legs.push((walk = { kind: 'walk', from: prev.slice(0, 3), to: null, steps: 0, floors: 0, teleports: 0, levitate: 0, parcels: 0, time: 0 }));
     walk.to = e.slice(0, 3);
     if (e[3] === 'onto' || e[3] === 'use') continue; // part of the next move
     walk.steps++;
     walk.time += entryTime(e, speed);
     if (e[3] === 'teleport') walk.teleports++;
+    else if (e[3] === 'levitate' || e[3] === 'parcels') walk[e[3]]++;
     else if (e[2] !== prev[2]) walk.floors++;
   }
   return legs;
@@ -85,9 +95,10 @@ export function routerMain() {
   let W = null;
   const C = 32;
   const PASSAGE_MS = 2000, TALK_RANGE = 3; // as outside (this function can't see them)
+  const CLIMB_MS = { levitate: 1000, parcels: 2000 }, CLIMB_SPELL = 1, CLIMB_PARCELS = 2;
   const GOLD = 1e9; // cheapest route: 1 gold weighs more than any walking time (ms)
   // What a path entry says it is ('how'), by code.
-  const HOW = ['start', 'walk', 'diagonal', 'step', 'teleport', 'ladder', 'grate', 'rope', 'dig', 'well', 'npc'];
+  const HOW = ['start', 'walk', 'diagonal', 'step', 'teleport', 'ladder', 'grate', 'rope', 'dig', 'well', 'npc', 'levitate', 'parcels'];
   const H = Object.fromEntries(HOW.map((s, i) => [s, i]));
   const VIA = [null, 'onto', 'use'];
   const popcnt = (v) => { v -= (v >>> 1) & 0x55555555; v = (v & 0x33333333) + ((v >>> 2) & 0x33333333); return (((v + (v >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24; };
@@ -123,8 +134,9 @@ export function routerMain() {
     W = { bytes, cx0, cy0, cw, ch, chunkOrd };
     const coordsOf = (t) => { const o = t >> 10, i = t & 1023; return [ordX[o] * C + (i & 31), ordY[o] * C + (i >> 5), ordZ[o]]; };
 
-    // Links by tile; flags: 1 = stepped onto (stairs, hole, forcefield), 2 = used (ladder, grate, ...), 4 = locked door.
-    const flags = new Uint8Array(N), stepLinks = new Map(), useLinks = new Map();
+    // Links by tile; flags: 1 = stepped onto (stairs, hole, forcefield), 2 = used (ladder, grate, ...), 4 = locked door,
+    // 8 = a climb or drop starts here (exani hur, parcels).
+    const flags = new Uint8Array(N), stepLinks = new Map(), useLinks = new Map(), climbLinks = new Map();
     const words = (N + 31) >>> 5, mask = new Uint32Array(words);
     const mark = (t) => { mask[t >>> 5] |= 1 << (t & 31); };
     for (let t = 0; t < N; t++) if (bytes[t]) mark(t);
@@ -142,6 +154,15 @@ export function routerMain() {
         flags[s] |= 2;
       }
     }
+    // Climbs and drops, worked out by the converter: [x, y, z, tx, ty, tz, ways] (ways: 1 spell, 2 parcels).
+    for (const [x, y, z, tx, ty, tz, ways] of linksJson.climbs || []) {
+      const s = tileIndex(x, y, z), d = tileIndex(tx, ty, tz);
+      if (s < 0 || d < 0) { skipped++; continue; }
+      mark(s); mark(d);
+      if (!climbLinks.has(s)) climbLinks.set(s, []);
+      climbLinks.get(s).push([d, ways]);
+      flags[s] |= 8;
+    }
     // NPC passages: [NPC, destination, price, min level, x, y, z, tx, ty, tz] (+ its destination tile).
     const passages = [];
     for (const p of linksJson.passages || []) {
@@ -157,7 +178,7 @@ export function routerMain() {
     const rank = new Uint32Array(words);
     let M = 0;
     for (let w = 0; w < words; w++) { rank[w] = M; M += popcnt(mask[w]); }
-    Object.assign(W, { flags, stepLinks, useLinks, mask, rank, M, teleports, passages, lockedAt });
+    Object.assign(W, { flags, stepLinks, useLinks, climbLinks, mask, rank, M, teleports, passages, lockedAt });
     const X = new Uint16Array(M), Y = new Uint16Array(M), Z = new Uint8Array(M);
     for (let w = 0; w < words; w++) {
       let m = mask[w];
@@ -191,8 +212,8 @@ export function routerMain() {
     }
     const area = new Int32Array(M);
     for (let c = 0; c < M; c++) area[c] = find(c);
-    const edges = new Map(); // area -> [[area, min level]]
-    const edge = (from, to, lvl) => { if (from === to) return; if (!edges.has(from)) edges.set(from, []); edges.get(from).push([to, lvl]); };
+    const edges = new Map(); // area -> [[area, min level, climb ways (0: anyone)]]
+    const edge = (from, to, lvl, ways = 0) => { if (from === to) return; if (!edges.has(from)) edges.set(from, []); edges.get(from).push([to, lvl, ways]); };
     // From the tiles a link is taken from (its neighbours, and for a use link the tile itself) to its destination.
     const linkEdges = (s, d, self) => {
       const cs = cid(s);
@@ -210,9 +231,10 @@ export function routerMain() {
         if (standable(t)) edge(area[cid(t)], area[cid(d)], p[3]);
       }
     }
+    for (const [s, list] of climbLinks) for (const [d, ways] of list) edge(area[cid(s)], area[cid(d)], 0, ways);
     W.area = area;
     // a, b: compact tiles. Starting on stairs or a hole, you walk off it into the areas around it.
-    W.reachable = (a, b, level) => {
+    W.reachable = (a, b, level, climb) => {
       const to = area[b], seen = new Set([area[a]]);
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
         const t = tileIndex(X[a] + dx, Y[a] + dy, Z[a]);
@@ -222,7 +244,7 @@ export function routerMain() {
       while (todo.length) {
         const cur = todo.pop();
         if (cur === to) return true;
-        for (const [next, lvl] of edges.get(cur) || []) if (lvl <= level && !seen.has(next)) { seen.add(next); todo.push(next); }
+        for (const [next, lvl, ways] of edges.get(cur) || []) if (lvl <= level && (!ways || ways & climb) && !seen.has(next)) { seen.add(next); todo.push(next); }
       }
       return false;
     };
@@ -258,12 +280,12 @@ export function routerMain() {
   }
 
   // A* from tile `from` to tile `to` ([x, y, z], walkable) for a character with `speed` (client speed value) and
-  // `level`. cheap: least gold first, then fastest. Returns { path, steps, gold, expanded } or { error }.
+  // `level`. climb: what the character can climb with (bits CLIMB_SPELL, CLIMB_PARCELS). cheap: least gold first, then fastest. Returns { path, steps, gold, expanded } or { error }.
   // locked(tile): is there a locked door here that is still locked? (Only asked for tiles flagged as locked doors.)
   // yieldEvery: the cheapest search lets other messages in now and then (see onmessage); it then stops when it
   // has been replaced (cancelled() is true) and returns { cancelled: true }.
-  async function route(from, to, speed, level, cheap, locked, cancelled) {
-    const { bytes, flags, stepLinks, useLinks, X, Y, Z, stamp, g, hc, prev, how, via, viaHow, pas } = W;
+  async function route(from, to, speed, level, climb, cheap, locked, cancelled) {
+    const { bytes, flags, stepLinks, useLinks, climbLinks, X, Y, Z, stamp, g, hc, prev, how, via, viaHow, pas } = W;
     const gen = ++W.gen;
     // Step times by ground speed / 2 (walk.bin's unit): 50 * ceil(1000 * ground / speed / 50).
     const st = new Float64Array(256);
@@ -359,6 +381,15 @@ export function routerMain() {
         const sp = bytes[nt];
         if (sp && !((f & 4) && locked(nt))) { const t1 = st[sp]; relax(cid(nt), cost + (diag ? 3 * t1 : t1), k, diag ? H.diagonal : H.walk, -1, 0, -1); }
       }
+      // Climbs and drops from this tile: the spell when the character has it (faster), else parcels.
+      if (climb && flags[t0] & 8) {
+        for (const [d, ways] of climbLinks.get(t0)) {
+          const w = ways & climb;
+          if (!w) continue;
+          const kind = w & CLIMB_SPELL ? H.levitate : H.parcels;
+          relax(cid(d), cost + CLIMB_MS[HOW[kind]] + stepTime(groundAt(d)), k, kind, -1, 0, -1);
+        }
+      }
       // Boats, carpets and the Oracle: talk, pay, arrive.
       const here = passagesFrom.get(t0);
       if (here) for (const ps of here) relax(cid(ps.d), cost + PASSAGE_MS + (cheap ? ps.p[2] * GOLD : 0), k, H.npc, -1, 0, passages.indexOf(ps));
@@ -392,7 +423,7 @@ export function routerMain() {
   // Every message replaces the cheapest search that may be running (it stops at its next pause).
   let current = 0;
   self.onmessage = async (e) => {
-    const { id, type, base, from, to, speed, level, doors = { all: false, open: [] } } = e.data;
+    const { id, type, base, from, to, speed, level, climb = 0, doors = { all: false, open: [] } } = e.data;
     const mine = ++current;
     try {
       if (type === 'load') { await load(base); self.postMessage({ id, ok: true }); return; }
@@ -417,21 +448,21 @@ export function routerMain() {
       const locked = (t) => { const d = !doors.all && W.lockedAt.get(t); return !!d && !open.has(unit(d)); };
       if (type === 'cheapest') {
         // Least gold, then fastest. Asked after the fastest route is shown; lets other messages in now and then.
-        const cheap = await route(a, b, speed, level, true, locked, () => current !== mine);
+        const cheap = await route(a, b, speed, level, climb, true, locked, () => current !== mine);
         self.postMessage({ id, ...cheap, ms: Math.round(performance.now() - t0) });
         return;
       }
       // Can't be reached even with all doors open: no search needed.
-      if (!W.reachable(cid(tileIndex(...a)), cid(tileIndex(...b)), level)) {
+      if (!W.reachable(cid(tileIndex(...a)), cid(tileIndex(...b)), level, climb)) {
         self.postMessage({ id, error: 'No route found: these two places are not connected.', ms: Math.round(performance.now() - t0) });
         return;
       }
-      const fast = await route(a, b, speed, level, false, locked);
+      const fast = await route(a, b, speed, level, climb, false, locked);
       if (fast.error) {
         // Would it go with all doors open? Then tell which locked doors are in the way.
         let lockedOnPath;
         if (!doors.all) {
-          const any = await route(a, b, speed, level, false, () => false);
+          const any = await route(a, b, speed, level, climb, false, () => false);
           if (any.path) {
             const seen = new Map();
             for (const [x, y, z] of any.path) {
@@ -464,13 +495,13 @@ export function createRouter(base) {
   const ready = ask({ type: 'load', base: absBase });
   return {
     // The fastest route. from, to: [x, y, z]; speed: the character's speed (client value); level: for the Oracle.
-    // doors: { all, open: [unit] } (see the map's doorUnit).
+    // doors: { all, open: [unit] } (see the map's doorUnit). climb: CLIMB_SPELL | CLIMB_PARCELS, what the character can climb with.
     // Resolves to { routes: [{ name: 'Fastest', path, steps, gold }], cheaper } or { error }, also with
     // locked: [{ key, p }] when locked doors are in the way. cheaper: ask cheapest() for a route with less gold.
-    route: async (from, to, speed, level, doors) => { await ready; return ask({ type: 'route', from, to, speed, level, doors }); },
+    route: async (from, to, speed, level, doors, climb = 0) => { await ready; return ask({ type: 'route', from, to, speed, level, doors, climb }); },
     // The cheapest route (least gold, then fastest): { path, steps, gold } or { error }, or { cancelled } when a
     // newer request (or cancel()) replaced it.
-    cheapest: async (from, to, speed, level, doors) => { await ready; return ask({ type: 'cheapest', from, to, speed, level, doors }); },
+    cheapest: async (from, to, speed, level, doors, climb = 0) => { await ready; return ask({ type: 'cheapest', from, to, speed, level, doors, climb }); },
     cancel: () => { ask({ type: 'cancel' }); },
     terminate: () => worker.terminate(),
   };

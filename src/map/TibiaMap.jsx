@@ -7,7 +7,7 @@ import DoorWindow from './DoorWindow.jsx';
 import MonsterWindow from './MonsterWindow.jsx';
 import QuestWindow from './QuestWindow.jsx';
 import ItemWindow from './ItemWindow.jsx';
-import RoutePanel, { speedOf } from './RoutePanel.jsx';
+import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter } from './engine/router.js';
 import { drawText, textWidth } from './engine/text.js';
 import './tibia-map.css';
@@ -337,7 +337,8 @@ function visibleQuestChests(world, v, left, top, right, bottom) {
 const questRing = (f, ox, oy, s, k) => ({ cx: ox + (f[0] + 0.5) * s, cy: oy + (f[1] + 0.5) * s, r: Math.max(9 * k, s * 0.55) });
 
 // The character's settings before the user changes them (user, 2026-11-13).
-const CHAR_DEFAULT = { level: 8, haste: 'none', boh: false };
+// levitate / parcels: may routes climb and drop with exani hur up/down or 3 parcels (slice 11; off by default).
+const CHAR_DEFAULT = { level: 8, haste: 'none', boh: false, levitate: false, parcels: false };
 
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
 const withCut = (v) => ({ ...v, cut: v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0 });
@@ -574,6 +575,16 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           ctx.fillRect(sx + k0, sy + k0, s - 2 * k0, s - 2 * k0);
           ctx.fillStyle = '#fff';
           ctx.fillText((l[5] === l[2] ? '' : upward ? '↑' : '↓') + kind[0].toUpperCase(), sx + s / 2, sy + s / 2);
+        }
+        // Climbs and drops (slice 11): a bar on the tile's edge you face, orange up / blue down; solid = the spell
+        // works, hollow = parcels only.
+        for (const c of world.walk.climbsAt?.get(`${x},${y},${v.z}`) || []) {
+          const dx = c[3] - x, dy = c[4] - y, w = Math.max(3 * k0, s / 6), up = c[5] < c[2];
+          const bx = dx > 0 ? sx + s - w : sx, by = dy > 0 ? sy + s - w : sy;
+          const bw = dx ? w : s, bh = dy ? w : s;
+          ctx.fillStyle = ctx.strokeStyle = up ? 'rgba(255,140,0,0.95)' : 'rgba(0,140,255,0.95)';
+          ctx.lineWidth = k0;
+          if (c[6] & 1) ctx.fillRect(bx, by, bw, bh); else ctx.strokeRect(bx + k0 / 2, by + k0 / 2, bw - k0, bh - k0);
         }
       }
       // Teleports and NPC passages: a line to where they go (dashed when the destination is on another floor),
@@ -1176,7 +1187,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         r.busy = true; r.result = null;
         router.current ||= createRouter(dataUrl);
         const speed = speedOf(charRef.current); // the time shown is worked out again when the settings change
-        const args = [r.from.pos, r.to.pos, speed, Number(charRef.current.level) || 1, doorsRef.current];
+        const args = [r.from.pos, r.to.pos, speed, Number(charRef.current.level) || 1, doorsRef.current, climbOf(charRef.current)];
         r.cheapBusy = false;
         // The fastest route first, shown as soon as it's found; then, when it costs gold, the cheapest is searched
         // and added when it's cheaper. A newer request stops that search in the worker.
@@ -1212,13 +1223,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   };
   // The Oracle needs level 8: search again when the level crosses it.
   const oracleLevel = Number(char.level) >= 8;
+  const climb = climbOf(char); // ... and when climbing is switched on or off
   const routeRef = useRef(route);
   routeRef.current = route;
   // ... and when doors are unlocked or locked.
   const doorsKey = `${doors.all}:${doors.open.join(';')}`;
   useEffect(() => {
     if (routeRef.current.from && routeRef.current.to) updateRoute({}, true);
-  }, [oracleLevel, doorsKey, updateRoute]);
+  }, [oracleLevel, climb, doorsKey, updateRoute]);
   const clearRoute = () => { routeSeq.current++; router.current?.cancel(); routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
 
   const selectNpc = useCallback((n) => {

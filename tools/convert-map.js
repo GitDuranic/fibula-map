@@ -17,6 +17,7 @@
 //   doors.json            locked doors [[x,y,z, door id, open door id, key number (0 unknown), key id]] (client ids)
 //   walk.bin, links.json  router data: per tile 0 (blocked) or ground speed / 2, in map.json chunk order;
 //                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig, teleport);
+//                         climbs [[x,y,z, tx,ty,tz, ways]] (exani hur / parcels, ways: 1 = spell, 2 = parcels);
 //                         passages [[NPC, destination, price, min level, x,y,z, tx,ty,tz]] (boats, carpets, Oracle)
 //   places.json           [{ n name, k 'town' | 'depot', p [x,y,z] }] towns from the map's town list (temple), depots
 //   monsters.json, monsters.png  monster kinds (stats, outfit, loot without chances) and 7.1 spawns, see below
@@ -48,6 +49,7 @@ import { loadItemInfo } from './lib/iteminfo.js';
 import { loadNpcs, renderOutfit } from './lib/npcs.js';
 import { loadMonsters, spawnGroups } from './lib/monsters.js';
 import { walkRules, buildWalk, LINK_KINDS } from './lib/walk.js';
+import { buildClimbs, CLIMB_SPELL, CLIMB_PARCELS } from './lib/climb.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
 // The input files are in the repo (assets/, see the README); each can be pointed elsewhere with its option.
@@ -228,13 +230,14 @@ const { rules: walkRuleMap, counts: walkCounts } = walkRules({ dataDir: DATA, it
 const walk = buildWalk({ tileAt, rules: walkRuleMap });
 const walkBytes = [];
 const speeds = new Map();
+const walkTiles = []; // [x, y, z] of every walkable tile, for the climb spots
 for (let z = 0; z < 16; z++) {
   for (const [cx, cy] of chunkIndex[z] || []) {
     const buf = new Uint8Array(CHUNK * CHUNK);
     for (const [i, items] of floors[z].get(`${cx},${cy}`)) {
       const x = cx * CHUNK + (i % CHUNK), y = cy * CHUNK + Math.floor(i / CHUNK);
       const sp = walk.speedAt(x, y, z);
-      if (sp) { buf[i] = Math.max(1, Math.min(255, Math.round(sp / 2))); speeds.set(sp, (speeds.get(sp) || 0) + 1); }
+      if (sp) { buf[i] = Math.max(1, Math.min(255, Math.round(sp / 2))); speeds.set(sp, (speeds.get(sp) || 0) + 1); walkTiles.push([x, y, z]); }
       walk.visitTile(x, y, z, items);
     }
     walkBytes.push(buf);
@@ -264,6 +267,28 @@ for (const [x, y, z, tx, ty, tz] of teleports) {
     walk.links.push([...s.from, ...s.to, LINK_KINDS.indexOf(s.kind)]);
   }
   log(`Scripted links: ${scripted.length}`);
+}
+// Climb and drop spots (exani hur up/down, 3 parcels; tools/lib/climb.js): [[x,y,z, tx,ty,tz, ways]], ways bits
+// 1 = the spell, 2 = parcels. Stored in links.json as "climbs", looked up by the router.
+const climbInfo = (x, y, z) => {
+  const items = tileAt(x, y, z);
+  if (!items) return undefined;
+  const t = { ground: false, block: false, fixedBlock: false, change: false, height: 0 };
+  for (const v of items) {
+    const r = walkRuleMap.get(Array.isArray(v) ? v[0] : v);
+    if (!r) continue;
+    if (r.ground !== undefined) t.ground = true;
+    if (r.block) { t.block = true; if (!r.moveable) t.fixedBlock = true; }
+    if (r.change) t.change = true;
+    if (r.height) t.height++;
+  }
+  return t;
+};
+const climbs = buildClimbs({ tiles: walkTiles, tileInfo: climbInfo, walkable: (x, y, z) => walk.speedAt(x, y, z) > 0 });
+{
+  const n = (f) => climbs.filter(f).length;
+  const perFloor = Array.from({ length: 16 }, (_, z) => n((c) => c[2] === z)).map((c, z) => c && `${z}:${c}`).filter(Boolean).join(' ');
+  log(`Climbs: ${n((c) => c[5] < c[2])} up (${n((c) => c[5] < c[2] && c[6] === CLIMB_SPELL)} spell only, ${n((c) => c[5] < c[2] && c[6] === CLIMB_PARCELS)} parcels only), ${n((c) => c[5] > c[2])} down; per floor ${perFloor}`);
 }
 if (rookTeleports.length) log(`Teleports from the mainland to Rookgaard, left out: ${rookTeleports.join('; ')}`);
 if (badTeleports.length) log(`Teleports without a destination on the map, left out: ${badTeleports.length} (${badTeleports.slice(0, 8).join('; ')}${badTeleports.length > 8 ? '; ...' : ''})`);
@@ -437,7 +462,7 @@ npcList.forEach((n, i) => {
     else droppedTravel.push(`${n.name} -> ${t.name}`);
   }
 });
-fs.writeFileSync(path.join(OUT, 'links.json'), JSON.stringify({ kinds: LINK_KINDS, links: walk.links, passages }));
+fs.writeFileSync(path.join(OUT, 'links.json'), JSON.stringify({ kinds: LINK_KINDS, links: walk.links, passages, climbs }));
 log(`Passages: ${passages.length} (${new Set(passages.map((p) => p[0])).size} NPCs), of which ${passages.filter((p) => p[3]).length} need a level`);
 
 // ---------- monsters ----------
