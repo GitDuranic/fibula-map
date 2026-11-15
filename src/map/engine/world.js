@@ -1,5 +1,6 @@
 // Loads the converted map data and draws it in chunks, cached as canvases.
 import { drawTile, TILE } from './render.js';
+import { mergeQuests } from './questdata.js';
 
 const loadImage = (src) => new Promise((resolve, reject) => {
   const img = new Image();
@@ -125,10 +126,33 @@ export class World {
   //   quests: [{ n, v (version, '' = unknown), reward (TibiaWiki's text), chests: [{ p, items: [[id, count, key?]] }] }]
   //   questChests: every chest: { p, items, quest }
   //   questLabels: one name label per group of a quest's chests on one floor within 6 tiles: { p (the top chest), quest }
+  // Slice 12: quests.json is the user's Fibula quest list merged with the automatic spots. In development the list
+  // comes live from the dev server (/__quests) and can be edited (questEditable, setQuestList).
   async loadQuests() {
     const quests = await loadJson(`${this.base}/quests.json`).catch(() => []);
+    this.questEditable = false;
+    try {
+      const res = await fetch('/__quests');
+      if (res.ok && (res.headers.get('content-type') || '').includes('json')) {
+        const list = await res.json();
+        this.questAuto = await loadJson(`${this.base}/quests-auto.json`).catch(() => []);
+        if (Array.isArray(list?.quests)) { this.questEditable = true; this.setQuestList(list, false); return; }
+      }
+    } catch { /* no dev server: the converted list */ }
+    this.setQuests(quests);
+  }
+
+  // The user's quest list changed (dev): merge it with the automatic spots again. search: rebuild the search too.
+  setQuestList(list, search = true) {
+    this.questList = list;
+    this.setQuests(mergeQuests(list, this.questAuto || []));
+    if (search) this.buildSearch();
+  }
+
+  // quests: merged (see questdata.js). Each spot also knows its quest and its place in the quest's list (i).
+  setQuests(quests) {
     this.quests = quests;
-    this.questChests = quests.flatMap((q) => q.chests.map((c) => ({ p: c.p, items: c.items, quest: q })));
+    this.questChests = quests.flatMap((q) => q.chests.map((c, i) => ({ p: c.p, id: c.id, items: c.items, quest: q, i })));
     const labels = [];
     for (const q of quests) {
       const left = [...q.chests];
@@ -429,7 +453,7 @@ export class World {
     // Monsters that spawn on the map (6d): picking one shows all of them.
     const spawning = new Set((this.spawnPoints || []).map((sp) => sp.kind));
     (this.monKinds || []).forEach((m, i) => { if (spawning.has(i)) entries.push({ kind: 'Monster', name: m.n, mon: i }); });
-    // Quests with a chest on the map (slice 10): picking one goes to its first chest.
+    // Quests (slices 10, 12): picking one goes to its first spot, or opens its window when it has none.
     for (const q of this.quests || []) entries.push({ kind: 'Quest', name: q.n, quest: q });
     for (const e of entries) e.lower = e.name.toLowerCase();
     this.searchEntries = entries;
@@ -474,6 +498,21 @@ export class World {
       if (!best || d < best.d) best = { t, d };
     }
     return best?.t.n || '';
+  }
+
+  // Items by name for the quest editor (slice 12): names starting with q first, then containing it. [{ id, name }]
+  searchItems(q, limit = 12) {
+    const t = q.trim().toLowerCase();
+    if (!t) return [];
+    this.itemNames ||= Object.entries(this.defs).filter(([, d]) => d.n).map(([id, d]) => ({ id: +id, name: d.n, lower: d.n.toLowerCase() }));
+    const seen = new Set(), out = [];
+    for (const pass of [(x) => x.lower.startsWith(t), (x) => x.lower.includes(t)]) {
+      for (const x of this.itemNames) {
+        if (out.length >= limit) break;
+        if (pass(x) && !seen.has(x.name)) { seen.add(x.name); out.push(x); }
+      }
+    }
+    return out;
   }
 
   // An item's name as an NPC offers it, e.g. "vial of oil" for a vial with fluid type 7.

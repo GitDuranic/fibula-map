@@ -223,3 +223,26 @@
 /* right-click menu: naming a location */
 .tm-menu-add { display: flex; gap: 4px; padding: 2px; }
 .tm-menu-add .tm-input { width: 150px; }
+
+/* Quest editor and checklist (slice 12, development only) */
+.tm-quest .tm-window-body { gap: 3px; }
+.tm-quest-spots { display: flex; flex-wrap: wrap; gap: 2px; }
+.tm-quest-spots .tm-btn { min-width: 22px; padding: 0 4px; }
+.tm-quest-gives { margin-top: 4px; }
+.tm-quest-item { align-items: center; gap: 4px; }
+.tm-quest-item-name { display: flex; flex: 1; min-width: 0; align-items: center; gap: 4px; }
+.tm-quest-count { width: 44px; flex: none; }
+.tm-quest-remove { flex: none; }
+.tm-quest-picker { flex: none; margin-top: 2px; }
+.tm-quest-pick { display: flex; align-items: center; gap: 4px; }
+.tm-quest-del { margin-top: 6px; align-self: flex-start; }
+.tm-quest-list .tm-window-body { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+.tm-quest-list .tm-select { flex: none; }
+.tm-quest-rows { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+.tm-quest-row { display: flex; align-items: center; gap: 4px; flex: none; }
+.tm-quest-row .tm-offer-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tm-quest-mark { flex: none; width: 16px; text-align: center; }
+.tm-quest-done { flex: none; width: 12px; color: #60d060; text-align: center; }
+.tm-menu-quests { display: flex; flex-direction: column; max-height: 220px; overflow-y: auto; }
+.tm-menu-quests-wrap { flex-direction: column; align-items: stretch; }
+.tm-quest-list { flex: 0 1 auto; max-height: 45%; }

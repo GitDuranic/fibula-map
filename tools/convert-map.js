@@ -10,10 +10,12 @@
 //   <map>                                            the 7.1 map (TVP item ids)                    default assets/map71/Tibia71.otbm
 //   <spawn>                                          7.1 NPC and monster spawns                    default assets/map71/Tibia71-spawn.xml
 //   tools/data/wikiquests.json, custom-places.json   TibiaWiki quests; the user's named locations
+//   tools/data/fibula-quests.json                    the user's Project Fibula quest list (slice 12, edited on the map)
 // Outputs (in <out>/):
 //   items.json            draw info and name for every item on the map or traded by an NPC (keyed by client id),
 //                         plus fluid names by fluid type
-//   quests.json           quest chests on the 7.1 map: quest name/version/reward (TibiaWiki), chests with items
+//   quests.json           quests: the Fibula list merged with the chests found on the 7.1 map (src/map/engine/questdata.js)
+//   quests-auto.json      only the chests found on the 7.1 map (name/version/reward from TibiaWiki), for live merging
 //   doors.json            locked doors [[x,y,z, door id, open door id, key number (0 unknown), key id]] (client ids)
 //   walk.bin, links.json  router data: per tile 0 (blocked) or ground speed / 2, in map.json chunk order;
 //                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig, teleport);
@@ -50,6 +52,7 @@ import { loadNpcs, renderOutfit } from './lib/npcs.js';
 import { loadMonsters, spawnGroups } from './lib/monsters.js';
 import { walkRules, buildWalk, LINK_KINDS } from './lib/walk.js';
 import { buildClimbs, CLIMB_SPELL, CLIMB_PARCELS } from './lib/climb.js';
+import { mergeQuests } from '../src/map/engine/questdata.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
 // The input files are in the repo (assets/, see the README); each can be pointed elsewhere with its option.
@@ -358,7 +361,17 @@ fs.writeFileSync(path.join(OUT, 'doors.json'), JSON.stringify(doorsOut));
       items: c.items.map((i) => { const cid = toClient(i.sid); if (cid) usedItems.add(cid); return i.key ? [cid, i.count, i.key] : [cid, i.count]; }).filter((x) => x[0]),
     })),
   }));
-  fs.writeFileSync(path.join(OUT, 'quests.json'), JSON.stringify(questsOut));
+  // Slice 12: the user's Project Fibula quest list wins (its quests, names, rewards, and spots once edited);
+  // quests-auto.json keeps the automatic ones, so the map can merge again with live edits in development.
+  let fibulaList = { quests: [] };
+  try { fibulaList = JSON.parse(fs.readFileSync('tools/data/fibula-quests.json', 'utf8')); } catch {}
+  for (const q of fibulaList.quests) for (const s of q.spots || []) {
+    if (s.id && dat.items.has(s.id)) usedItems.add(s.id);
+    for (const [id] of s.items || []) if (dat.items.has(id)) usedItems.add(id);
+  }
+  fs.writeFileSync(path.join(OUT, 'quests-auto.json'), JSON.stringify(questsOut));
+  fs.writeFileSync(path.join(OUT, 'quests.json'), JSON.stringify(mergeQuests(fibulaList, questsOut)));
+  log(`Fibula quest list: ${fibulaList.quests.length} quests, ${fibulaList.quests.filter((q) => q.spots).length} edited`);
   log(`Quest chests: ${stats.spots} on the 7.6 map, ${stats.on71} of them on the 7.1 map, ${stats.matched} with a TibiaWiki quest -> ${questsOut.length} quests, ${questsOut.reduce((a, q) => a + q.chests.length, 0)} chests`);
 }
 
@@ -508,6 +521,11 @@ fs.writeFileSync(path.join(OUT, 'monsters.json'), JSON.stringify({ kinds: kindsO
 }
 
 // ---------- sprite atlases ----------
+// Every item that can be picked up or holds items (with a name), so the quest editor (slice 12) can show any reward,
+// and a chest, crate or body for a quest spot, even when it isn't on the map.
+for (const [cid, t] of dat.items) {
+  if ((t.flags.PICKUPABLE !== undefined || t.flags.CONTAINER !== undefined) && itemInfo.byClient(cid)?.name) usedItems.add(cid);
+}
 log(`Packing sprites for ${usedItems.size} items`);
 const SHEET_CELLS = 64, PER_SHEET = SHEET_CELLS * SHEET_CELLS;
 const spriteSlot = new Map(); // spr id -> atlas index (0 = empty)

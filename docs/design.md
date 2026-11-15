@@ -144,6 +144,7 @@ Agree each slice before building it, then build one at a time.
 9. Map pins, current position, route export for the overlay. (The spawn layer moved to slice 6.)
 10. **Chests and quests** (asked for 2026-11-13, see its plan; order not agreed yet): what's in chests, and quests marked with their name.
 
+12. **Quest list and editor** (asked for 2026-11-15, built): the user's Project Fibula quest list, checked one by one on the map, with spots and rewards edited there.
 11. **Climbing and dropping** (asked for 2026-11-15, built): routes can go a floor up or down with exani hur up/down or 3 parcels, as an option per character.
 
 Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (the loot seller was 5).
@@ -395,6 +396,29 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - Clicking it opens a quest window: name, version, what's in this chest (items open their item window), and the quest's whole reward as the wiki gives it.
 
 ## Decisions made while building
+
+### Slice 12: quest list and editor (built 2026-11-15)
+- **Asked by the user:** check every Project Fibula quest and its rewards, one by one. Often you'd need a body, chest or crate with items on a square. Should that be done in RME?
+- **Not in RME (my advice, the user agreed: "can you add the quest editor thing"):**
+  - The converter doesn't read what's in containers on the map.
+  - Ryndean's map batches replace the `.otbm`, so map edits would be lost.
+  - Placing objects only to describe a quest is slow.
+  - RME stays for real map errors, e.g. a quest chest missing from the game world: those are fixes for Ryndean's map.
+  - Still worth asking Ryndean for the server's own quest data (chests with action ids, the reward script): then nothing needs checking by hand.
+- **The list:** `tools/data/fibula-quests.json`, from the user's list (83 quests, 53 with ✅). Each quest: `n`, `level` (null = none), `area`, `reward` (the list's text), `mark` (the list's ✅/⬜), `checked` (gone through on the map), and `spots`. `spots` is null (use the spots found automatically) or `[{ p, id (object shown), items [[client id, count, key?]] }]`.
+  - **Open:** what ✅/⬜ means on the user's list. It's stored and shown as given.
+- **Merging** (`src/map/engine/questdata.js`, used by the converter and by the map in development): the list's quests in its order, with the automatic spots (slice 10) when the quest has none of its own. Names are matched loosely (case, punctuation). Automatic quests that aren't on the list stay, marked "Not on your Fibula list": Captain Iglues Treasure, Present, Demon Helmet, Fire Axe. 27 of the 83 list quests have automatic spots; 56 start empty.
+  - The converter writes `quests.json` (merged) and `quests-auto.json` (only the automatic ones, for merging live).
+- **Editing (development only, like named locations):**
+  - The dev server's `/__quests` endpoint (vite.config.js) saves one quest at a time into the file.
+  - The map merges again at once. On the built site (Ryndean's), nothing can be edited; there the converted list shows.
+  - **Quests button** (by Route): the checklist. "N of 83 checked", a filter (Not checked / No spot on the map / Checked / All on the list / Not on the list). Rows: ✅/⬜, the name without " Quest" (the panel is narrow), how many spots, ✓ once checked; area and reward in the tooltip. Clicking a row goes to its first spot and opens the quest window (no spot: just the window).
+  - **Quest window:** your list's mark, level, area; a **Checked** tick; the list's reward (TibiaWiki's below it when there is one); the spots as numbered buttons (click to go there). For the open spot: its object (with an item search to change it, e.g. chest, crate, dead body) and what it gives. Each item has a count field and ×; an item search adds items. "Remove this spot".
+  - **Right-click → "Add quest spot here":** type to narrow the quests, click one (Enter takes the first). The spot gets the top object on that square as its icon (none on bare floor) and opens in the window.
+  - The first change to a quest's spots copies its automatic spots into the file, so they can be changed. Ticking Checked alone keeps using the automatic spots.
+- **Any item can be picked:** the converter now adds every named item that can be picked up or holds items to the sprite sheet (2396 items, was ~1300), so rewards and objects that aren't on the map still show.
+- **For the built site** (Ryndean's), run the converter after editing, so quests.json has the changes.
+- Tested in the browser (on a second dev server, port 5182): opened Battle Axe Quest (no spot), added a spot in the Thais temple, added a battle axe, changed the object to a chest, ticked Checked. The file held exactly that, and was then restored to the list.
 
 ### Slice 11: climbing and dropping with exani hur and parcels (built 2026-11-15)
 - **Asked by the user:** some places can be reached a floor up or down with 3 parcels or exani hur up / exani hur down. The user corrected me that parcels also work **down**: throw them onto the tile below and walk into the open air.

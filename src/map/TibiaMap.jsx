@@ -6,6 +6,7 @@ import NpcWindow from './NpcWindow.jsx';
 import DoorWindow from './DoorWindow.jsx';
 import MonsterWindow from './MonsterWindow.jsx';
 import QuestWindow from './QuestWindow.jsx';
+import QuestList from './QuestList.jsx';
 import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter } from './engine/router.js';
@@ -341,6 +342,13 @@ const questRing = (f, ox, oy, s, k) => ({ cx: ox + (f[0] + 0.5) * s, cy: oy + (f
 
 // The character's settings before the user changes them (user, 2026-11-13).
 // levitate / parcels: may routes climb and drop with exani hur up/down or 3 parcels (slice 11; off by default).
+// The quests offered for "Add quest spot here" (slice 12): the list's quests first, narrowed by the typed text.
+function questChoices(world, text) {
+  const t = text.trim().toLowerCase();
+  const qs = (world?.quests || []).filter((q) => !t || q.n.toLowerCase().includes(t));
+  return [...qs.filter((q) => q.onList), ...qs.filter((q) => !q.onList)].slice(0, 30);
+}
+
 const CHAR_DEFAULT = { level: 8, haste: 'none', boh: false, levitate: false, parcels: false };
 
 // The layer cut for a view opened at a zoom: zoomed in on the surface, that floor only (see MAIN_FROM).
@@ -451,6 +459,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   };
   const [menu, setMenu] = useState(null); // the right-click menu: { x, y (CSS px in the map), tile: [x,y,z], adding }
   const [locName, setLocName] = useState(''); // the name being typed for "Add location here"
+  const [questsOpen, setQuestsOpen] = useState(false); // the quest checklist (slice 12, development only)
   const [locNote, setLocNote] = useState(null); // a failed save, shown under the search
   // Named locations (the user's own, dev only): add or remove a name on a square through the dev server, then search
   // them right away.
@@ -1267,6 +1276,44 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (c) { setItem(null); selected.current = null; setNpc(null); selectedDoor.current = null; setDoor(null); selectedMon.current = null; setMon(null); }
     redraw();
   }, [redraw]);
+  // A quest's window: on spot i (going there), or without a spot when it has none (slice 12).
+  const goToQuest = useCallback((q, i = 0) => {
+    const c = worldRef.current?.questChests.find((x) => x.quest === q && x.i === i);
+    if (c) { jump({ x: c.p[0], y: c.p[1], z: c.p[2] }); selectQuest(c); }
+    else selectQuest({ quest: q, i: null });
+  }, [jump, selectQuest]);
+  // The quest editor (slice 12, development only): change(raw) edits the quest as stored in
+  // tools/data/fibula-quests.json ({ n, level, area, reward, mark, checked, spots }); the dev server saves it and the
+  // map merges the list again. Spots found automatically become the quest's own on its first spot edit. select: the
+  // spot whose window stays open afterwards (index), or null.
+  const editQuest = async (q, change, select) => {
+    const world = worldRef.current;
+    const raw = {
+      n: q.n, level: q.level, area: q.area, reward: q.reward, mark: q.mark, checked: q.checked,
+      spots: q.chests.map((c) => ({ p: [...c.p], id: c.id || 0, items: c.items.map((it) => [...it]) })),
+    };
+    const before = JSON.stringify(raw.spots);
+    change(raw);
+    if (!q.edited && JSON.stringify(raw.spots) === before) raw.spots = null; // only "checked" changed: keep the automatic spots
+    try {
+      const res = await fetch('/__quests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest: raw }) });
+      const list = await res.json();
+      if (!res.ok || !Array.isArray(list?.quests)) throw new Error(list?.error || res.status);
+      world.setQuestList(list);
+      setLocNote(null);
+    } catch (e) { setLocNote(`Could not save the quest: ${e.message || e}`); return; }
+    const nq = world.quests.find((x) => x.n === q.n);
+    const c = nq && world.questChests.find((x) => x.quest === nq && x.i === select);
+    if (c) selectQuest(c);
+    else if (nq) selectQuest({ quest: nq, i: null });
+  };
+  // Right-click "Add quest spot here": a new spot for quest q on tile p, showing the top object there (if any).
+  const addQuestSpot = (q, p) => {
+    const world = worldRef.current;
+    const items = (world.tile(...p)?.items || []).map((it) => it.id);
+    const top = [...items].reverse().find((id) => world.defs[id] && world.defs[id].f.GROUND === undefined) || 0;
+    editQuest(q, (raw) => { raw.spots.push({ p, id: top, items: [] }); }, q.chests.length);
+  };
   const selectDoor = useCallback((d) => {
     selectedDoor.current = d;
     setDoor(d);
@@ -1521,11 +1568,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     setQuery(r.name);
     monSearch.current = r.kind === 'Monster' ? r.mon : null;
     if (r.kind === 'Monster') { fitMonsters(r.mon); return; }
-    if (r.kind === 'Quest') {
-      const c = worldRef.current.questChests.find((x) => x.quest === r.quest);
-      if (c) { jump({ x: c.p[0], y: c.p[1], z: c.p[2] }); selectQuest(c); }
-      return;
-    }
+    if (r.kind === 'Quest') { goToQuest(r.quest, 0); return; }
     redraw();
     if (r.kind === 'Position') jump(r.pos);
     else if (r.kind === 'NPC') { jump({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
@@ -1570,7 +1613,27 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             <div className="tm-menu-catcher" onPointerDown={() => setMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMenu(null); }} />
             <div className="tm-menu-at" style={{ left: menu.x, top: menu.y }}>
             <div className="tm-menu" style={{ zoom: uiScale / dpr }}>
-              {menu.adding ? (
+              {menu.addingQuest ? (
+                // Which quest this spot is for: type to narrow the list, click one (Enter takes the first).
+                <div className="tm-menu-add tm-menu-quests-wrap">
+                  <input
+                    className="tm-input" autoFocus value={locName} maxLength={60} placeholder="Which quest?"
+                    onChange={(e) => setLocName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setMenu(null);
+                      else if (e.key === 'Enter') {
+                        const q = questChoices(world, locName)[0];
+                        if (q) { setMenu(null); addQuestSpot(q, menu.tile); }
+                      }
+                    }}
+                  />
+                  <div className="tm-menu-quests">
+                    {questChoices(world, locName).map((q) => (
+                      <button type="button" key={q.n} className="tm-menu-item" onClick={() => { setMenu(null); addQuestSpot(q, menu.tile); }}>{q.n}</button>
+                    ))}
+                  </div>
+                </div>
+              ) : menu.adding ? (
                 // A name for this square: Enter or Add saves it, Escape cancels.
                 <form className="tm-menu-add" onSubmit={(e) => { e.preventDefault(); if (locName.trim()) saveLocation({ add: { n: locName.trim(), p: menu.tile } }); setMenu(null); }}>
                   <input
@@ -1584,6 +1647,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
                 ['Route to here', () => updateRoute({ to: { label: menu.tile.join(', '), pos: menu.tile } })],
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
                 ...(world?.customEditable ? [['Add location here', () => { setLocName(''); setMenu({ ...menu, adding: true }); }, true]] : []),
+                ...(world?.questEditable ? [['Add quest spot here', () => { setLocName(''); setMenu({ ...menu, addingQuest: true }); }, true]] : []),
                 ...(world?.customEditable ? world.customAt(...menu.tile).map((n) => [`Remove '${n}'`, () => saveLocation({ remove: { n, p: menu.tile } })]) : []),
               ].map(([label, act, keepOpen]) => (
                 <button type="button" key={label} className="tm-menu-item" onClick={() => { if (!keepOpen) setMenu(null); act(); }}>{label}</button>
@@ -1624,6 +1688,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
               <button type="button" className="tm-btn" onClick={goBack} disabled={!backCount} title="Back to where you were (or the browser's back key)">Back</button>
               <button type="button" className="tm-btn" onClick={goHome} title="Show the whole world (Home key)">Home</button>
               <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
+              {world?.questEditable && (
+                <button type="button" className="tm-btn" onClick={() => setQuestsOpen((o) => !o)} title="Your quest list, to check one by one (development only)">Quests</button>
+              )}
             </span>
           </div>
           <input
@@ -1656,8 +1723,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             onClose={clearRoute} doorsAll={doors.all} onDoorsAll={(all) => setDoors({ ...doors, all })}
           />
         )}
+        {questsOpen && world?.questEditable && (
+          <QuestList world={world} selected={questSel?.quest} onPick={(q) => goToQuest(q, 0)} onClose={() => setQuestsOpen(false)} />
+        )}
         {questSel && world && (
-          <QuestWindow world={world} chest={questSel} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)} />
+          <QuestWindow
+            world={world} chest={questSel} editable={!!world.questEditable} onEdit={editQuest}
+            onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
+          />
         )}
         {mon && world && (
           <MonsterWindow
