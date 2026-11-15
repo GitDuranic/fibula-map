@@ -412,6 +412,9 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - Level, magic level and premium aren't checked: TVP has magic level 3 and premium, and the 7.1 values aren't known. The tick is the player's own call.
 - **Time (rough guesses, to tune with the user):** one step on the landing tile, as with every floor change, plus 1 s to say the spell or 2 s to put the parcels down (`CLIMB_MS` in `router.js`). Parcels cost no gold in the router; the parcel count is shown instead.
 - **On the map:** a climb is a floor change like the others: the up/down arrow on the tile you stand on and a dot where you land.
+  - **What you need there (user, 2026-11-15):** an item icon beside the arrow, a **spellbook** for exani hur and a **parcel** for parcels. Both are 7.1 items, so nothing that isn't in the game is drawn. The converter adds both to the sprite sheet and writes their client ids to links.json (`climbIcons`).
+  - **Clickable (user):** hovering a route's climb arrow shows the floor it leads to, and clicking goes there, as with stairs. Only the climbs on the shown route are clickable, not all ~12,000 spots.
+  - Checked in the browser: 32603,31852,7 → 32589,31846,4 with exani hur is 13 s instead of 1 min 04 s (3 casts, 150 mana); clicking the first arrow goes to floor 6.
 - **`?debug=walk`:** a bar on the tile's edge you face, orange for up and blue for down. Solid means the spell works there; an outline means parcels only.
 - **"Not connected"** (the walking-area graph) takes climbs into account only when the character has them ticked.
 
@@ -584,6 +587,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
     - Boats and forcefields on the same floor don't count as a change.
   - ~~The route lines on other floors (5b) are unchanged; this is only the see-through.~~
   - **The route lines follow the same rule (user, 2026-11-15):** "when I go from Fibula to Demona and go down the Demona hole, I still see the path behind me on the surface layer". Now lines, arrows, dots and boat arcs on other floors only show when they're ahead (`routeAhead`, shared with the see-through), within 2 floor changes. The start dot behind you goes too; the end dot always shows (as far as `routeAlpha` allows). When the route never touches the floor you're looking at, all of it shows as before, so it doesn't vanish.
+- **The surface route always shows (user, 2026-11-15):** on the surface or a floor above it, the route on every floor 0–7 shows. On the floor you're on it's the solid line; on the other surface floors it's dashed, at `ROUTE_SURFACE_ALPHA` 0.8, behind you too. Underground parts still don't show from up there, and underground nothing changes (only your own floor).
 - **Switched off (user, 2026-11-15, experiment):** after the fix above the band was still seen on the floor above at Demona; the user: "maybe that feature is just not worth it, try it without seeing the path on the next layer". `ROUTE_OTHER_FLOORS = false`: no see-through band, and the route (lines, dots, arrows, arcs, end dot) only on the floor you're looking at. Hover preview (5d) stays. Set it to `true` to bring 5b + 5c back. **Kept** (user, 2026-11-15: "I honestly think this is better").
 - **To tune with the user:** the band width, the fade, the clear zone and the strength per floor (all constants at the top of `seeThrough` in TibiaMap.jsx).
 

@@ -97,6 +97,9 @@ const ROUTE_FADE = [1, 0.55, 0.3];
 // User 2026-11-15: better without ("maybe that feature is just not worth it"): false = the route only on the floor you're
 // looking at, no see-through band (5c) and no lines/dots on other floors (5b). true brings both back.
 const ROUTE_OTHER_FLOORS = false;
+// User 2026-11-15: on the surface or above it, the route on every surface floor (0-7) always shows, the parts on
+// other floors than yours dashed, at this alpha (also behind you; underground parts don't show).
+const ROUTE_SURFACE_ALPHA = 0.8;
 function routeAlpha(z, vz) {
   if (z === vz) return 1;
   if (z <= 7 && vz <= 7) return ROUTE_FADE[1];
@@ -752,7 +755,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       // user 2026-11-15: going down the Demona hole, the surface part behind you still showed). When the route
       // doesn't touch the floor you're looking at, all of it shows as before. The end dot always shows.
       const { ahead, onRoute } = routeAhead(rp, v.z);
-      const alpha = (i) => (!ROUTE_OTHER_FLOORS ? +(rp[i][2] === v.z) : !onRoute || ahead[i] ? routeAlpha(rp[i][2], v.z) : 0);
+      const alpha = (i) => {
+        const z = rp[i][2];
+        if (z === v.z) return 1;
+        if (z <= 7 && v.z <= 7) return ROUTE_SURFACE_ALPHA; // the surface route always shows from the surface and above
+        return ROUTE_OTHER_FLOORS && (!onRoute || ahead[i]) ? routeAlpha(z, v.z) : 0;
+      };
       // Runs of tiles walked on one floor (path indices). The line goes onto stairs, holes and forcefields ('onto'); a
       // ladder, grate or rope spot used from next to it ('use') gets a short dashed line from where you stand.
       const runs = [], uses = [];
@@ -838,13 +846,19 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           const [x, y] = at(rp[i - 1]);
           ctx.globalAlpha = a;
           drawArrow(ctx, x, y, Math.max(12 * k, s * 0.5), up, k);
+          // Climbs (slice 11, user): what you need there, a spellbook (exani hur) or a parcel, beside the arrow.
+          const iconId = (how === 'levitate' || how === 'parcels') && world.links?.climbIcons?.[how];
+          if (iconId) {
+            const size = Math.max(16 * k, Math.round(s * 0.7));
+            ctx.drawImage(world.iconCanvas(iconId), Math.round(x + Math.max(6 * k, s * 0.25)), Math.round(y - size + Math.max(4 * k, s * 0.1)), size, size);
+          }
           ctx.globalAlpha = 1;
         } else if (rp[i][2] === rp[i - 1][2]) dot(i - 1, color, 5 * k);
         dot(i, color, 3 * k);
       }
       dot(0, '#30c030', 6 * k);
       const last = rp.length - 1;
-      dot(last, '#e03030', 6 * k, ROUTE_OTHER_FLOORS ? routeAlpha(rp[last][2], v.z) : alpha(last));
+      dot(last, '#e03030', 6 * k, alpha(last));
     }
 
     // Town names over the zoomed-out map (gone once the sprites show), centred on the temple, white in the
@@ -1301,11 +1315,24 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
 
   // The floor change (or magic forcefield) at canvas point p, for the hover preview and a click to that floor or to
   // where the forcefield leads (with or without a route), zoomed in far enough to see the sprites. Null otherwise.
+  // A climb or drop of the shown route (exani hur, parcels; slice 11) that starts on tile (x, y, z), as a floor
+  // change [x, y, z, tx, ty, tz, -1], so its arrow can be hovered and clicked like stairs (user). Kept per route.
+  const climbCache = useRef({ path: null, list: [] });
+  const routeClimbAt = (x, y, z) => {
+    const rp = routePath.current;
+    if (!rp) return null;
+    if (climbCache.current.path !== rp) {
+      const list = [];
+      for (let i = 1; i < rp.length; i++) if (rp[i][3] === 'levitate' || rp[i][3] === 'parcels') list.push([...rp[i - 1].slice(0, 3), ...rp[i].slice(0, 3), -1]);
+      climbCache.current = { path: rp, list };
+    }
+    return climbCache.current.list.find((l) => l[0] === x && l[1] === y && l[2] === z) || null;
+  };
   const floorChangeAtPoint = (p) => {
     const world = worldRef.current, v = view.current;
     if (!world?.links || v.zoom < SPRITES_FROM) return null;
     const t = tileAt(p);
-    const l = world.floorChangeAt(t.x, t.y, v.z) || world.teleportAt(t.x, t.y, v.z);
+    const l = world.floorChangeAt(t.x, t.y, v.z) || world.teleportAt(t.x, t.y, v.z) || routeClimbAt(t.x, t.y, v.z);
     return l && world.floors.includes(l[5]) ? l : null;
   };
   const setHoverLink = (l) => {

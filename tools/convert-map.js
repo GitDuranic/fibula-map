@@ -462,7 +462,10 @@ npcList.forEach((n, i) => {
     else droppedTravel.push(`${n.name} -> ${t.name}`);
   }
 });
-fs.writeFileSync(path.join(OUT, 'links.json'), JSON.stringify({ kinds: LINK_KINDS, links: walk.links, passages, climbs }));
+// The icons shown on a route's climbs (slice 11, user): a spellbook for exani hur, a parcel for parcels (client ids).
+const climbIcons = { levitate: toClient(2175), parcels: toClient(2595) };
+for (const cid of Object.values(climbIcons)) if (cid && dat.items.has(cid)) usedItems.add(cid);
+fs.writeFileSync(path.join(OUT, 'links.json'), JSON.stringify({ kinds: LINK_KINDS, links: walk.links, passages, climbs, climbIcons }));
 log(`Passages: ${passages.length} (${new Set(passages.map((p) => p[0])).size} NPCs), of which ${passages.filter((p) => p[3]).length} need a level`);
 
 // ---------- monsters ----------

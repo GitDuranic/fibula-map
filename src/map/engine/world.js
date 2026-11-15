@@ -369,7 +369,7 @@ export class World {
         if (!climbsAt.has(k)) climbsAt.set(k, []);
         climbsAt.get(k).push(c);
       }
-      this.links = { kinds: links.kinds, links: links.links, linksAt, climbsAt, passages: links.passages || [] };
+      this.links = { kinds: links.kinds, links: links.links, linksAt, climbsAt, climbIcons: links.climbIcons || {}, passages: links.passages || [] };
       return this.links;
     });
     return this.linksPromise;
