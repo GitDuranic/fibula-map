@@ -563,6 +563,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
     - Boats and forcefields on the same floor don't count as a change.
   - ~~The route lines on other floors (5b) are unchanged; this is only the see-through.~~
   - **The route lines follow the same rule (user, 2026-11-15):** "when I go from Fibula to Demona and go down the Demona hole, I still see the path behind me on the surface layer". Now lines, arrows, dots and boat arcs on other floors only show when they're ahead (`routeAhead`, shared with the see-through), within 2 floor changes. The start dot behind you goes too; the end dot always shows (as far as `routeAlpha` allows). When the route never touches the floor you're looking at, all of it shows as before, so it doesn't vanish.
+- **Switched off (user, 2026-11-15, experiment):** after the fix above the band was still seen on the floor above at Demona; the user: "maybe that feature is just not worth it, try it without seeing the path on the next layer". `ROUTE_OTHER_FLOORS = false`: no see-through band, and the route (lines, dots, arrows, arcs, end dot) only on the floor you're looking at. Hover preview (5d) stays. Set it to `true` to bring 5b + 5c back.
 - **To tune with the user:** the band width, the fade, the clear zone and the strength per floor (all constants at the top of `seeThrough` in TibiaMap.jsx).
 
 ### Slice 5b: route lines on other floors (built 2026-11-13)
