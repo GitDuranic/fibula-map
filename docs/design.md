@@ -492,6 +492,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - The first version drew only the floor being looked at. But on the surface the map draws floors 0–7 together, so 314 spawn points on floors 1–6 were missing.
   - Now the NPCs' rule (`npcFrame`): underground only their own floor; on the surface every surface floor that is drawn (above the layer cut), shifted like that floor. So "only the floor they spawn on" means not through the ground, not hiding upper surface floors.
   - Seen in the browser: both dragons on the mountain above Edron from floor 7 at zoom 16.
+  - **Changed back 2026-11-15 (user):** at Darashia's minotaurs it was unclear which floor each monster belongs to, so monsters (not NPCs) now show **only on the floor you are on**, surface too (`monFrame`). Monsters upstairs show when you go up a floor (Ctrl + wheel), or when you search for them (search still shows every floor).
 - **Markers** (zoom 16–32):
   - Monsters of one kind in one spawn group, within 3 tiles of each other (chained), are one marker. It shows one outfit with "3x" in the client's outlined font (white) at the tile's bottom right, at the spawn point nearest their middle.
   - The count is all of them together (spawn amounts added up).
