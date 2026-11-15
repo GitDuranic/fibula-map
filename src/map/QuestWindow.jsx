@@ -51,7 +51,7 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
   const editSpot = (fn) => onEdit(q, (raw) => fn(raw.spots[chest.i]), chest.i);
   const info = [q.level ? `Level ${q.level}` : null, q.area || null, q.v ? `came in ${q.v}` : null].filter(Boolean).join(' · ');
   return (
-    <div className="tm-panel tm-window tm-door tm-quest">
+    <div className="tm-panel tm-window tm-quest">
       <div className="tm-window-title">
         <span className="tm-window-name">{q.n}</span>
         <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>

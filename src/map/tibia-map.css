@@ -225,7 +225,8 @@
 .tm-menu-add .tm-input { width: 150px; }
 
 /* Quest editor and checklist (slice 12, development only) */
-.tm-quest .tm-window-body { gap: 3px; }
+.tm-quest { flex: 1 1 0; min-height: 140px; }
+.tm-quest .tm-window-body { display: flex; flex-direction: column; gap: 3px; }
 .tm-quest-spots { display: flex; flex-wrap: wrap; gap: 2px; }
 .tm-quest-spots .tm-btn { min-width: 22px; padding: 0 4px; }
 .tm-quest-gives { margin-top: 4px; }
@@ -245,4 +246,10 @@
 .tm-quest-done { flex: none; width: 12px; color: #60d060; text-align: center; }
 .tm-menu-quests { display: flex; flex-direction: column; max-height: 220px; overflow-y: auto; }
 .tm-menu-quests-wrap { flex-direction: column; align-items: stretch; }
-.tm-quest-list { flex: 0 1 auto; max-height: 45%; }
+.tm-quest-list { flex: 0 1 auto; min-height: 110px; max-height: 30%; }
+
+/* The side panel must fit (user 2026-11-15: route and quest windows fell off the screen): the route panel shrinks
+   and its result (the legs) scrolls; the quest list and window share what's left, each scrolling inside. */
+.tm-route { flex: 0 1 auto; min-height: 0; }
+.tm-route-body { flex: 1 1 auto; min-height: 0; }
+.tm-route-result { flex: 0 1 auto; overflow-y: auto; }

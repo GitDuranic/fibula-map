@@ -418,6 +418,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - The first change to a quest's spots copies its automatic spots into the file, so they can be changed. Ticking Checked alone keeps using the automatic spots.
 - **Any item can be picked:** the converter now adds every named item that can be picked up or holds items to the sprite sheet (2396 items, was ~1300), so rewards and objects that aren't on the map still show.
 - **For the built site** (Ryndean's), run the converter after editing, so quests.json has the changes.
+- **Fitting the side panel (user, 2026-11-15: "both route and quest are falling off the screen"):** the quest window no longer uses the door window's no-shrink rule. The route panel shrinks, and its result (the legs) scrolls. The checklist takes at most 30% of the height (at least 110 px) and the quest window the rest (at least 140 px), each scrolling inside. Checked with a Thais → Darashia route, the checklist and Alawar's Vault open together.
 - Tested in the browser (on a second dev server, port 5182): opened Battle Axe Quest (no spot), added a spot in the Thais temple, added a battle axe, changed the object to a chest, ticked Checked. The file held exactly that, and was then restored to the list.
 
 ### Slice 11: climbing and dropping with exani hur and parcels (built 2026-11-15)
