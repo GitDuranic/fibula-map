@@ -94,7 +94,7 @@ function visibleDoors(world, v, left, top, right, bottom) {
 // other surface floors (0-7) at 0.55, as before. Underground floors, and everything seen from underground: up to
 // 2 floors away, 0.55 and 0.3; further away not drawn.
 const ROUTE_FADE = [1, 0.55, 0.3];
-// Experiment (user 2026-11-15, "maybe that feature is just not worth it"): false = the route only on the floor you're
+// User 2026-11-15: better without ("maybe that feature is just not worth it"): false = the route only on the floor you're
 // looking at, no see-through band (5c) and no lines/dots on other floors (5b). true brings both back.
 const ROUTE_OTHER_FLOORS = false;
 function routeAlpha(z, vz) {
