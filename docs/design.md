@@ -112,6 +112,7 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
 
 ## Data sources
 - `C:\git\tibia assets\tibia71-tvp-converted\Tibia71.otbm`: **the 7.1 map** (in TVP item ids), plus `Tibia71-house.xml`, `Tibia71-spawn.xml` (spawns) and `Tibia71-npc-port-report.txt`
+  - 2026-11-15: `assets/map71/Tibia71.otbm` replaced by Ryndean's **border fix batch 1** (`Tibia71-borderfix-1.zip`): 37,525 ground tiles with a built-in border (84 kinds: grass, sand, …) became a plain ground + a normal border item; tile count and everything else unchanged. He made it with `replace_solid_borders.py` + `solid_border_map.csv` (in `tibia assets`, reference only - his server layout, we don't run it); 409 kinds (~155k tiles) are still unmapped, so later batches are expected: swap the map in and reconvert.
 - `C:\git\tibia assets\TVP-main\TVP-main\data\world\map.otbm`: the 7.6 map (not used any more)
 - `…\data\spawns.dat`: NPC positions (7.6; the 7.1 positions come with Ryndean's data / the port report)
 - `…\data\npc\*.xml` + `…\data\npc\behavior\*.npc` (376 scripts): trade lists, prices, passages (`Teleport(x,y,z)`). These are 7.6 stand-ins until Ryndean's 7.1 NPC files arrive.
