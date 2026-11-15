@@ -393,6 +393,14 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 
 ## Decisions made while building
 
+### Minimap (built 2026-11-15, asked for by Ryndean)
+- **Where:** at the top of the side panel, where the client has its minimap. It **replaces the compass rose**: dragging the map does the same job, and the arrow keys still pan. The zoom and floor buttons stay under it as before, with the floor and layer lines beside them.
+- **What it shows:** like the client's minimap, the map's floor only, each tile one pixel in its automap colour (not the sprites). The converter writes these again as `minimap/<z>/<mx>_<my>.png` (256×256 tiles per image, 1 px per tile, about the same code as the minimap colours that were dropped from the far zoom on 2026-11-12): a tile's colour is the automap colour of the last item in its stack that has one, from the client's 8-bit palette.
+- It **follows the map's zoom**: at zoom 32 it has 1 client pixel per tile, the client's own minimap scale, and further out it stops once the whole world fits. Zoomed in it shows sharp squares; shrunk below 1 px per tile it's smoothed. The map's view is a white frame on it.
+- It is centred on the map's centre, except near the world's edge, where it stops at the edge and the frame moves off centre instead.
+- **Click** on it: the map goes there (same floor, zoom and layers). **Drag** it: the map is pulled along, like dragging the map itself but faster. Hovering shows the position under the mouse.
+- Size: `MINI_W` × `MINI_H` (158 × 158 client pixels, inside a 1 px inset border); the scale is `MINI_PER_TILE` in `TibiaMap.jsx`.
+
 ### Faster routes (built 2026-11-14, user: "path finding is kind of slow")
 - **Measured first** (Node benchmark on the real data, level 8, no haste):
   - The slow part was the cheapest route: walking only, and walking routes wind around water and mountains, so the search covers 200k–600k tiles.

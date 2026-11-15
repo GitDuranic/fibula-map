@@ -31,6 +31,8 @@
 //                         item = client id, or [client id, count] for stack counts / fluid types
 //   overview/<set>/<level>/<bx>_<by>.webp  the map drawn with sprites for far zoom: level = px per tile (8, 4, 2, 1),
 //                         1024x1024 px each; set "surface" (floors 7..0 from above) or "8".."15"
+//   minimap/<z>/<mx>_<my>.png  the client's automap colours for the minimap: 1 px per tile, that floor only,
+//                         256x256 tiles each
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -171,6 +173,52 @@ for (let z = 0; z < 16; z++) {
 log(`${Object.values(chunkIndex).reduce((a, l) => a + l.length, 0)} chunks, ${(chunkBytes / 1e6).toFixed(1)} MB`);
 
 const tileAt = (x, y, z) => floors[z]?.get(`${Math.floor(x / CHUNK)},${Math.floor(y / CHUNK)}`)?.get((y - Math.floor(y / CHUNK) * CHUNK) * CHUNK + (x - Math.floor(x / CHUNK) * CHUNK));
+
+// ---------- minimap ----------
+// The minimap in the side panel looks like the client's: each tile one pixel in its automap colour, that floor only.
+// A tile's colour is the automap colour (Tibia.dat) of the last item in its stack that has one, as the client draws
+// its automap, from the client's 8-bit palette (index c -> 6x6x6 colour cube). Tiles without one stay transparent.
+const MINI = 256; // tiles per minimap image side
+const palette = (c) => [Math.floor(c / 36) % 6 * 51, Math.floor(c / 6) % 6 * 51, c % 6 * 51];
+const colourOf = (items) => {
+  let c = -1;
+  for (const it of items) {
+    const f = dat.items.get(Array.isArray(it) ? it[0] : it)?.flags;
+    if (f?.MINIMAP_COLOR !== undefined) c = f.MINIMAP_COLOR;
+  }
+  return c;
+};
+log('Writing minimap');
+const miniIndex = {};
+let miniCount = 0;
+for (let z = 0; z < 16; z++) {
+  if (!floors[z].size) continue;
+  const imgs = new Map(); // "mx,my" -> RGBA pixels
+  for (const [ck, tiles] of floors[z]) {
+    const [cx, cy] = ck.split(',').map(Number);
+    for (const [i, items] of tiles) {
+      const c = colourOf(items);
+      if (c < 0) continue;
+      const x = cx * CHUNK + (i % CHUNK), y = cy * CHUNK + Math.floor(i / CHUNK);
+      const mx = Math.floor(x / MINI), my = Math.floor(y / MINI), k = `${mx},${my}`;
+      let img = imgs.get(k);
+      if (!img) imgs.set(k, (img = new Uint8Array(MINI * MINI * 4)));
+      const p = ((y - my * MINI) * MINI + (x - mx * MINI)) * 4;
+      const [r, g, b] = palette(c);
+      img[p] = r; img[p + 1] = g; img[p + 2] = b; img[p + 3] = 255;
+    }
+  }
+  if (!imgs.size) continue;
+  fs.mkdirSync(path.join(OUT, 'minimap', String(z)), { recursive: true });
+  miniIndex[z] = [];
+  for (const [k, img] of imgs) {
+    const [mx, my] = k.split(',').map(Number);
+    writePng(path.join(OUT, 'minimap', String(z), `${mx}_${my}.png`), MINI, MINI, img);
+    miniIndex[z].push([mx, my]);
+    miniCount++;
+  }
+}
+log(`Minimap: ${miniCount} images on ${Object.keys(miniIndex).length} floors`);
 
 // ---------- walk data (router) ----------
 // walk.bin: one byte per tile, chunk by chunk in the order of map.json "chunks" (per floor, as listed):
@@ -607,7 +655,7 @@ for (const [set, floorsList, z] of sets) {
 }
 log(`Overview images: ${(overviewBytes / 1e6).toFixed(1)} MB`);
 
-fs.writeFileSync(path.join(OUT, 'map.json'), JSON.stringify({ chunk: CHUNK, bounds, chunks: chunkIndex, overview: { px: OV_PX, levels: OV_LEVELS, sets: overviewIndex } }));
+fs.writeFileSync(path.join(OUT, 'map.json'), JSON.stringify({ chunk: CHUNK, bounds, chunks: chunkIndex, overview: { px: OV_PX, levels: OV_LEVELS, sets: overviewIndex }, minimap: { size: MINI, floors: miniIndex } }));
 // Swap the new data in: old folder aside, new one in place, then remove the old one.
 const OLD = `${FINAL_OUT}.old`;
 fs.rmSync(OLD, { recursive: true, force: true });
