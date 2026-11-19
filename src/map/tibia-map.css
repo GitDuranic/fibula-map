@@ -285,3 +285,5 @@
   border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); color: #fff;
 }
 .tm-quest-notes { margin-top: 4px; white-space: pre-wrap; }
+.tm-goto-tools { display: flex; gap: 4px; }
+.tm-goto-tools .tm-btn { flex: 1; }

@@ -1686,8 +1686,6 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             <span className="tm-search-btns">
               <button type="button" className="tm-btn" onClick={goBack} disabled={!backCount} title="Back to where you were (or the browser's back key)">Back</button>
               <button type="button" className="tm-btn" onClick={goHome} title="Show the whole world (Home key)">Home</button>
-              <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
-              <button type="button" className="tm-btn" onClick={() => setQuestsOpen((o) => !o)} disabled={!ready} title="The quests, to look up and follow">Quests</button>
             </span>
           </div>
           <input
@@ -1709,6 +1707,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
               ))}
             </div>
           )}
+          {/* Route and Quests on their own row: with Back and Home they don't fit the panel's width */}
+          <div className="tm-goto-tools">
+            <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
+            <button type="button" className="tm-btn" onClick={() => setQuestsOpen((o) => !o)} disabled={!ready} title="The quests, to look up and follow">Quests</button>
+          </div>
         </form>
         {locNote && <div className="tm-panel tm-error">{locNote}</div>}
         {route.open && world && (
