@@ -24,8 +24,10 @@
 //   places.json           [{ n name, k 'town' | 'depot', p [x,y,z] }] towns from the map's town list (temple), depots
 //   monsters.json, monsters.png  monster kinds (stats, outfit, loot without chances) and 7.1 spawns, see below
 //   npcs.json, npcs.png   NPCs: [{ n name, p [x,y,z], img [x,y,w,h] in npcs.png (outfit standing, coloured),
-//                         d displacement, sells/buys [[client id, price(, fluid type)]], travel [[name, price, x,y,z]] }]
+//                         d displacement, sells/buys [[client id, price(, fluid type)]], travel [[name, price, x,y,z]],
+//                         t talk file name (if it has a conversation) }]
 //                         (7.1 positions from --spawn; names/outfits/trade/travel from the TVP NPC files for now)
+//   talk/<script>.json    an NPC script's conversation: what you can say and what the NPC answers (tools/lib/talk.js)
 //   sprites-N.png         sprite atlases (64x64 cells of 32px)
 //   gui.png, stone.png    client interface graphics from Tibia.pic (skin + tileable stone texture)
 //   font-outlined.png, fonts.json   the client's outlined font (creature names) and its glyph widths
@@ -48,6 +50,7 @@ import { writePng } from './lib/png.js';
 import sharp from 'sharp';
 import { drawTile, TILE as TILE32 } from '../src/map/engine/render.js';
 import { loadItemInfo } from './lib/iteminfo.js';
+import { makeTalk } from './lib/talk.js';
 import { loadNpcs, renderOutfit } from './lib/npcs.js';
 import { loadMonsters, spawnGroups } from './lib/monsters.js';
 import { walkRules, buildWalk, LINK_KINDS } from './lib/walk.js';
@@ -413,6 +416,7 @@ const npcsOut = npcList.map((n, i) => {
   return {
     n: n.name, p: [n.x, n.y, n.z], img, d: disp ? [disp.x, disp.y] : [0, 0],
     sells: n.sells.map(offerOut).filter(Boolean), buys: n.buys.map(offerOut).filter(Boolean), travel,
+    ...(n.behaviour ? { t: n.behaviour } : {}), // replaced by the talk file's name below
   };
 });
 // ---------- places: towns (the map's town list, also internal names like Mists or Minoroom) and depots ----------
@@ -446,6 +450,34 @@ for (const g of groups) {
   placesOut.push({ n: i > 1 ? `${town} depot ${i}` : `${town} depot`, k: 'depot', p: at });
 }
 const depots = groups;
+// Conversations (slice 13a): talk/<script>.json per behaviour script (NPCs sharing a script share the file),
+// loaded when an NPC's Conversation is opened. Format in tools/lib/talk.js.
+{
+  const itemName = (sid, data, amount) => {
+    const it = itemInfo.server.get(sid);
+    let name = it?.name || `item ${sid}`;
+    if (typeof amount === 'number' && amount > 1 && it?.plural) name = it.plural;
+    if (data != null && /\bkey\b/.test(name)) return `${name} (number ${data})`;
+    if (data != null && FLUIDS[data]) return `${name} of ${FLUIDS[data]}`;
+    return name;
+  };
+  // Town(N) uses TVP's town ids, which differ from the 7.1 map's: the town is the one whose temple is nearest to
+  // where the same line teleports you (every Town() in the scripts comes with a Teleport).
+  const parseTalk = makeTalk({ itemName, townName: (tp) => (tp ? nearestTown(tp) : null) });
+  fs.mkdirSync(path.join(OUT, 'talk'), { recursive: true });
+  const done = new Map(); // script path -> file name, or null (nothing to say)
+  for (const n of npcsOut) {
+    if (!n.t) continue;
+    if (!done.has(n.t)) {
+      const talk = parseTalk(n.t);
+      const name = path.basename(n.t, '.npc').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      if (talk.length) fs.writeFileSync(path.join(OUT, 'talk', `${name}.json`), JSON.stringify(talk));
+      done.set(n.t, talk.length ? name : null);
+    }
+    if (done.get(n.t)) n.t = done.get(n.t); else delete n.t;
+  }
+  log(`Conversations: ${[...done.values()].filter(Boolean).length} scripts, ${npcsOut.filter((n) => n.t).length} NPCs`);
+}
 // Locations the user named on the map (tools/data/custom-places.json, added with the dev server): kind 'custom'.
 {
   let custom = [];

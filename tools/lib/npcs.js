@@ -108,7 +108,7 @@ export function parseOracle(text) {
 }
 
 // ---------- all NPCs ----------
-// Returns [{ name, x, y, z, dir, look, sells, buys, travel, oracle }] (offers still in server ids).
+// Returns [{ name, x, y, z, dir, look, sells, buys, travel, oracle, behaviour (script path) }] (offers in server ids).
 export function loadNpcs({ spawnFile, npcDir, log = () => {} }) {
   const spawn = fs.readFileSync(spawnFile, 'latin1');
   const out = [], missing = [];
@@ -126,6 +126,7 @@ export function loadNpcs({ spawnFile, npcDir, log = () => {} }) {
       const behaviour = /behavior="([^"]*)"/.exec(xml)?.[1];
       const bFile = behaviour && path.join(npcDir, 'behavior', behaviour);
       if (bFile && fs.existsSync(bFile)) {
+        npc.behaviour = bFile; // its conversation is read by talk.js
         const text = fs.readFileSync(bFile, 'latin1');
         Object.assign(npc, parseBehaviour(text));
         npc.oracle = parseOracle(text); // the Oracle's one-way trips (empty for everyone else)

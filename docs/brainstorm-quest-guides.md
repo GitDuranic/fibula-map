@@ -43,7 +43,14 @@ Each slice adds something you can use on its own (user: small slices of function
 - The NPC window gets a **Conversation** view: what you can say and what the NPC answers, with the conditions in plain words ("only if you have 1 apple").
 - A copy button on each keyword.
 - **Useful because:** any player can look up what to say to any NPC, before a single quest exists.
-
+- **Built (2026-11-19):** `tools/lib/talk.js` → `public/map-data/talk/<script>.json` (one per script, fetched when a conversation is opened; NPCs get `t` in npcs.json). 262 of 265 NPCs have one.
+  - Follow-ups: a reply that sets `Topic=N` gets the `Topic=N` rules nested under it ("yes" → ..., "anything else" → ...), so a whole exchange reads as a tree. Type/Amount/Price/Data carry down from the line that asked, so "if you have 7 red apples" reads right. Loops stop when a topic repeats; at most 6 deep.
+  - `*` lines (same answer) become one entry with several ways to say it ("labyrinth / way"); if their conditions differ, each way keeps its own ("red (quest 2 is 1) / blue (quest 2 is 2)").
+  - Known at build time: everyone is premium, the world is not PvP-enforced, BUSY lines left out; a line that can never fire (an earlier one with the same words and no conditions) is left out; Data=/Amount= conditions are checked against what the earlier answer set (the Oracle shows only the right town per branch).
+  - Shop lines (an item with a price, or a number you say) are left out: Sells/Buys already show them. Spell lines stay.
+  - Quest values show as numbers ("quest 1 above 0", "quest 1 becomes 2") until 13f gives them meaning.
+  - `Town(N)` is named from the temple nearest the line's teleport (TVP town ids differ from the 7.1 map's).
+  - NPC window: Trade / Conversation buttons (the choice is kept between NPCs; an NPC with nothing to trade opens on its conversation), a "Find a word" filter, and each way to say something is a button that copies it ("copied" flashes). Your words in say-yellow, replies in light blue, conditions grey, what happens (items, teleport, quest value, ends the conversation) in gold.
 
 ### 13b. Quest list from the database
 - Supabase tables for quests (with a history table from the start); the 83 quests are moved over from `tools/data/fibula-quests.json` and the wiki data: name, area, rewards, status "not checked".

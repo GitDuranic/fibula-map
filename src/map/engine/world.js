@@ -180,6 +180,17 @@ export class World {
   //   monMarkers: what the map draws zoomed out: monsters of one kind in one spawn group within MARKER_JOIN tiles
   //     of each other (chained) are one marker { p (the point nearest their middle), kind, count, points, group }.
   //   spawnGroups: Map(group -> { kinds: Map(kind -> count), points })
+  // An NPC's conversation (talk/<npc.t>.json, see tools/lib/talk.js), fetched once per script.
+  talk(name) {
+    this.talks ??= new Map();
+    if (!this.talks.has(name)) {
+      const p = loadJson(`${this.base}/talk/${name}.json`);
+      p.catch(() => this.talks.delete(name)); // try again next time
+      this.talks.set(name, p);
+    }
+    return this.talks.get(name);
+  }
+
   async loadMonsters() {
     let data, sheet;
     try {
