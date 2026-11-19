@@ -408,7 +408,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - Quests live in Supabase (`map_quests` + `map_quest_history`, `supabase/migrations/0001_map_quests.sql`); the Quests button is for everyone now, with search and "I'm on this quest". Ryndean must pass `supabaseUrl` / `supabaseKey` to `<TibiaMap>` (same values as the planner). Details: `docs/brainstorm-quest-guides.md`, 13b.
 
 ### Slice 13a: NPC conversations from the scripts (built 2026-11-19)
-- The NPC window has Trade / Conversation: every NPC's script as what you can say (copy buttons) and what it answers, follow-ups nested, conditions and effects in plain words. Details and the choices made: `docs/brainstorm-quest-guides.md`, 13a.
+- Every NPC's script as what you can say (copy buttons) and what it answers, conditions and effects in plain words, in a window that comes out of the NPC on the map (Conversation button in the NPC window); a folded tree that opens one path at a time. Details and the choices made: `docs/brainstorm-quest-guides.md`, 13a.
 
 ### Slice 12: quest list and editor (built 2026-11-15)
 - **Asked by the user:** check every Project Fibula quest and its rewards, one by one. Often you'd need a body, chest or crate with items on a square. Should that be done in RME?

@@ -50,7 +50,10 @@ Each slice adds something you can use on its own (user: small slices of function
   - Shop lines (an item with a price, or a number you say) are left out: Sells/Buys already show them. Spell lines stay.
   - Quest values show as numbers ("quest 1 above 0", "quest 1 becomes 2") until 13f gives them meaning.
   - `Town(N)` is named from the temple nearest the line's teleport (TVP town ids differ from the 7.1 map's).
-  - NPC window: Trade / Conversation buttons (the choice is kept between NPCs; an NPC with nothing to trade opens on its conversation), a "Find a word" filter, and each way to say something is a button that copies it ("copied" flashes). Your words in say-yellow, replies in light blue, conditions grey, what happens (items, teleport, quest value, ends the conversation) in gold.
+  - **Conversation window (reworked 2026-11-19, user: the tree didn't read well; paths should stay hidden until you choose, in a bigger window that comes out of the NPC):** the NPC window has **Conversation** next to Route here; it opens a 300 px window next to the NPC on the map (). It follows the NPC when the map pans, sits right of the NPC (left when there's no room), level with its tile so the name stays clear, is kept inside the map (at most 380 px high, the body scrolls) and hides while the NPC is out of view. Selecting another NPC closes it.
+  - **Collapsible tree** (the user chose it over a chat log): every line starts folded (▸); clicking it shows the answer, what happens and what you can say next (also folded). Opening a line folds the others on its level, so one path shows at a time. Clicking a word also copies it (it flashes green).
+  - **Find a word** keeps the top lines that contain it (words, answers or what happens, e.g. "silver key") and opens the paths down to it.
+  - Your words in say-yellow, answers in light blue, conditions grey, what happens (items, teleport, quest value, ends the conversation) in gold. Options not chosen: a chat log with "say next" buttons; the window docked by the side panel.
 
 ### 13b. Quest list from the database
 - Supabase tables for quests (with a history table from the start); the 83 quests are moved over from `tools/data/fibula-quests.json` and the wiki data: name, area, rewards, status "not checked".

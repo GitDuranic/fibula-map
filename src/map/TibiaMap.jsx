@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
+import NpcTalk from './NpcTalk.jsx';
 import DoorWindow from './DoorWindow.jsx';
 import MonsterWindow from './MonsterWindow.jsx';
 import QuestWindow from './QuestWindow.jsx';
@@ -37,6 +38,27 @@ function npcFrame(n, z, cut) {
   if (z > 7 || nz > 7) return nz === z ? [x, y] : null;
   if (nz < cut) return null;
   return [x - (z - nz), y - (z - nz)];
+}
+
+// Places the conversation window el (NpcTalk) next to NPC n on the map: right of its tile, or left when there's no
+// room, its top level with the NPC's tile, kept inside the map. Hidden while the NPC is out of view or on a floor that
+// isn't shown. v, ox, oy, s, W, H: the view as draw() has it (canvas pixels); el is in CSS pixels.
+function placeTalk(el, n, v, ox, oy, s, W, H) {
+  if (!el || !n) return;
+  const f = npcFrame(n, v.z, v.cut);
+  const d = window.devicePixelRatio || 1;
+  const x1 = (ox + f?.[0] * s) / d, x2 = x1 + s / d, y1 = (oy + f?.[1] * s) / d;
+  const cw = W / d, ch = H / d;
+  if (!f || x2 < 0 || x1 > cw || y1 + s / d < 0 || y1 > ch) { el.style.visibility = 'hidden'; return; }
+  const win = el.firstChild, z = parseFloat(win.style.zoom) || 1;
+  win.style.maxHeight = `${Math.max(120, Math.min(380, (ch - 8) / z))}px`; // at most the map's height
+  const r = el.getBoundingClientRect(), gap = 8;
+  let left = x2 + gap;
+  if (left + r.width > cw - 4) left = x1 - gap - r.width;
+  left = Math.max(4, Math.min(cw - r.width - 4, left));
+  const top = Math.max(4, Math.min(ch - r.height - 4, y1)); // level with the tile: the name above stays clear
+  el.style.visibility = 'visible';
+  el.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
 }
 
 // NPCs are drawn over everything (roofs too) from NPCS_FROM, with their names from NAMES_FROM. Zoomed out, their
@@ -410,6 +432,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const frame = useRef(0);
   const viewBox = useRef(null); // the tile area on screen, from the last draw
   const selected = useRef(null); // the NPC whose window is open (drawn with a frame)
+  // The NPC whose conversation window is open next to it on the map (NpcTalk), and that window's element,
+  // which draw() moves along with the NPC.
+  const [talkNpc, setTalkNpc] = useState(null);
+  const talkRef = useRef(null), talkEl = useRef(null);
   const selectedDoor = useRef(null); // the locked door whose window is open (drawn with a frame)
   const selectedQuest = useRef(null); // the quest chest whose window is open (drawn with a white ring)
   const selectedMon = useRef(null); // the monster window's { kind | 'all', group } (its spawn drawn with frames)
@@ -895,6 +921,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         ctx.restore();
       }
     }
+    placeTalk(talkEl.current, talkRef.current, v, ox, oy, s, W, H);
     // The minimap follows every change of the map (and gets its images the same way).
     if (miniRef.current) mini.current = drawMini(miniRef.current, world, v, s, viewBox.current);
     if (more) frame.current = requestAnimationFrame(draw);
@@ -1255,12 +1282,15 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   }, [oracleLevel, climb, doorsKey, updateRoute]);
   const clearRoute = () => { routeSeq.current++; router.current?.cancel(); routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
 
+  // Opens an NPC's conversation next to it (or closes it: null).
+  const openTalk = useCallback((n) => { talkRef.current = n; setTalkNpc(n); redraw(); }, [redraw]);
   const selectNpc = useCallback((n) => {
+    if (n && talkRef.current && n !== talkRef.current) openTalk(null); // another NPC: its conversation closes
     selected.current = n;
     setNpc(n);
     if (n) { setItem(null); selectedDoor.current = null; setDoor(null); selectedMon.current = null; setMon(null); selectedQuest.current = null; setQuestSel(null); }
     redraw();
-  }, [redraw]);
+  }, [redraw, openTalk]);
   // Opens the monster window ({ kind | 'all', group }) or closes it (null).
   const selectMonster = useCallback((m) => {
     selectedMon.current = m;
@@ -1607,6 +1637,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           }}
         />
         {!ready && <div className="tm-loading">Loading map...</div>}
+        {talkNpc && world && <NpcTalk world={world} npc={talkNpc} elRef={talkEl} zoom={uiScale / dpr} onResize={redraw} onClose={() => openTalk(null)} />}
         {menu && (
           <>
             <div className="tm-menu-catcher" onPointerDown={() => setMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMenu(null); }} />
@@ -1748,7 +1779,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         {npc && world && (
           <NpcWindow
             world={world} npc={npc} onClose={() => selectNpc(null)} onTravel={(t) => jump({ x: t[2], y: t[3], z: t[4] })}
-            onRoute={() => updateRoute({ to: { label: npc.n, pos: npc.p } })}
+            onRoute={() => updateRoute({ to: { label: npc.n, pos: npc.p } })} onTalk={() => openTalk(npc)}
           />
         )}
         {item && world && (
