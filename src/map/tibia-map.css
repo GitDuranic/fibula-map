@@ -273,3 +273,15 @@
 .tm-talk-reply { color: #7fd8ff; }
 .tm-talk-cond, .tm-talk-else { color: #9a9a9a; }
 .tm-talk-fx { color: #c8b070; }
+
+/* quest list and window (slice 13b) */
+.tm-quest-search { flex: none; }
+.tm-quest-on { flex: none; }
+.tm-quest-on .tm-muted { margin: 0 0 1px; }
+.tm-quest-on-row { color: #fff; border: 1px solid #5a5a5a; }
+.tm-quest-draft { margin-top: 3px; color: #d8a860; }
+.tm-quest-follow { margin-top: 4px; width: 100%; }
+.tm-quest-follow.tm-pressed, .tm-quest-follow.tm-pressed:active:not(:disabled) {
+  border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); color: #fff;
+}
+.tm-quest-notes { margin-top: 4px; white-space: pre-wrap; }

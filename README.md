@@ -87,6 +87,19 @@ import TibiaMap from './map/TibiaMap.jsx';
 - `height`: the map's height (any CSS size).
 - `syncUrl` (default `true`): keep the view in the address (`#x,y,z,zoom`) so links can be shared, and let the
   browser's back button work with the map's Back button. Set it to `false` if the page uses the address itself.
+- `supabaseUrl`, `supabaseKey` (optional): the quest database, the same Supabase project and public key as the
+  house planner. Without them the quest list built by the converter is shown.
+
+## Quest database
+
+The quests come from Supabase (the house planner's project). Set it up once: open
+`supabase/migrations/0001_map_quests.sql`, paste it into Supabase's SQL Editor and run it. For `npm run dev`, put
+the address and public key in `.env.local` (not in git), as for the planner:
+
+```
+VITE_SUPABASE_URL=https://<project>.supabase.co
+VITE_SUPABASE_ANON_KEY=<public key>
+```
 
 ## Named locations
 

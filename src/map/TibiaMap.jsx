@@ -11,6 +11,7 @@ import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter } from './engine/router.js';
 import { drawText, textWidth } from './engine/text.js';
+import { questDbConfig, questOn, setQuestOn } from './engine/questdb.js';
 import './tibia-map.css';
 
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
@@ -396,7 +397,8 @@ function drawMini(mc, world, v, s, box) {
   return { ox, oy, sm };
 }
 
-export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncUrl = true }) {
+// supabaseUrl + supabaseKey (the public key, as for the house planner): the quest database (slice 13b).
+export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncUrl = true, supabaseUrl, supabaseKey }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const miniRef = useRef(null); // the minimap canvas
@@ -459,7 +461,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   };
   const [menu, setMenu] = useState(null); // the right-click menu: { x, y (CSS px in the map), tile: [x,y,z], adding }
   const [locName, setLocName] = useState(''); // the name being typed for "Add location here"
-  const [questsOpen, setQuestsOpen] = useState(false); // the quest checklist (slice 12, development only)
+  const [questsOpen, setQuestsOpen] = useState(false); // the quest list (13b; the slice 12 checklist in development)
+  const [onQuest, setOnQuestState] = useState(questOn); // "I'm on this quest" (13b), kept in the browser
+  const setOnQuest = (name) => { setQuestOn(name); setOnQuestState(name); };
   const [locNote, setLocNote] = useState(null); // a failed save, shown under the search
   // Named locations (the user's own, dev only): add or remove a name on a square through the dev server, then search
   // them right away.
@@ -996,7 +1000,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   useEffect(() => {
     // "ready" belongs to this World only: React may run this twice (StrictMode in development, or a new dataUrl),
     // and a ready flag left over from the first one must not make the panel use the second one half-loaded.
-    const world = new World(dataUrl, () => redraw());
+    const world = new World(dataUrl, () => redraw(), { questDb: questDbConfig({ url: supabaseUrl, key: supabaseKey }) });
     worldRef.current = world;
     setReady(false);
     world.load().then(() => {
@@ -1010,7 +1014,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       viewChanged();
     }, (e) => { if (worldRef.current === world) setError(e.message); });
     return () => { worldRef.current = null; cancelAnimationFrame(frame.current); frame.current = 0; };
-  }, [dataUrl, redraw, viewChanged]);
+  }, [dataUrl, supabaseUrl, supabaseKey, redraw, viewChanged]);
 
   // A link pasted into the same tab (only the hash changes) moves the view there.
   useEffect(() => {
@@ -1683,9 +1687,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
               <button type="button" className="tm-btn" onClick={goBack} disabled={!backCount} title="Back to where you were (or the browser's back key)">Back</button>
               <button type="button" className="tm-btn" onClick={goHome} title="Show the whole world (Home key)">Home</button>
               <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
-              {world?.questEditable && (
-                <button type="button" className="tm-btn" onClick={() => setQuestsOpen((o) => !o)} title="Your quest list, to check one by one (development only)">Quests</button>
-              )}
+              <button type="button" className="tm-btn" onClick={() => setQuestsOpen((o) => !o)} disabled={!ready} title="The quests, to look up and follow">Quests</button>
             </span>
           </div>
           <input
@@ -1718,12 +1720,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             onClose={clearRoute} doorsAll={doors.all} onDoorsAll={(all) => setDoors({ ...doors, all })}
           />
         )}
-        {questsOpen && world?.questEditable && (
-          <QuestList world={world} selected={questSel?.quest} onPick={(q) => goToQuest(q, 0)} onClose={() => setQuestsOpen(false)} />
+        {questsOpen && world && ready && (
+          <QuestList world={world} selected={questSel?.quest} onQuest={onQuest} onPick={(q) => goToQuest(q, 0)} onClose={() => setQuestsOpen(false)} />
         )}
         {questSel && world && (
           <QuestWindow
-            world={world} chest={questSel} editable={!!world.questEditable} onEdit={editQuest}
+            world={world} chest={questSel} editable={!!world.questEditable} onEdit={editQuest} onQuest={onQuest} setOn={setOnQuest}
             onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
           />
         )}

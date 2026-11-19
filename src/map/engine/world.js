@@ -1,6 +1,7 @@
 // Loads the converted map data and draws it in chunks, cached as canvases.
 import { drawTile, TILE } from './render.js';
-import { mergeQuests } from './questdata.js';
+import { mergeQuests, questKey } from './questdata.js';
+import { fetchQuests } from './questdb.js';
 
 const loadImage = (src) => new Promise((resolve, reject) => {
   const img = new Image();
@@ -29,8 +30,10 @@ export function floorsFor(z, mode) {
 }
 
 export class World {
-  constructor(base, onChange) {
+  // options.questDb: the quest database's { url, key } (questdb.js), or null.
+  constructor(base, onChange, options = {}) {
     this.base = base;
+    this.questDbCfg = options.questDb || null;
     this.onChange = onChange; // called when new data arrives (redraw)
     this.chunks = new Map(); // "z:cx:cy" -> tiles[] (index = row-major) | 'loading' | 'missing'
     this.canvases = new Map(); // key -> { canvas, pixels }
@@ -129,7 +132,11 @@ export class World {
   // Slice 12: quests.json is the user's Fibula quest list merged with the automatic spots. In development the list
   // comes live from the dev server (/__quests) and can be edited (questEditable, setQuestList).
   async loadQuests() {
+    // Slice 13b: the quest database (Supabase), when the map has its settings. Its quests are the list players
+    // see; the converted/dev list still gives the spots (matched by name) until slice 13i.
+    const db = this.questDbCfg ? fetchQuests(this.questDbCfg).catch((e) => { this.questDbError = String(e.message || e); return null; }) : null;
     const quests = await loadJson(`${this.base}/quests.json`).catch(() => []);
+    this.questDb = db ? await db : null;
     this.questEditable = false;
     try {
       const res = await fetch('/__quests');
@@ -151,6 +158,24 @@ export class World {
 
   // quests: merged (see questdata.js). Each spot also knows its quest and its place in the quest's list (i).
   setQuests(quests) {
+    // The database's quests (13b): each merged quest gets its row as q.db; database quests that the list doesn't
+    // have yet are added without spots. q.listed: shown in the players' quest list.
+    if (this.questDb) {
+      const byKey = new Map(this.questDb.map((r) => [questKey(r.name), r]));
+      const seen = new Set();
+      for (const q of quests) {
+        const k = questKey(q.n);
+        q.db = byKey.get(k) || null;
+        if (q.db) seen.add(k);
+      }
+      for (const r of this.questDb) {
+        if (seen.has(questKey(r.name))) continue;
+        quests.push({ n: r.name, level: null, area: '', reward: '', mark: false, checked: false, onList: false, edited: false, v: '', wiki: '', chests: [], db: r });
+      }
+      const sort = (q) => q.db?.sort ?? Infinity;
+      quests.sort((a, b) => sort(a) - sort(b));
+    }
+    for (const q of quests) q.listed = this.questDb ? !!q.db : q.onList;
     this.quests = quests;
     this.questChests = quests.flatMap((q) => q.chests.map((c, i) => ({ p: c.p, id: c.id, items: c.items, quest: q, i })));
     const labels = [];

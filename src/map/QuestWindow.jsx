@@ -46,10 +46,15 @@ const markText = (q) => (!q.onList ? 'Not on your Fibula list' : q.mark ? '✅ o
 
 // chest: a spot { p, id, items: [[item id, count, key?]], quest, i }, or { quest, i: null } for a quest without one.
 // onEdit(quest, change(raw), select spot index?): saves a change (see TibiaMap editQuest). onGo(spot): go to a spot.
-export default function QuestWindow({ world, chest, editable, onEdit, onGo, onItem, onClose }) {
+// onQuest: the quest you're on (name) and setOn(name | null) for "I'm on this quest" (slice 13b).
+export default function QuestWindow({ world, chest, editable, onEdit, onGo, onItem, onClose, onQuest, setOn }) {
   const q = chest.quest, spot = chest.i == null ? null : q.chests[chest.i];
   const editSpot = (fn) => onEdit(q, (raw) => fn(raw.spots[chest.i]), chest.i);
-  const info = [q.level ? `Level ${q.level}` : null, q.area || null, q.v ? `came in ${q.v}` : null].filter(Boolean).join(' · ');
+  const d = q.db; // the quest database's row (13b), if there is one
+  const level = d ? d.level : q.level, area = d ? d.area : q.area, version = d?.wiki_version || q.v;
+  const info = [level ? `Level ${level}` : null, area || null, version ? `came in ${version}` : null].filter(Boolean).join(' · ');
+  const rewards = d ? d.rewards : q.reward, wiki = d ? d.wiki_reward : q.wiki;
+  const isOn = onQuest === q.n;
   return (
     <div className="tm-panel tm-window tm-quest">
       <div className="tm-window-title">
@@ -57,7 +62,14 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
         <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>
       </div>
       <div className="tm-window-body">
-        <div className="tm-muted">{markText(q)}{info ? ` · ${info}` : ''}</div>
+        {editable ? <div className="tm-muted">{markText(q)}{info ? ` · ${info}` : ''}</div> : info && <div className="tm-muted">{info}</div>}
+        {d && d.status !== 'checked' && <div className="tm-quest-draft" title="Nobody has gone through this quest's guide yet: it may be wrong">Not checked yet</div>}
+        {q.listed && setOn && (
+          <button type="button" className={`tm-btn tm-quest-follow${isOn ? ' tm-pressed' : ''}`} onClick={() => setOn(isOn ? null : q.n)}
+            title={isOn ? 'Stop following this quest' : 'Keep this quest at the top of the quest list (saved in this browser)'}
+          >{isOn ? "I'm on this quest ✓" : "I'm on this quest"}</button>
+        )}
+        {d?.notes && <div className="tm-quest-notes">{d.notes}</div>}
         {editable && (
           <label className="tm-check" title="You went through this quest on the map and its spots and items are right">
             <input type="checkbox" checked={q.checked} onChange={(e) => onEdit(q, (raw) => { raw.checked = e.target.checked; }, chest.i)} /> Checked
@@ -65,8 +77,8 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
         )}
         <div className="tm-section">
           <div className="tm-section-title">Reward</div>
-          <div>{q.reward || q.wiki || 'Not known'}</div>
-          {q.reward && q.wiki && <div className="tm-muted">TibiaWiki: {q.wiki}</div>}
+          <div>{rewards || wiki || 'Not known'}</div>
+          {rewards && wiki && <div className="tm-muted">TibiaWiki: {wiki}</div>}
         </div>
         <div className="tm-section">
           <div className="tm-section-title">Spots on the map ({q.chests.length})</div>
