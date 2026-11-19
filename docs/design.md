@@ -57,6 +57,12 @@ Status: design agreed on 2026-11-12, nothing built yet. Keep this doc current: e
       - Tested in Thais: from floor 2 down to 6, then this floor only, then floors 8 to 12, and back up to 7.
     - **Phones: no depth control (decided 2026-11-12).** The user expects little phone use; on phones the floor buttons are enough.
     - Layers don't apply to the far-zoom overview images (below 16).
+  - **Replaced (2026-11-19): Ctrl + wheel = one whole floor per step.** The user lost track of the floor, wasn't sure which way was down, and on the way to −1 kept getting stuck on roof layers that barely showed ("nothing happens… I assume I'm scrolling the wrong way").
+    - **Ctrl + wheel forward** (or Ctrl + `+`) goes a floor down, **backward** (Ctrl + `-`) a floor up, on the surface and underground alike. Floors with nothing on screen are still skipped.
+    - **Roofs follow the zoom,** as with the floor buttons: zoomed in (from `MAIN_FROM`, 32) this floor only, zoomed out with the floors above. Layers can no longer be taken off one at a time while staying on a floor; to look at an upper floor, go up to it.
+    - Options considered: skip layers that cover little of the screen, or only show each step more clearly. Chosen: whole floors, so every step changes something big.
+    - **The view stays still on a floor change** (fix, user 2026-11-19: Ctrl + wheel up moved the view a tile up-left). A surface floor is drawn one tile up-left per floor above the shown floor, so changing floor moves the view centre by the same amount (`changeFloor`). Applies to Ctrl + wheel, the floor buttons, PageUp/PageDown and the switch to the main level at zoom 32. Underground floors aren't shifted.
+    - Still open: an indicator on the map showing the floor (the user dislikes text over the map, so to be agreed first).
   - Still planned: around the route and a selected NPC, roofs are cut away even when zoomed out.
 - **Viewer: our own canvas code, no map library (2026-11-12).** Leaflet was considered. It can look like Tibia, but the per-building roof swap and pixel-exact zoom steps (sharp at DPR 2.5) fight its design, and it would be an extra npm package for Ryndean. The pan/zoom/markers code is small enough to write ourselves.
 - **Code sharing:** the planner's `tools/lib` (dat, spr, otbm, png) and render engine are **copied** into tibia-map, not linked, so the planner's sync to Ryndean's site isn't affected.
@@ -146,6 +152,7 @@ Agree each slice before building it, then build one at a time.
 
 12. **Quest list and editor** (asked for 2026-11-15, built): the user's Project Fibula quest list, checked one by one on the map, with spots and rewards edited there.
 11. **Climbing and dropping** (asked for 2026-11-15, built): routes can go a floor up or down with exani hur up/down or 3 parcels, as an option per character.
+13. **Quest guides** (brainstormed 2026-11-19, for the 7.2 release): quests with segments and steps in Supabase, a route through the current segment, NPC dialogs from the scripts with copy buttons, a bring list, editing on the map for the user and Ryndean only. Replaces slices 10 and 12 except locked doors and keys. Plan and slices 13a–13k: `docs/brainstorm-quest-guides.md`.
 
 Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (the loot seller was 5).
 

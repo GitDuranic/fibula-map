@@ -1060,51 +1060,46 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     viewChanged();
   }, [viewChanged]);
 
+  // Changes the floor without moving what's on screen: a surface floor zz is drawn (v.z - zz) tiles up-left
+  // (as in the client), so the view centre moves along by the difference (user 2026-11-19: Ctrl + wheel up
+  // shifted the view a tile). Underground floors aren't shifted.
+  const changeFloor = (z) => {
+    const v = view.current, d = Math.min(v.z, 7) - Math.min(z, 7);
+    v.x += d; v.y += d; v.z = z;
+    const an = anim.current.anchor;
+    if (an && d) { an.wx += d; an.wy += d; } // a zoom in progress keeps the same spot under the mouse
+  };
+
   // Crossing MAIN_FROM: zooming in goes to the main level of the place zoomed into ("this floor only");
   // zooming out brings the roofs back. Underground (after Ctrl + wheel) the floor stays as it is.
   const mainLevel = (before, x, y) => {
     const v = view.current;
-    if (before < MAIN_FROM && v.zoom >= MAIN_FROM && v.z <= 7) { v.z = mainLevelAt(x, y); v.cut = v.z; }
+    if (before < MAIN_FROM && v.zoom >= MAIN_FROM && v.z <= 7) { changeFloor(mainLevelAt(x, y)); v.cut = v.z; }
     else if (before >= MAIN_FROM && v.zoom < MAIN_FROM && v.z <= 7) v.cut = 0;
   };
 
-  // Depth (Ctrl + wheel, Ctrl + +/-): going in takes the top layer off the whole view (roofs first, then upper
-  // floors); once only this floor is left, it goes a floor down, into the underground. Going out does the
-  // same in reverse: up the underground floors to the ground floor (still without roofs), then the layers come
-  // back. Floors with nothing on screen are skipped, so every step changes something.
+  // Depth (Ctrl + wheel, Ctrl + +/-): every step is one whole floor, forward = down, backward = up (user,
+  // 2026-11-19: stepping through roof layers that barely showed felt like nothing happened). Roofs follow the
+  // zoom as with the floor buttons: zoomed in this floor only, zoomed out with the floors above. Floors with
+  // nothing on screen are skipped, so every step changes something.
   const layerBy = useCallback((dir) => {
     const v = view.current, world = worldRef.current, b = viewBox.current;
     if (!world || !b) return;
     const [x1, y1, x2, y2] = [b.left, b.top, b.right, b.bottom].map(Math.floor);
-    const layers = v.z <= 7 ? world.layersIn(v.z, x1, y1, x2, y2) : [];
-    const floorWithData = (from, step) => {
-      for (let z = from; z >= 0 && z <= 15; z += step) if (world.floors.includes(z) && world.hasData(z, x1, y1, x2, y2)) return z;
-      return -1;
-    };
-    if (dir > 0) {
-      const f = layers.find((zz) => zz >= v.cut);
-      if (f !== undefined) v.cut = f + 1; // take the next layer off
-      else {
-        const z = floorWithData(v.z + 1, 1); // only this floor left: go down
-        if (z < 0) return;
-        v.z = z; v.cut = z;
-      }
-    } else if (v.z > 7) {
-      const z = floorWithData(v.z - 1, -1); // underground: go up (to the ground floor at most, without roofs)
-      if (z < 0) return;
-      v.z = z; v.cut = z;
-    } else {
-      if (!v.cut) return;
-      const hidden = layers.filter((zz) => zz < v.cut);
-      v.cut = hidden.length > 1 ? hidden[hidden.length - 1] : 0; // put the last layer back
+    const step = dir > 0 ? 1 : -1;
+    for (let z = v.z + step; z >= 0 && z <= 15; z += step) {
+      if (!world.floors.includes(z) || !world.hasData(z, x1, y1, x2, y2)) continue;
+      changeFloor(z);
+      v.cut = v.zoom >= MAIN_FROM ? z : 0;
+      viewChanged();
+      return;
     }
-    viewChanged();
   }, [viewChanged]);
 
   const setFloor = useCallback((z) => {
     const world = worldRef.current;
     if (!world?.floors?.includes(z)) return; // also before the map has loaded
-    view.current.z = z;
+    changeFloor(z);
     view.current.cut = view.current.zoom >= MAIN_FROM ? z : 0; // zoomed in: this floor only
     viewChanged();
   }, [viewChanged]);
@@ -1475,8 +1470,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     }
   };
 
-  // Wheel: one zoom step per notch (trackpads add up small deltas); Ctrl + wheel: one layer per notch
-  // (forward = take the top layer off). Not passive, so the page neither scrolls nor zooms.
+  // Wheel: one zoom step per notch (trackpads add up small deltas); Ctrl + wheel: one floor per notch
+  // (forward = down). Not passive, so the page neither scrolls nor zooms.
   const wheelAcc = useRef({ v: 0, ctrl: false });
   useEffect(() => {
     const c = canvasRef.current;
@@ -1674,7 +1669,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             </div>
             <div className="tm-info">
               <div>Floor {ui.z}{ui.z === 7 ? ' (ground)' : ui.z < 7 ? ` (+${7 - ui.z})` : ` (-${ui.z - 7})`}</div>
-              <div title="Ctrl + mouse wheel (or Ctrl + +/-): take layers off and go underground, or come back up">
+              <div title="Ctrl + mouse wheel (or Ctrl + +/-): a floor down (forward) or up (backward)">
                 {ui.z > 7 || ui.cut >= ui.z ? 'This floor only' : ui.cut ? `Layers from floor ${ui.cut}` : 'All layers'}
               </div>
               <div className="tm-pos">{hover ? `${hover.x}, ${hover.y}, ${hover.z}` : ' '}</div>
