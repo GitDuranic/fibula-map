@@ -1,6 +1,6 @@
 // Loads the converted map data and draws it in chunks, cached as canvases.
 import { drawTile, TILE } from './render.js';
-import { mergeQuests, questKey } from './questdata.js';
+import { questKey } from './questdata.js';
 import { fetchQuests } from './questdb.js';
 
 const loadImage = (src) => new Promise((resolve, reject) => {
@@ -123,43 +123,20 @@ export class World {
     return this.places.filter((p) => p.k === 'custom' && p.p[0] === x && p.p[1] === y && p.p[2] === z).map((p) => p.n);
   }
 
-  // ---------- quest chests (slice 10) ----------
+  // ---------- quests ----------
 
-  // Loads quests.json (older data without it: none).
-  //   quests: [{ n, v (version, '' = unknown), reward (TibiaWiki's text), chests: [{ p, items: [[id, count, key?]] }] }]
-  //   questChests: every chest: { p, items, quest }
-  //   questLabels: one name label per group of a quest's chests on one floor within 6 tiles: { p (the top chest), quest }
-  // Slice 12: quests.json is the user's Fibula quest list merged with the automatic spots. In development the list
-  // comes live from the dev server (/__quests) and can be edited (questEditable, setQuestList).
+  // Loads quests.json (the user's Fibula list as converted; older data without it: none) and, when the map has the
+  // database's settings, the quest database (13b), whose quests are then the list players see (each merged quest
+  // gets its row as q.db). The old quest spots (slices 10/12) are now Reward steps (13i): no spots here any more.
+  //   quests: [{ n, level, area, reward, v, wiki, onList, db, listed }]
   async loadQuests() {
-    // Slice 13b: the quest database (Supabase), when the map has its settings. Its quests are the list players
-    // see; the converted/dev list still gives the spots (matched by name) until slice 13i.
     const db = this.questDbCfg ? fetchQuests(this.questDbCfg).catch((e) => { this.questDbError = String(e.message || e); return null; }) : null;
     const quests = await loadJson(`${this.base}/quests.json`).catch(() => []);
     this.questDb = db ? await db : null;
-    this.questEditable = false;
-    try {
-      const res = await fetch('/__quests');
-      if (res.ok && (res.headers.get('content-type') || '').includes('json')) {
-        const list = await res.json();
-        this.questAuto = await loadJson(`${this.base}/quests-auto.json`).catch(() => []);
-        if (Array.isArray(list?.quests)) { this.questEditable = true; this.setQuestList(list, false); return; }
-      }
-    } catch { /* no dev server: the converted list */ }
     this.setQuests(quests);
   }
 
-  // The user's quest list changed (dev): merge it with the automatic spots again. search: rebuild the search too.
-  setQuestList(list, search = true) {
-    this.questList = list;
-    this.setQuests(mergeQuests(list, this.questAuto || []));
-    if (search) this.buildSearch();
-  }
-
-  // quests: merged (see questdata.js). Each spot also knows its quest and its place in the quest's list (i).
   setQuests(quests) {
-    // The database's quests (13b): each merged quest gets its row as q.db; database quests that the list doesn't
-    // have yet are added without spots. q.listed: shown in the players' quest list.
     if (this.questDb) {
       const byKey = new Map(this.questDb.map((r) => [questKey(r.name), r]));
       const seen = new Set();
@@ -170,31 +147,13 @@ export class World {
       }
       for (const r of this.questDb) {
         if (seen.has(questKey(r.name))) continue;
-        quests.push({ n: r.name, level: null, area: '', reward: '', mark: false, checked: false, onList: false, edited: false, v: '', wiki: '', chests: [], db: r });
+        quests.push({ n: r.name, level: null, area: '', reward: '', onList: false, v: '', wiki: '', db: r });
       }
       const sort = (q) => q.db?.sort ?? Infinity;
       quests.sort((a, b) => sort(a) - sort(b));
     }
     for (const q of quests) q.listed = this.questDb ? !!q.db : q.onList;
     this.quests = quests;
-    this.questChests = quests.flatMap((q) => q.chests.map((c, i) => ({ p: c.p, id: c.id, items: c.items, quest: q, i })));
-    const labels = [];
-    for (const q of quests) {
-      const left = [...q.chests];
-      while (left.length) {
-        const group = [left.shift()];
-        for (let i = 0; i < group.length; i++) {
-          for (let j = left.length - 1; j >= 0; j--) {
-            const a = group[i].p, b = left[j].p;
-            if (a[2] === b[2] && Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1])) <= 6) group.push(...left.splice(j, 1));
-          }
-        }
-        const top = group.reduce((t, c) => (c.p[1] < t.p[1] || (c.p[1] === t.p[1] && c.p[0] < t.p[0]) ? c : t));
-        const xs = group.map((c) => c.p[0]);
-        labels.push({ p: [Math.round((Math.min(...xs) + Math.max(...xs)) / 2), top.p[1], top.p[2]], quest: q });
-      }
-    }
-    this.questLabels = labels;
   }
 
   // ---------- monsters ----------

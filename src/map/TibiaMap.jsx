@@ -350,23 +350,7 @@ function searchedRect(kd, f, ox, oy, s, k) {
   return { x: Math.round(cx + (16 - w0 - kd.d[0]) * sc), y: Math.round(cy + (16 - h0 - kd.d[1]) * sc), w: Math.round(w0 * sc), h: Math.round(h0 * sc), sc, cx, cy, r: Math.max(10 * k, 18 * sc) };
 }
 
-// The old quest spots (slices 10, 12) are switched off (user 2026-11-20: replaced by the steps; a Reward step gets its
-// own look). Their data stays until 13i turns them into steps.
-const OLD_QUEST_SPOTS = false;
-
-// Quest chests (slice 10): a chest icon in a gold ring on each quest chest, and the quest's name above each group
-// of its chests, from QUESTS_FROM, where their floor is shown (as NPCs, npcFrame).
-const QUESTS_FROM = 16;
-function visibleQuestChests(world, v, left, top, right, bottom) {
-  if (v.zoom < QUESTS_FROM || !world.questChests) return [];
-  const out = [];
-  for (const c of world.questChests) {
-    const f = npcFrame(c, v.z, v.cut);
-    if (f && f[0] >= left - 2 && f[0] <= right + 2 && f[1] >= top - 2 && f[1] <= bottom + 2) out.push({ c, f });
-  }
-  return out;
-}
-// A quest chest's ring on the canvas: centre and radius.
+// A Reward step's ring (13i; it was the old quest chests' ring): centre and radius on the canvas.
 const questRing = (f, ox, oy, s, k) => ({ cx: ox + (f[0] + 0.5) * s, cy: oy + (f[1] + 0.5) * s, r: Math.max(9 * k, s * 0.55) });
 
 // The guide's step markers (13d-2), from zoom STEPS_FROM: a circle over the step's tile; the step you're on larger.
@@ -377,12 +361,6 @@ const stepRing = (f, ox, oy, s, k, state) => ({
 
 // The character's settings before the user changes them (user, 2026-11-13).
 // levitate / parcels: may routes climb and drop with exani hur up/down or 3 parcels (slice 11; off by default).
-// The quests offered for "Add quest spot here" (slice 12): the list's quests first, narrowed by the typed text.
-function questChoices(world, text) {
-  const t = text.trim().toLowerCase();
-  const qs = (world?.quests || []).filter((q) => !t || q.n.toLowerCase().includes(t));
-  return [...qs.filter((q) => q.onList), ...qs.filter((q) => !q.onList)].slice(0, 30);
-}
 
 const CHAR_DEFAULT = { level: 8, haste: 'none', boh: false, levitate: false, parcels: false };
 
@@ -587,7 +565,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const q = guide?.quest;
     try {
       const t = await editGuide((gd) => qg.addStep(dbCfg, gd, fields));
-      if (selectedQuest.current?.quest !== q) selectQuest({ quest: q, i: null });
+      if (selectedQuest.current?.quest !== q) selectQuest({ quest: q });
       if (t) setEditStep(t.id);
     } catch (e) { setLocNote(`Could not add the step: ${e.message || e}`); }
   };
@@ -849,35 +827,6 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       }
     }
 
-    // Quest chests (slice 10): the chest in a gold ring (white when its window is open), then the quests' names.
-    if (OLD_QUEST_SPOTS) {
-      const kq = Math.max(1, Math.round(window.devicePixelRatio || 1));
-      for (const { c, f } of visibleQuestChests(world, v, left, top, right, bottom)) {
-        const r = questRing(f, ox, oy, s, kq), sel = selectedQuest.current === c;
-        ctx.beginPath(); ctx.arc(r.cx, r.cy, r.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
-        ctx.strokeStyle = sel ? '#ffffff' : '#ffd700'; ctx.lineWidth = 2 * kq; ctx.stroke();
-        if (c.id) {
-          const size = Math.round(r.r * 1.5);
-          ctx.imageSmoothingEnabled = size < 32;
-          ctx.drawImage(world.iconCanvas(c.id), Math.round(r.cx - size / 2), Math.round(r.cy - size / 2), size, size);
-        }
-      }
-      if (v.zoom >= QUESTS_FROM && world.questLabels) {
-        const fq = Math.max(kq, Math.round(s / 32));
-        ctx.imageSmoothingEnabled = false;
-        for (const l of world.questLabels) {
-          const f = npcFrame(l, v.z, v.cut);
-          if (!f || f[0] < left - 10 || f[0] > right + 10 || f[1] < top - 2 || f[1] > bottom + 2) continue;
-          const r = questRing(f, ox, oy, s, kq), t = l.quest.n, w = textWidth(world.font, t) * fq;
-          ctx.save();
-          ctx.translate(Math.round(r.cx - w / 2), Math.round(r.cy - r.r - 13 * fq));
-          ctx.scale(fq, fq);
-          drawText(ctx, world.font, t, 0, 0, '#ffd700');
-          ctx.restore();
-        }
-      }
-    }
 
     // The guide's steps (13d-2): numbered circles on the current segment's steps (where their floor is shown, as
     // NPCs). The step you're on is white and larger, done steps are faint, the ones still to do gold.
@@ -1212,18 +1161,6 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     return best;
   };
 
-  // The quest chest at canvas point p (inside its ring), or null.
-  const questAtPoint = (p) => {
-    const world = worldRef.current, c = canvasRef.current, v = view.current, s = anim.current.s, b = viewBox.current;
-    if (!OLD_QUEST_SPOTS || !world?.questChests || !c || !b) return null;
-    const ox = Math.round(c.width / 2 - v.x * s), oy = Math.round(c.height / 2 - v.y * s);
-    const k = Math.max(1, Math.round(window.devicePixelRatio || 1));
-    for (const { c: ch, f } of visibleQuestChests(world, v, b.left, b.top, b.right, b.bottom)) {
-      const r = questRing(f, ox, oy, s, k);
-      if (Math.hypot(p.x - r.cx, p.y - r.cy) <= r.r) return ch;
-    }
-    return null;
-  };
 
   // The locked door at canvas point p (its tile), or null.
   const doorAtPoint = (p) => {
@@ -1608,43 +1545,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   // editor (user 2026-11-20: players should see a clean quest panel).
   const devTools = !!login.editor;
   // A quest's window: on spot i (going there), or without a spot when it has none (slice 12).
-  const goToQuest = useCallback((q, i = 0) => {
-    const c = OLD_QUEST_SPOTS && worldRef.current?.questChests.find((x) => x.quest === q && x.i === i);
-    if (c) { jump({ x: c.p[0], y: c.p[1], z: c.p[2] }); selectQuest(c); }
-    else selectQuest({ quest: q, i: null });
-  }, [jump, selectQuest]);
-  // The quest editor (slice 12, development only): change(raw) edits the quest as stored in
-  // tools/data/fibula-quests.json ({ n, level, area, reward, mark, checked, spots }); the dev server saves it and the
-  // map merges the list again. Spots found automatically become the quest's own on its first spot edit. select: the
-  // spot whose window stays open afterwards (index), or null.
-  const editQuest = async (q, change, select) => {
-    const world = worldRef.current;
-    const raw = {
-      n: q.n, level: q.level, area: q.area, reward: q.reward, mark: q.mark, checked: q.checked,
-      spots: q.chests.map((c) => ({ p: [...c.p], id: c.id || 0, items: c.items.map((it) => [...it]) })),
-    };
-    const before = JSON.stringify(raw.spots);
-    change(raw);
-    if (!q.edited && JSON.stringify(raw.spots) === before) raw.spots = null; // only "checked" changed: keep the automatic spots
-    try {
-      const res = await fetch('/__quests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest: raw }) });
-      const list = await res.json();
-      if (!res.ok || !Array.isArray(list?.quests)) throw new Error(list?.error || res.status);
-      world.setQuestList(list);
-      setLocNote(null);
-    } catch (e) { setLocNote(`Could not save the quest: ${e.message || e}`); return; }
-    const nq = world.quests.find((x) => x.n === q.n);
-    const c = nq && world.questChests.find((x) => x.quest === nq && x.i === select);
-    if (c) selectQuest(c);
-    else if (nq) selectQuest({ quest: nq, i: null });
-  };
-  // Right-click "Add quest spot here": a new spot for quest q on tile p, showing the top object there (if any).
-  const addQuestSpot = (q, p) => {
-    const world = worldRef.current;
-    const items = (world.tile(...p)?.items || []).map((it) => it.id);
-    const top = [...items].reverse().find((id) => world.defs[id] && world.defs[id].f.GROUND === undefined) || 0;
-    editQuest(q, (raw) => { raw.spots.push({ p, id: top, items: [] }); }, q.chests.length);
-  };
+  const goToQuest = useCallback((q) => selectQuest({ quest: q }), [selectQuest]);
   const selectDoor = useCallback((d) => {
     selectedDoor.current = d;
     setDoor(d);
@@ -1739,7 +1640,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       setHover(seenTileAt(p));
       const l = floorChangeAtPoint(p);
       setHoverLink(l);
-      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = stepAtPoint(p) || npcAtPoint(p) || searchedAtPoint(p) || questAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
+      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = stepAtPoint(p) || npcAtPoint(p) || searchedAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
       return;
     }
     setHoverLink(null);
@@ -1790,18 +1691,17 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       const st = stepAtPoint(toCanvas(e));
       if (st) {
         const q = stepMarks.current.quest;
-        if (selectedQuest.current?.quest !== q) selectQuest({ quest: q, i: null });
+        if (selectedQuest.current?.quest !== q) selectQuest({ quest: q });
         // A Talk step's marker sits on its NPC: open the conversation too (13f-0b).
         const sn = st.step.kind === 'talk' && st.step.npc && worldRef.current.npcs?.find((x) => x.n.toLowerCase() === st.step.npc.toLowerCase());
         if (sn) { selectNpc(sn); openTalk(sn); }
         return;
       }
-      const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p), qc = !n && !sm && questAtPoint(p);
-      const m = !n && !sm && !qc && monsterAtPoint(p);
-      const dr = !n && !sm && !qc && !m && doorAtPoint(p), l = !n && !sm && !qc && !m && !dr && floorChangeAtPoint(p);
+      const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p);
+      const m = !n && !sm && monsterAtPoint(p);
+      const dr = !n && !sm && !m && doorAtPoint(p), l = !n && !sm && !m && !dr && floorChangeAtPoint(p);
       // An NPC of the quest you're on opens its conversation straight away (13f-0b, user); others their window.
       if (n) { selectNpc(n); if (questNpcs.current.has(n.n.toLowerCase())) openTalk(n); }
-      else if (qc) selectQuest(qc);
       else if (sm) {
         // A searched monster: on another floor, go to it there (Back returns); then its window.
         if (!sm.here) jump({ x: sm.p[0], y: sm.p[1], z: sm.p[2] }, { zoom: Math.max(view.current.zoom, MAIN_FROM) });
@@ -1924,7 +1824,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     setQuery(r.name);
     monSearch.current = r.kind === 'Monster' ? r.mon : null;
     if (r.kind === 'Monster') { fitMonsters(r.mon); return; }
-    if (r.kind === 'Quest') { goToQuest(r.quest, 0); return; }
+    if (r.kind === 'Quest') { goToQuest(r.quest); return; }
     redraw();
     if (r.kind === 'Position') jump(r.pos);
     else if (r.kind === 'NPC') { jump({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
@@ -1958,13 +1858,13 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         <div className="tm-side tm-left" style={{ zoom: uiScale / dpr }}>
           {world && ready && !questSel && (
             <QuestList
-              world={world} dev={devTools && !!world.questEditable} selected={questSel?.quest} onQuest={onQuest} onPick={(q) => goToQuest(q, 0)} onClose={closeQuests}
+              world={world} selected={questSel?.quest} onQuest={onQuest} onPick={goToQuest} onClose={closeQuests}
               login={dbCfg ? login : null} onLogIn={() => logIn(dbCfg)} onLogOut={() => logOut(dbCfg)}
             />
           )}
           {questSel && world && (
             <QuestWindow
-              world={world} chest={questSel} editable={devTools && !!world.questEditable} onEdit={editQuest} onQuest={onQuest} setOn={setOnQuest}
+              world={world} chest={questSel} onQuest={onQuest} setOn={setOnQuest}
               onSave={login.editor ? saveDbQuest : null}
               guide={dbCfg && questSel.quest.db ? {
                 guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
@@ -1975,7 +1875,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
                 onRouteTo: (label, pos) => updateRoute({ to: { label: label.slice(0, 60), pos } }),
               onTalk: talkTo,
               } : null}
-              onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={closeQuests} onBack={() => selectQuest(null)}
+              onItem={(id) => setItem({ id, fluid: null })} onClose={closeQuests} onBack={() => selectQuest(null)}
             />
           )}
         </div>
@@ -1998,27 +1898,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             <div className="tm-menu-catcher" onPointerDown={() => setMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMenu(null); }} />
             <div className="tm-menu-at" style={{ left: menu.x, top: menu.y }}>
             <div className="tm-menu" style={{ zoom: uiScale / dpr }}>
-              {menu.addingQuest ? (
-                // Which quest this spot is for: type to narrow the list, click one (Enter takes the first).
-                <div className="tm-menu-add tm-menu-quests-wrap">
-                  <input
-                    className="tm-input" autoFocus value={locName} maxLength={60} placeholder="Which quest?"
-                    onChange={(e) => setLocName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') setMenu(null);
-                      else if (e.key === 'Enter') {
-                        const q = questChoices(world, locName)[0];
-                        if (q) { setMenu(null); addQuestSpot(q, menu.tile); }
-                      }
-                    }}
-                  />
-                  <div className="tm-menu-quests">
-                    {questChoices(world, locName).map((q) => (
-                      <button type="button" key={q.n} className="tm-menu-item" onClick={() => { setMenu(null); addQuestSpot(q, menu.tile); }}>{q.n}</button>
-                    ))}
-                  </div>
-                </div>
-              ) : menu.adding ? (
+              {menu.adding ? (
                 // A name for this square: Enter or Add saves it, Escape cancels.
                 <form className="tm-menu-add" onSubmit={(e) => { e.preventDefault(); if (locName.trim()) saveLocation({ add: { n: locName.trim(), p: menu.tile } }); setMenu(null); }}>
                   <input
@@ -2036,7 +1916,6 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
                 // A Reward step (database step 6): the chest's spot; the object is the item on that tile when there is one.
                 ...(guideEd && !guide.guide.missing ? [['Add reward step here', () => addGuideStep({ kind: 'reward', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2], object: topItemAt(menu.tile) })]] : []),
                 ...(guideEd && editStep ? [['Move step here', () => moveEditStep(menu.tile)]] : []),
-                ...(OLD_QUEST_SPOTS && devTools && world?.questEditable ? [['Add quest spot here', () => { setLocName(''); setMenu({ ...menu, addingQuest: true }); }, true]] : []),
                 ...(devTools && world?.customEditable ? world.customAt(...menu.tile).map((n) => [`Remove '${n}'`, () => saveLocation({ remove: { n, p: menu.tile } })]) : []),
               ].map(([label, act, keepOpen]) => (
                 <button type="button" key={label} className="tm-menu-item" onClick={() => { if (!keepOpen) setMenu(null); act(); }}>{label}</button>

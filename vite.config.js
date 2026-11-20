@@ -42,48 +42,8 @@ function customPlaces() {
   };
 }
 
-// The user's Project Fibula quest list (slice 12), edited on the map in development: tools/data/fibula-quests.json
-// ({ quests: [{ n, level, area, reward, mark, checked, spots }] }, see src/map/engine/questdata.js).
-//   GET  /__quests                -> the list
-//   POST /__quests { quest }      -> replaces the quest with that name (or adds it), returns the list
-function fibulaQuests() {
-  const file = path.resolve('tools/data/fibula-quests.json');
-  const read = () => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return { quests: [] }; } };
-  const write = (list) => fs.writeFileSync(file, `{\n  "quests": [\n${list.quests.map((q) => `    ${JSON.stringify(q)}`).join(',\n')}\n  ]\n}\n`);
-  const key = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-  return {
-    name: 'tm-fibula-quests',
-    configureServer(server) {
-      server.middlewares.use('/__quests', (req, res) => {
-        const send = (code, body) => { res.statusCode = code; res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); };
-        if (req.method === 'GET') { send(200, read()); return; }
-        if (req.method !== 'POST') { send(405, { error: 'GET or POST' }); return; }
-        let body = '';
-        req.on('data', (c) => { body += c; });
-        req.on('end', () => {
-          try {
-            const { quest: q } = JSON.parse(body || '{}');
-            const pos = (p) => Array.isArray(p) && p.length === 3 && p.every(Number.isInteger);
-            const okSpots = q?.spots === null || (Array.isArray(q?.spots) && q.spots.every((s) => pos(s.p) && Number.isInteger(s.id || 0)
-              && Array.isArray(s.items) && s.items.every((i) => Array.isArray(i) && i.every(Number.isInteger))));
-            if (!q || typeof q.n !== 'string' || !q.n.trim() || !okSpots) { send(400, { error: 'quest { n, spots, ... }' }); return; }
-            const clean = { n: q.n.trim().slice(0, 80), level: Number.isInteger(q.level) ? q.level : null, area: String(q.area || '').slice(0, 60),
-              reward: String(q.reward || '').slice(0, 400), mark: !!q.mark, checked: !!q.checked, spots: q.spots };
-            if (typeof q.note === 'string' && q.note.trim()) clean.note = q.note.trim().slice(0, 400);
-            const list = read();
-            const i = list.quests.findIndex((x) => key(x.n) === key(clean.n));
-            if (i >= 0) list.quests[i] = clean; else list.quests.push(clean);
-            write(list);
-            send(200, list);
-          } catch (e) { send(400, { error: String(e.message || e) }); }
-        });
-      });
-    },
-  };
-}
-
 export default defineConfig({
-  plugins: [react(), customPlaces(), fibulaQuests()],
+  plugins: [react(), customPlaces()],
   server: {
     // Native file watching misses some edits on this Windows setup; polling is reliable.
     watch: { usePolling: true, interval: 300, ignored: ['**/public/map-data*/**', '**/dist/**', '**/tools/data/**'] },

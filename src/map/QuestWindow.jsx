@@ -108,15 +108,12 @@ function QuestEdit({ world, row, onSave, onDone, hasSteps }) {
   );
 }
 
-const markText = (q) => (!q.onList ? 'Not on your Fibula list' : q.mark ? '✅ on your list' : '⬜ on your list');
-
-// chest: a spot { p, id, items: [[item id, count, key?]], quest, i }, or { quest, i: null } for a quest without one.
-// onEdit, onGo, onItem: from the removed spots section (unused for now; 13i).
+// chest: { quest } (the open quest). onItem(id): the item window (a reward item's icon).
 // onQuest: the quest you're on (name) and setOn(name | null) for "I'm on this quest" (slice 13b).
 // onSave(quest, changes): an editor is logged in (13c), so the quest's database row can be edited.
 // guide: the props for QuestGuide (13d) when this quest has a database row, else null.
 // onBack: back to the quest list (the quest panel shows the list OR a quest, 13f-0b).
-export default function QuestWindow({ world, chest, editable, onEdit, onGo, onItem, onClose, onBack, onQuest, setOn, onSave, guide }) {
+export default function QuestWindow({ world, chest, onItem, onClose, onBack, onQuest, setOn, onSave, guide }) {
   const [editing, setEditing] = useState(null); // the quest whose form is open (13c)
   const q = chest.quest;
   const d = q.db; // the quest database's row (13b), if there is one
@@ -134,7 +131,7 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
       <div className="tm-window-body">
         {editing === q && d && onSave ? <QuestEdit world={world} row={d} onSave={(changes) => onSave(q, changes)} onDone={() => setEditing(null)} hasSteps={!!guide?.guide?.steps.length} /> : (
         <>
-        {editable ? <div className="tm-muted">{markText(q)}{info ? ` · ${info}` : ''}</div> : info && <div className="tm-muted">{info}</div>}
+        {info && <div className="tm-muted">{info}</div>}
         {/* The reward with the quest's information at the top (user 2026-11-20). */}
         {/* Free text with the items as icons under it (user 2026-11-20); TibiaWiki's reward (today's Tibia) only for
             editors, as a reference. */}
