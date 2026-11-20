@@ -1635,6 +1635,20 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const v = view.current, s = anim.current.s, c = canvasRef.current;
     return { x: Math.floor(v.x + (p.x - c.width / 2) / s), y: Math.floor(v.y + (p.y - c.height / 2) / s), z: v.z };
   };
+  // The tile you see at canvas point p (right-click menu, position readout). Looking at a surface floor above 7, the
+  // floors below show through where it has nothing, each one tile further down-right; so it's the highest floor from
+  // the view's down to 7 with something on that spot (user 2026-11-20: quest steps added while looking at floor 1
+  // landed in the air on floor 1, 6 tiles off, and no route could reach them).
+  const seenTileAt = (p) => {
+    const t = tileAt(p), v = view.current, world = worldRef.current;
+    if (world && v.z < 7) {
+      for (let zz = v.z; zz <= 7; zz++) {
+        const x = t.x + (v.z - zz), y = t.y + (v.z - zz);
+        if (world.tile(x, y, zz) || (world.walk && world.speedAt(x, y, zz))) return { x, y, z: zz };
+      }
+    }
+    return t;
+  };
 
   const onPointerDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
@@ -1680,7 +1694,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const onPointerMove = (e) => {
     const p = toCanvas(e);
     if (!pointers.current.has(e.pointerId)) {
-      setHover(tileAt(p));
+      setHover(seenTileAt(p));
       const l = floorChangeAtPoint(p);
       setHoverLink(l);
       if (e.pointerType === 'mouse') e.currentTarget.style.cursor = stepAtPoint(p) || npcAtPoint(p) || searchedAtPoint(p) || questAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
@@ -1895,7 +1909,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           onPointerLeave={() => { setHover(null); setHoverLink(null); }}
           onContextMenu={(e) => {
             e.preventDefault();
-            const r = wrapRef.current.getBoundingClientRect(), t = tileAt(toCanvas(e));
+            const r = wrapRef.current.getBoundingClientRect(), t = seenTileAt(toCanvas(e));
             setMenu({ x: e.clientX - r.left, y: e.clientY - r.top, tile: [t.x, t.y, t.z] });
           }}
         />

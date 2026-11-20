@@ -117,6 +117,7 @@ Each slice adds something you can use on its own (user: small slices of function
   - Drawn under the panel's route as plain gold lines on the floor you look at (surface legs also from the other surface floors, fainter): the leg to the step you're on with a black edge, legs still to do at 55 %, done legs at 25 %. Floor changes and boat arcs are only drawn for the leg in the Route panel. The leg that's in the panel isn't drawn twice.
   - In the guide: "Route: 4 min 10 s · Show route" under the checked count (" + …" while legs are still being searched), and each step's time on its row (orange "no route" with the reason in its tooltip). Clicking a time puts that leg into the Route panel.
   - The panel itself still offers fastest and cheapest for the leg it shows (it's the normal Route panel).
+  - **Why no route showed (user, 2026-11-20):** the Paradox Tower steps were added while looking at floor 1, and the right-click menu took the floor you look at, so they were saved in the air on floor 1, 6 tiles off the ground you clicked; the router couldn't start there. Fixed: the right-click menu and the position readout now take the tile you see (from the view's floor down to 7, the highest one with something on that spot). The 7 saved steps need moving (one-off SQL).
 
 ### 13f. Quest dialogs
 - In a talk step, build the dialog by clicking through the NPC's keywords from 13a, in a wider pop-out window.
