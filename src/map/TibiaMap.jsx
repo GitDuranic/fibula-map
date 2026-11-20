@@ -599,6 +599,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   useEffect(() => {
     if (markQ && !guides[markQ.db.id]) loadGuide(markQ);
   }, [markQ, guides, loadGuide]);
+  const questNpcs = useRef(new Set()); // the NPCs in the guide's Talk steps (lower case): a click opens the conversation
   const stepMarks = useRef(null); // { quest, marks: [{ step, n, pos, state: 'cur' | 'done' | 'todo' }] }
   const markAt = markQ ? atOf(markQ.db.id) : null;
   useEffect(() => {
@@ -614,6 +615,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       });
       stepMarks.current = { quest: markQ, marks };
     }
+    questNpcs.current = new Set((markQ && markGuide?.steps || []).filter((t) => t.kind === 'talk' && t.npc).map((t) => t.npc.toLowerCase()));
     redraw();
   }, [markQ, markGuide, markAt]); // eslint-disable-line react-hooks/exhaustive-deps
   const [locNote, setLocNote] = useState(null); // a failed save, shown under the search
@@ -1570,6 +1572,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     redraw();
   }, [redraw]); // eslint-disable-line react-hooks/exhaustive-deps
   const closeQuests = () => { setQuestsOpen(false); selectQuest(null); };
+  // A Talk step's NPC (13f-0b): go to it, its window and its conversation.
+  const talkTo = (n) => { jump({ x: n.p[0], y: n.p[1], z: n.p[2] }); selectNpc(n); openTalk(n); };
   // The development tools (slice 12 spot editing, named locations; only on the dev server) show only to a logged-in
   // editor (user 2026-11-20: players should see a clean quest panel).
   const devTools = !!login.editor;
@@ -1754,11 +1758,19 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       // ladder leads to, else close.
       // A guide step marker (13d-2) is on top of everything: it opens the guide's quest.
       const st = stepAtPoint(toCanvas(e));
-      if (st) { const q = stepMarks.current.quest; if (selectedQuest.current?.quest !== q) selectQuest({ quest: q, i: null }); return; }
+      if (st) {
+        const q = stepMarks.current.quest;
+        if (selectedQuest.current?.quest !== q) selectQuest({ quest: q, i: null });
+        // A Talk step's marker sits on its NPC: open the conversation too (13f-0b).
+        const sn = st.step.kind === 'talk' && st.step.npc && worldRef.current.npcs?.find((x) => x.n.toLowerCase() === st.step.npc.toLowerCase());
+        if (sn) { selectNpc(sn); openTalk(sn); }
+        return;
+      }
       const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p), qc = !n && !sm && questAtPoint(p);
       const m = !n && !sm && !qc && monsterAtPoint(p);
       const dr = !n && !sm && !qc && !m && doorAtPoint(p), l = !n && !sm && !qc && !m && !dr && floorChangeAtPoint(p);
-      if (n) selectNpc(n);
+      // An NPC of the quest you're on opens its conversation straight away (13f-0b, user); others their window.
+      if (n) { selectNpc(n); if (questNpcs.current.has(n.n.toLowerCase())) openTalk(n); }
       else if (qc) selectQuest(qc);
       else if (sm) {
         // A searched monster: on another floor, go to it there (Back returns); then its window.
@@ -1772,7 +1784,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         jump({ x: l[3], y: l[4], z: l[5] }, { zoom: view.current.zoom });
       }
       else if (l) { setHoverLink(null); setFloor(l[5]); }
-      else { selectNpc(null); selectMonster(null); selectQuest(null); selectDoor(dr || null); }
+      else { selectNpc(null); selectMonster(null); selectDoor(dr || null); }
       return;
     }
     if (d && performance.now() - d.t < 80) {
@@ -1914,7 +1926,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           for steps and dialogs). Open until closed; the map gets narrower. */}
       {questsOpen && (
         <div className="tm-side tm-left" style={{ zoom: uiScale / dpr }}>
-          {world && ready && (
+          {world && ready && !questSel && (
             <QuestList
               world={world} dev={devTools && !!world.questEditable} selected={questSel?.quest} onQuest={onQuest} onPick={(q) => goToQuest(q, 0)} onClose={closeQuests}
               login={dbCfg ? login : null} onLogIn={() => logIn(dbCfg)} onLogOut={() => logOut(dbCfg)}
@@ -1931,8 +1943,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
                 legs: legInfo?.quest.db.id === questSel.quest.db.id ? legInfo : null,
                 // "Route here": the Route panel's To becomes the step (your own From stays), only when asked (13e).
                 onRouteTo: (label, pos) => updateRoute({ to: { label: label.slice(0, 60), pos } }),
+              onTalk: talkTo,
               } : null}
-              onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
+              onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={closeQuests} onBack={() => selectQuest(null)}
             />
           )}
         </div>

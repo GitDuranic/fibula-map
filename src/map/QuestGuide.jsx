@@ -2,11 +2,54 @@
 // (the tick moves the guide on; it never moves by itself), go Back a step or start over; their place is kept in
 // the browser. Clicking a step goes to its spot. Editors also add, change, reorder (drag) and delete steps, tick
 // each one as checked, and add, rename and delete segments.
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ItemIcon } from './NpcWindow.jsx';
+import { MonsterIcon } from './MonsterWindow.jsx';
 import { ItemPicker } from './QuestWindow.jsx';
 import { KINDS, stepPos, stepTitle, currentIndex } from './engine/questguide.js';
 import { fmtTime } from './RoutePanel.jsx';
+
+// An NPC's outfit, fitted into a 32x32 slot like an item icon (13f-0b).
+function NpcIcon({ world, npc }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const ctx = ref.current?.getContext('2d'), img = npc.img;
+    if (!ctx) return;
+    ctx.clearRect(0, 0, 32, 32);
+    if (!img || !world.npcSheet) return;
+    const sc = Math.min(1, 32 / Math.max(img[2], img[3]));
+    const w = img[2] * sc, h = img[3] * sc;
+    ctx.imageSmoothingEnabled = sc < 1;
+    ctx.drawImage(world.npcSheet, img[0], img[1], img[2], img[3], 32 - w, 32 - h, w, h);
+  }, [world, npc]);
+  return <canvas ref={ref} className="tm-icon" width={32} height={32} />;
+}
+
+// Game sprites for steps without an NPC, monster or item of their own (13f-0b, user: authentic icons).
+const MAP_ICON = 2822, SCROLL_ICON = 2815;
+
+// What a step's card shows (13f-0b): { icon, title, text, npc (a Talk step's NPC), items (Get, shown under the text) }.
+// Talk / Kill / Get: the NPC, monster or items are the title and the step's text goes below; Go / Note: the text is
+// the title.
+function stepCard(world, t) {
+  const lower = (x) => (x || '').toLowerCase();
+  if (t.kind === 'talk') {
+    const npc = t.npc && world.npcs?.find((m) => lower(m.n) === lower(t.npc));
+    return { npc, icon: npc ? <NpcIcon world={world} npc={npc} /> : <ItemIcon world={world} id={SCROLL_ICON} count={1} />, title: t.npc || 'Talk', text: t.text };
+  }
+  if (t.kind === 'kill') {
+    const k = t.monster ? (world.monKinds || []).findIndex((m) => lower(m.n) === lower(t.monster)) : -1;
+    return { icon: k >= 0 ? <MonsterIcon world={world} kind={k} /> : <ItemIcon world={world} id={SCROLL_ICON} count={1} />, title: t.monster ? `Kill ${t.monster}` : 'Kill', text: t.text };
+  }
+  if (t.kind === 'get') {
+    const [id, n] = t.items[0] || [];
+    return {
+      icon: <ItemIcon world={world} id={id || SCROLL_ICON} count={id ? n : 1} />,
+      title: stepTitle(world, { ...t, text: '' }), text: t.text, items: t.items.length > 1 ? t.items : null,
+    };
+  }
+  return { icon: <ItemIcon world={world} id={t.kind === 'go' ? MAP_ICON : SCROLL_ICON} count={1} />, title: stepTitle(world, t), text: null };
+}
 
 // The editors' form for one step. onSave(changes), onDelete(), onDone().
 function StepEdit({ world, step, onSave, onDelete, onDone }) {
@@ -83,11 +126,13 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
 // legs (13e, only for the guide on the map): { byStep: { [step id]: { time, show() } | { error, locked } | { busy } },
 // total, all (every leg found), show() } for the walk to each step of the current segment (show: fit the view to it).
 // onRouteTo(label, pos): the step you're on as the Route panel's To (only when you ask; the guide's route is separate).
-export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onRouteTo }) {
+// onTalk(npc): open that NPC's conversation (going to it), from a Talk step's icon or name (13f-0b).
+export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onRouteTo, onTalk }) {
   const [open, setOpen] = useState({}); // segment id -> shown (default: the segment you're on; every one for editors)
   const [drag, setDrag] = useState(null); // the step being dragged (id)
   const [renaming, setRenaming] = useState(null); // { id, name }
   const [err, setErr] = useState(null);
+  const [more, setMore] = useState({}); // step id -> long text shown in full
   if (error) return <div className="tm-section"><div className="tm-muted">Guide not reachable: {error}</div></div>;
   if (!guide) return <div className="tm-section"><div className="tm-muted">Loading the guide…</div></div>;
   if (guide.missing && !ed) return null; // database step 3 not run yet
@@ -108,6 +153,7 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
     if (drag != null) tryEd(() => ed.moveStep(drag, segId, beforeId));
     setDrag(null);
   };
+  const card = (t) => stepCard(world, t);
   let n = 0;
   return (
     <div className="tm-section tm-guide">
@@ -152,47 +198,53 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
             {s.steps.map((t) => {
               const i = n++;
               if (!shown) return null;
-              const pos = stepPos(world, t), done = i < cur;
+              const pos = stepPos(world, t), done = i < cur, c = card(t);
+              const l = legs?.byStep[t.id];
+              const why = l?.locked?.length ? `Locked doors are in the way: ${l.locked.map((d) => (d.key ? `key ${d.key}` : `a door at ${d.p.join(', ')}`)).join(', ')}` : l?.error;
+              const long = c.text && c.text.length > 90;
               return (
                 <div
-                  key={t.id} className={`tm-step${i === cur ? ' tm-step-cur' : ''}${done ? ' tm-step-done' : ''}${drag === t.id ? ' tm-step-drag' : ''}`}
+                  key={t.id} className={`tm-step tm-step-card${i === cur ? ' tm-step-cur' : ''}${done ? ' tm-step-done' : ''}${drag === t.id ? ' tm-step-drag' : ''}`}
                   draggable={!!ed && editStep !== t.id} onDragStart={() => setDrag(t.id)} onDragEnd={() => setDrag(null)}
                   onDragOver={ed ? (e) => e.preventDefault() : undefined} onDrop={ed ? drop(s.id, t.id) : undefined}
                 >
                   <div className="tm-step-row">
                     <input type="checkbox" checked={done} onChange={(e) => go(e.target.checked ? i + 1 : i)} title={done ? 'Not done yet' : 'Done: on to the next step'} />
                     <button
-                      type="button" className="tm-step-main" onClick={() => pos && onGo(pos)}
-                      title={pos ? `Go to ${pos.join(', ')}` : t.source ? `From: ${t.source}` : undefined}
-                    >
-                      <span className="tm-step-num">{i + 1}.</span>
-                      <span className={`tm-step-kind tm-kind-${t.kind}`}>{KINDS[t.kind]}</span>
-                      <span className="tm-step-text">{stepTitle(world, t)}</span>
-                    </button>
-                    {legs?.byStep[t.id] && (() => {
-                      const l = legs.byStep[t.id];
-                      const why = l.locked?.length ? `Locked doors are in the way: ${l.locked.map((d) => (d.key ? `key ${d.key}` : `a door at ${d.p.join(', ')}`)).join(', ')}` : l.error;
-                      if (l.busy) return <span className="tm-step-leg tm-muted" title="Finding the way from the step before">…</span>;
-                      if (l.error) return <span className="tm-step-leg tm-step-leg-err" title={why}>no route</span>;
-                      return (
-                        <button type="button" className="tm-link tm-step-leg" onClick={l.show} title="Walking time from the step before (fastest way). Click: show this leg">
-                          {fmtTime(l.time)}
-                        </button>
-                      );
-                    })()}
-                    {i === cur && pos && onRouteTo && (
-                      <button type="button" className="tm-link tm-step-leg" onClick={() => onRouteTo(`${i + 1}. ${stepTitle(world, t)}`, pos)} title="Plan a route from where you are (Route panel) to this step">route here</button>
-                    )}
-                    {!t.checked && <span className="tm-step-unchecked" title="Not checked yet: may be wrong">•</span>}
-                    {ed && editStep !== t.id && <button type="button" className="tm-link" onClick={() => setEditStep(t.id)} title="Change this step">edit</button>}
-                  </div>
-                  {t.kind === 'get' && t.items.length > 0 && t.text && (
-                    <div className="tm-step-items">
-                      {t.items.map(([id, c], j) => <div className="tm-slot" key={j} title={world.itemName(id)}><ItemIcon world={world} id={id} count={c} /></div>)}
+                      type="button" className="tm-slot tm-step-icon" onClick={() => (c.npc && onTalk ? onTalk(c.npc) : pos && onGo(pos))}
+                      title={c.npc ? `Talk to ${c.npc.n}: open the conversation` : pos ? `Go to ${pos.join(', ')}` : KINDS[t.kind]}
+                    >{c.icon}</button>
+                    <div className="tm-step-body">
+                      <div className="tm-step-head">
+                        <span className="tm-step-num">{i + 1}.</span>
+                        <button
+                          type="button" className="tm-step-title" onClick={() => (c.npc && onTalk ? onTalk(c.npc) : pos && onGo(pos))}
+                          title={c.npc ? `Talk to ${c.npc.n}: open the conversation` : pos ? `Go to ${pos.join(', ')}` : t.source ? `From: ${t.source}` : undefined}
+                        >{c.title}</button>
+                        {!t.checked && <span className="tm-step-unchecked" title="Not checked yet: may be wrong">•</span>}
+                        {ed && editStep !== t.id && <button type="button" className="tm-link" onClick={() => setEditStep(t.id)} title="Change this step">edit</button>}
+                      </div>
+                      {c.text && (
+                        <div className={`tm-step-text${long && !more[t.id] ? ' tm-step-clamp' : ''}`} onClick={() => pos && onGo(pos)}>{c.text}</div>
+                      )}
+                      {long && <button type="button" className="tm-link tm-step-more" onClick={() => setMore({ ...more, [t.id]: !more[t.id] })}>{more[t.id] ? 'less' : 'more'}</button>}
+                      {c.items && (
+                        <div className="tm-step-items">
+                          {c.items.map(([id, n2], j) => <div className="tm-slot" key={j} title={world.itemName(id)}><ItemIcon world={world} id={id} count={n2} /></div>)}
+                        </div>
+                      )}
+                      {(l?.error || (i === cur && pos && onRouteTo)) && (
+                        <div className="tm-step-foot">
+                          {l?.error && <span className="tm-step-leg-err" title={why}>no route from the step before</span>}
+                          {i === cur && pos && onRouteTo && (
+                            <button type="button" className="tm-link" onClick={() => onRouteTo(`${i + 1}. ${stepTitle(world, t)}`, pos)} title="Plan a route from where you are (Route panel) to this step">route here</button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                   {ed && editStep === t.id && (
-                    <StepEdit world={world} step={t} onSave={(c) => ed.saveStep(t.id, c)} onDelete={() => ed.deleteStep(t.id)} onDone={() => setEditStep(null)} />
+                    <StepEdit world={world} step={t} onSave={(ch) => ed.saveStep(t.id, ch)} onDelete={() => ed.deleteStep(t.id)} onDone={() => setEditStep(null)} />
                   )}
                 </div>
               );

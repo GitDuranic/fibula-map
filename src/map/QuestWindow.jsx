@@ -95,7 +95,8 @@ const markText = (q) => (!q.onList ? 'Not on your Fibula list' : q.mark ? '✅ o
 // onQuest: the quest you're on (name) and setOn(name | null) for "I'm on this quest" (slice 13b).
 // onSave(quest, changes): an editor is logged in (13c), so the quest's database row can be edited.
 // guide: the props for QuestGuide (13d) when this quest has a database row, else null.
-export default function QuestWindow({ world, chest, editable, onEdit, onGo, onItem, onClose, onQuest, setOn, onSave, guide }) {
+// onBack: back to the quest list (the quest panel shows the list OR a quest, 13f-0b).
+export default function QuestWindow({ world, chest, editable, onEdit, onGo, onItem, onClose, onBack, onQuest, setOn, onSave, guide }) {
   const [editing, setEditing] = useState(null); // the quest whose form is open (13c)
   const q = chest.quest, spot = chest.i == null ? null : q.chests[chest.i];
   const editSpot = (fn) => onEdit(q, (raw) => fn(raw.spots[chest.i]), chest.i);
@@ -107,6 +108,7 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
   return (
     <div className="tm-panel tm-window tm-quest">
       <div className="tm-window-title">
+        {onBack && <button type="button" className="tm-link tm-quest-back" onClick={onBack} title="Back to all quests">◂ All quests</button>}
         <span className="tm-window-name">{q.n}</span>
         <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>
       </div>
