@@ -5,6 +5,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ItemIcon } from './NpcWindow.jsx';
 import { MonsterIcon } from './MonsterWindow.jsx';
+import DialogBuilder from './DialogBuilder.jsx';
 import { ItemPicker } from './QuestWindow.jsx';
 import { KINDS, CHEST_ICON, stepPos, stepTitle, currentIndex } from './engine/questguide.js';
 import { fmtTime } from './RoutePanel.jsx';
@@ -24,6 +25,8 @@ function NpcIcon({ world, npc }) {
   }, [world, npc]);
   return <canvas ref={ref} className="tm-icon" width={32} height={32} />;
 }
+
+const COPIED_KEY = 'tm-dialog-copied';
 
 // Game sprites for steps without an NPC, monster or item of their own (13f-0b, user: authentic icons).
 const MAP_ICON = 2822, SCROLL_ICON = 2815;
@@ -57,8 +60,11 @@ function stepCard(world, t) {
 function StepEdit({ world, step, onSave, onDelete, onDone }) {
   const [f, setF] = useState(() => ({
     kind: step.kind, text: step.text || '', npc: step.npc || '', monster: step.monster || '', items: step.items || [], checked: step.checked,
-    object: step.object ?? null,
+    object: step.object ?? null, dialog: step.dialog || [],
   }));
+  const hasDialog = step.dialog !== undefined; // database step 7 run (0007_map_quest_step_dialogs.sql)
+  const [building, setBuilding] = useState(false); // the dialog builder is open (13f-1)
+  const formNpc = f.npc.trim() && world.npcs?.find((m) => m.n.toLowerCase() === f.npc.trim().toLowerCase());
   const hasReward = step.object !== undefined; // database step 6 run (0006_map_quest_reward_steps.sql)
   const withItems = f.kind === 'get' || f.kind === 'reward';
   const [busy, setBusy] = useState(false);
@@ -72,6 +78,7 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
     kind: f.kind, text: f.text.trim() || null, npc: f.kind === 'talk' ? f.npc.trim() || null : null,
     monster: f.kind === 'kill' ? f.monster.trim() || null : null, items: withItems ? f.items : [], checked: f.checked,
     ...(hasReward ? { object: f.kind === 'reward' ? f.object : null } : {}),
+    ...(hasDialog ? { dialog: f.kind === 'talk' ? f.dialog : [] } : {}),
   }));
   return (
     <div className="tm-quest-edit tm-step-edit" onClick={(e) => e.stopPropagation()}>
@@ -86,6 +93,17 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
           <input className="tm-input" value={f.npc} onChange={set('npc')} list="tm-npc-names" maxLength={40} spellCheck={false} />
         </label>
       )}
+      {f.kind === 'talk' && (hasDialog ? (
+        <div className="tm-quest-field">Dialog
+          <div className="tm-muted">
+            {f.dialog.length ? f.dialog.map((l) => l.say).join(' › ') : 'None yet.'}
+          </div>
+          <button type="button" className="tm-btn" onClick={() => setBuilding(true)} disabled={!formNpc} title={formNpc ? "Click through the NPC's conversation" : 'Fill in an NPC first'}>Build dialog</button>
+          {building && formNpc && (
+            <DialogBuilder world={world} npc={formNpc} lines={f.dialog} onDone={(dialog) => { setF({ ...f, dialog }); setBuilding(false); }} onClose={() => setBuilding(false)} />
+          )}
+        </div>
+      ) : <div className="tm-quest-error">Run database step 7 (0007_map_quest_step_dialogs.sql) to add dialogs.</div>)}
       {f.kind === 'kill' && (
         <label className="tm-quest-field">Monster
           <input className="tm-input" value={f.monster} onChange={set('monster')} list="tm-monster-names" maxLength={40} spellCheck={false} />
@@ -149,6 +167,17 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
   const [renaming, setRenaming] = useState(null); // { id, name }
   const [err, setErr] = useState(null);
   const [more, setMore] = useState({}); // step id -> long text shown in full
+  // Dialog lines you copied (13f-1): { [step id]: [line index] }, kept in the browser; a copied line turns green,
+  // clicking it again unmarks it (without copying).
+  const [copied, setCopiedState] = useState(() => { try { return JSON.parse(localStorage.getItem(COPIED_KEY)) || {}; } catch { return {}; } });
+  const toggleCopied = (id, j, text) => {
+    const was = copied[id] || [], on = was.includes(j);
+    if (!on) navigator.clipboard?.writeText(text).catch(() => {});
+    const next = { ...copied, [id]: on ? was.filter((k) => k !== j) : [...was, j] };
+    if (!next[id].length) delete next[id];
+    setCopiedState(next);
+    try { localStorage.setItem(COPIED_KEY, JSON.stringify(next)); } catch { /* private mode */ }
+  };
   if (error) return <div className="tm-section"><div className="tm-muted">Guide not reachable: {error}</div></div>;
   if (!guide) return <div className="tm-section"><div className="tm-muted">Loading the guide…</div></div>;
   if (guide.missing && !ed) return null; // database step 3 not run yet
@@ -244,6 +273,18 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                         <div className={`tm-step-text${long && !more[t.id] ? ' tm-step-clamp' : ''}`} onClick={() => pos && onGo(pos)}>{c.text}</div>
                       )}
                       {long && <button type="button" className="tm-link tm-step-more" onClick={() => setMore({ ...more, [t.id]: !more[t.id] })}>{more[t.id] ? 'less' : 'more'}</button>}
+                      {t.kind === 'talk' && t.dialog?.length > 0 && (
+                        <ol className="tm-step-dialog" title="Click a line to copy it; click it again to unmark it">
+                          {t.dialog.map((l, j) => {
+                            const done = copied[t.id]?.includes(j);
+                            return (
+                              <li key={j}>
+                                <button type="button" className={`tm-say${done ? ' tm-copied' : ''}`} onClick={() => toggleCopied(t.id, j, l.say)}>{l.say}</button>
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      )}
                       {c.items && (
                         <div className="tm-step-items">
                           {c.items.map(([id, n2], j) => <div className="tm-slot" key={j} title={world.itemName(id)}><ItemIcon world={world} id={id} count={n2} /></div>)}

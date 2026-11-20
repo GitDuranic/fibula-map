@@ -5,13 +5,13 @@
 // Entries: see tools/lib/talk.js.
 import React, { useEffect, useState } from 'react';
 
-const sayText = (words) => words.map((w) => (w === '#' ? '<number>' : w)).join(' ');
+export const sayText = (words) => words.map((w) => (w === '#' ? '<number>' : w)).join(' ');
 
 // Does the text appear below an entry's own words (in its reply, what happens, or anything said after it)?
 const below = (e, q) => (e.r || '').toLowerCase().includes(q) || (e.x || []).some((x) => x.includes(q))
   || (e.n || []).some((n) => has(n, q));
 // ... or anywhere in it, its words included?
-const has = (e, q) => (e.k || []).some((w) => sayText(w).includes(q)) || below(e, q);
+export const has = (e, q) => (e.k || []).some((w) => sayText(w).includes(q)) || below(e, q);
 
 function copyText(text, done) {
   navigator.clipboard?.writeText(text).then(done, () => {});
