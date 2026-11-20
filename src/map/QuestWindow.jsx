@@ -42,12 +42,57 @@ export function ItemPicker({ world, placeholder, onPick }) {
   );
 }
 
+// The editors' form (slice 13c): name, level, area, rewards, notes and the checked status of a quest's database row.
+// onSave(changes) saves it (throws with a message when it can't).
+function QuestEdit({ row, onSave, onDone }) {
+  const [f, setF] = useState(() => ({
+    name: row.name, level: row.level == null ? '' : String(row.level), area: row.area || '', rewards: row.rewards || '',
+    notes: row.notes || '', checked: row.status === 'checked',
+  }));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
+  const save = async () => {
+    const name = f.name.trim();
+    if (!name) { setErr('The quest needs a name.'); return; }
+    const level = f.level.trim() === '' ? null : parseInt(f.level, 10);
+    if (level != null && !(level > 0 && level < 1000)) { setErr('Level: a number, or empty for none.'); return; }
+    const blank = (s) => s.trim() || null;
+    setBusy(true); setErr(null);
+    try {
+      await onSave({ name, level, area: blank(f.area), rewards: blank(f.rewards), notes: blank(f.notes), status: f.checked ? 'checked' : 'not checked' });
+      onDone();
+    } catch (e) { setErr(e.message || String(e)); setBusy(false); }
+  };
+  return (
+    <div className="tm-quest-edit">
+      <label className="tm-quest-field">Name<input className="tm-input" value={f.name} onChange={set('name')} maxLength={80} spellCheck={false} /></label>
+      <div className="tm-quest-fields">
+        <label className="tm-quest-field tm-quest-level">Level<input className="tm-input" value={f.level} onChange={set('level')} inputMode="numeric" maxLength={3} /></label>
+        <label className="tm-quest-field">Area<input className="tm-input" value={f.area} onChange={set('area')} maxLength={60} spellCheck={false} /></label>
+      </div>
+      <label className="tm-quest-field">Rewards<textarea className="tm-input" rows={3} value={f.rewards} onChange={set('rewards')} maxLength={500} /></label>
+      <label className="tm-quest-field">Notes<textarea className="tm-input" rows={3} value={f.notes} onChange={set('notes')} maxLength={2000} /></label>
+      <label className="tm-check" title="Someone went through this quest and the information is right (from slice 13d: when all its steps are checked)">
+        <input type="checkbox" checked={f.checked} onChange={set('checked')} /> Checked
+      </label>
+      {err && <div className="tm-quest-error">{err}</div>}
+      <div className="tm-quest-edit-buttons">
+        <button type="button" className="tm-btn" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+        <button type="button" className="tm-btn" onClick={onDone} disabled={busy}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 const markText = (q) => (!q.onList ? 'Not on your Fibula list' : q.mark ? '✅ on your list' : '⬜ on your list');
 
 // chest: a spot { p, id, items: [[item id, count, key?]], quest, i }, or { quest, i: null } for a quest without one.
 // onEdit(quest, change(raw), select spot index?): saves a change (see TibiaMap editQuest). onGo(spot): go to a spot.
 // onQuest: the quest you're on (name) and setOn(name | null) for "I'm on this quest" (slice 13b).
-export default function QuestWindow({ world, chest, editable, onEdit, onGo, onItem, onClose, onQuest, setOn }) {
+// onSave(quest, changes): an editor is logged in (13c), so the quest's database row can be edited.
+export default function QuestWindow({ world, chest, editable, onEdit, onGo, onItem, onClose, onQuest, setOn, onSave }) {
+  const [editing, setEditing] = useState(null); // the quest whose form is open (13c)
   const q = chest.quest, spot = chest.i == null ? null : q.chests[chest.i];
   const editSpot = (fn) => onEdit(q, (raw) => fn(raw.spots[chest.i]), chest.i);
   const d = q.db; // the quest database's row (13b), if there is one
@@ -62,6 +107,8 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
         <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>
       </div>
       <div className="tm-window-body">
+        {editing === q && d && onSave ? <QuestEdit row={d} onSave={(changes) => onSave(q, changes)} onDone={() => setEditing(null)} /> : (
+        <>
         {editable ? <div className="tm-muted">{markText(q)}{info ? ` · ${info}` : ''}</div> : info && <div className="tm-muted">{info}</div>}
         {d && d.status !== 'checked' && <div className="tm-quest-draft" title="Nobody has gone through this quest's guide yet: it may be wrong">Not checked yet</div>}
         {q.listed && setOn && (
@@ -70,6 +117,7 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
           >{isOn ? "I'm on this quest ✓" : "I'm on this quest"}</button>
         )}
         {d?.notes && <div className="tm-quest-notes">{d.notes}</div>}
+        {d && onSave && <button type="button" className="tm-btn tm-quest-follow" onClick={() => setEditing(q)} title="Change this quest (saved for everyone)">Edit</button>}
         {editable && (
           <label className="tm-check" title="You went through this quest on the map and its spots and items are right">
             <input type="checkbox" checked={q.checked} onChange={(e) => onEdit(q, (raw) => { raw.checked = e.target.checked; }, chest.i)} /> Checked
@@ -80,6 +128,8 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
           <div>{rewards || wiki || 'Not known'}</div>
           {rewards && wiki && <div className="tm-muted">TibiaWiki: {wiki}</div>}
         </div>
+        </>
+        )}
         <div className="tm-section">
           <div className="tm-section-title">Spots on the map ({q.chests.length})</div>
           {q.chests.length === 0 && <div className="tm-muted">None yet.{editable ? ' Right-click the map: "Add quest spot here".' : ''}</div>}

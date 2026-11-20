@@ -4,6 +4,7 @@
 // first spot).
 // In development (world.questEditable) the slice 12 checklist filters and columns stay, for checking spots.
 import React, { useState } from 'react';
+import { displayName } from './engine/questauth.js';
 
 const DEV_FILTERS = {
   all: ['All quests', (q) => q.listed],
@@ -18,7 +19,9 @@ const levelOf = (q) => (q.db ? q.db.level : q.level);
 const areaOf = (q) => (q.db ? q.db.area : q.area);
 const matches = (q, text) => [q.n, areaOf(q), rewardsOf(q)].some((s) => (s || '').toLowerCase().includes(text));
 
-export default function QuestList({ world, selected, onQuest, onPick, onClose }) {
+// login (13c): null without the quest database, else { user, editor }: a small line at the bottom to log in with
+// Discord (only the two editors can edit; anyone else who logs in is told so).
+export default function QuestList({ world, selected, onQuest, onPick, onClose, login, onLogIn, onLogOut }) {
   const [filter, setFilter] = useState('all');
   const [text, setText] = useState('');
   const dev = !!world.questEditable;
@@ -67,6 +70,18 @@ export default function QuestList({ world, selected, onQuest, onPick, onClose })
           {shown.map((q) => row(q))}
           {!shown.length && <div className="tm-muted">None.</div>}
         </div>
+        {login && (
+          <div className="tm-quest-login tm-muted">
+            {login.user ? (
+              <>
+                <span title={login.editor ? 'You can edit quests' : 'Only the quest editors can change quests'}>
+                  {displayName(login.user)}{login.editor ? ' · editor' : ' · not an editor'}
+                </span>
+                <button type="button" className="tm-link" onClick={onLogOut}>Log out</button>
+              </>
+            ) : <button type="button" className="tm-link" onClick={onLogIn} title="For the quest editors: log in with Discord">Editor login</button>}
+          </div>
+        )}
       </div>
     </div>
   );

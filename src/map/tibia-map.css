@@ -293,3 +293,18 @@
 .tm-quest-notes { margin-top: 4px; white-space: pre-wrap; }
 .tm-goto-tools { display: flex; gap: 4px; }
 .tm-goto-tools .tm-btn { flex: 1; }
+
+/* editors' login and quest form (slice 13c) */
+.tm-quest-login { flex: none; display: flex; gap: 6px; align-items: baseline; justify-content: space-between; margin-top: 4px; }
+.tm-link { background: none; border: 0; padding: 0; font: inherit; color: #a0a0a0; text-decoration: underline; cursor: pointer; }
+.tm-link:hover { color: #e0e0e0; }
+.tm-quest-edit { display: flex; flex-direction: column; gap: 4px; }
+.tm-quest-field { display: flex; flex-direction: column; gap: 1px; color: #a0a0a0; }
+.tm-quest-field .tm-input { width: 100%; box-sizing: border-box; }
+.tm-quest-field textarea.tm-input { height: auto; padding: 2px 3px; resize: vertical; font: inherit; }
+.tm-quest-fields { display: flex; gap: 4px; }
+.tm-quest-fields .tm-quest-field { flex: 1; min-width: 0; }
+.tm-quest-fields .tm-quest-level { flex: none; width: 42px; }
+.tm-quest-error { color: #e06060; }
+.tm-quest-edit-buttons { display: flex; gap: 4px; }
+.tm-quest-edit-buttons .tm-btn { flex: 1; }

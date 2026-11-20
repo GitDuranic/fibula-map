@@ -70,6 +70,13 @@ Each slice adds something you can use on its own (user: small slices of function
 - The planner's Discord login; only the two Discord IDs may edit.
 - Edit a quest's name, area, rewards and notes; every save goes into the history.
 - **Useful because:** you can already fix rewards for 7.2.
+- **Built (2026-11-20):**
+  - **Database step 2:** `supabase/migrations/0002_map_quest_editors.sql`. `map_is_editor()` checks the login's Discord ID in `auth.identities` (not `user_metadata`, which users can change themselves) against two hard-coded IDs; editors may update `map_quests` and read `map_quest_history`. Names may not be empty. Adding and deleting quests isn't in the map yet.
+  - **Login** (`src/map/engine/questauth.js`) works like the planner's: Discord through Supabase (PKCE), and `@supabase/supabase-js` is only downloaded when someone presses the login, comes back from Discord or was logged in before. It's now in package.json (same version as the planner's, so Ryndean's site already has it). Discord returns to the page without the map's place, so the `#x,y,z,zoom` is kept in sessionStorage over the login and put back.
+  - **Editor login** is a small link at the bottom of the quest list (only when the map has database settings); logged in it shows the Discord name with "· editor" or "· not an editor", and Log out. Players see only the link.
+  - **Edit** button in the quest window for editors: name, level, area, rewards, notes and a **Checked** tick (the quest's status; from 13d a quest is checked when all its steps are, so this tick is temporary). Save writes the row (the history trigger from step 1 keeps the old one) and the map uses the saved row straight away; a renamed quest you're on stays the one you're on. Errors (name taken, not an editor) show in the form.
+  - A renamed quest loses its slice 10/12 spots (they're matched by name) until 13i moves the spots to steps.
+  - Supabase's allowed redirect URLs must include the map's addresses (local test ports and the page on Ryndean's site).
 
 ### 13d. Steps and segments on the map
 - Segments and steps in the database (the "any order" group is in the data, not yet in the UI).

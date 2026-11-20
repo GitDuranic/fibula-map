@@ -1,6 +1,6 @@
 // Tibia Map: a Google Maps-style viewer of the Tibia 7.1 world, drawn with the real game sprites.
 // Props: dataUrl (where the converted map data lives), height (CSS height of the map), syncUrl (keep the view in the URL hash).
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
 import NpcTalk from './NpcTalk.jsx';
@@ -13,6 +13,7 @@ import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter } from './engine/router.js';
 import { drawText, textWidth } from './engine/text.js';
 import { questDbConfig, questOn, setQuestOn } from './engine/questdb.js';
+import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest } from './engine/questauth.js';
 import './tibia-map.css';
 
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
@@ -427,7 +428,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const mini = useRef(null); // where the minimap drew the world last: { ox, oy, sm }
   const worldRef = useRef(null);
   // x, y = centre in tiles (fractional); z; zoom = target step; cut = top layer drawn (floors above it are left out, 0 = all)
-  const view = useRef(withCut({ ...START, ...(syncUrl && readHash()) }));
+  // (the return from the editors' Discord login lost the place in the URL: put it back first, slice 13c)
+  const view = useRef(null);
+  if (!view.current) { if (syncUrl) restoreLoginHash(); view.current = withCut({ ...START, ...(syncUrl && readHash()) }); }
   const anim = useRef({ s: view.current.zoom, anchor: null }); // shown scale (animates to view.zoom)
   const frame = useRef(0);
   const viewBox = useRef(null); // the tile area on screen, from the last draw
@@ -490,6 +493,24 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const [questsOpen, setQuestsOpen] = useState(false); // the quest list (13b; the slice 12 checklist in development)
   const [onQuest, setOnQuestState] = useState(questOn); // "I'm on this quest" (13b), kept in the browser
   const setOnQuest = (name) => { setQuestOn(name); setOnQuestState(name); };
+  // The quest database's settings, and the editors' Discord login (13c): { user, editor } (editor: may edit quests).
+  const dbCfg = useMemo(() => questDbConfig({ url: supabaseUrl, key: supabaseKey }), [supabaseUrl, supabaseKey]);
+  const [login, setLogin] = useState({ user: null, editor: false });
+  useEffect(() => watchLogin(dbCfg, (user) => {
+    setLogin((l) => (l.user?.id === user?.id ? l : { user, editor: false }));
+    if (user) isEditor(dbCfg).then((editor) => setLogin((l) => (l.user?.id === user.id ? { user, editor } : l)));
+  }), [dbCfg]);
+  const [, setQuestRev] = useState(0); // bumped when a quest is saved (the world's quests changed in place)
+  // Saves an editor's changes to quest q's database row; the map uses the stored row straight away.
+  const saveDbQuest = async (q, changes) => {
+    const row = await saveQuest(dbCfg, q.db.id, changes);
+    if (onQuest === q.n && row.name !== q.n) setOnQuest(row.name);
+    Object.assign(q.db, row);
+    q.n = row.name;
+    worldRef.current?.buildSearch();
+    setQuestRev((r) => r + 1);
+    redraw();
+  };
   const [locNote, setLocNote] = useState(null); // a failed save, shown under the search
   // Named locations (the user's own, dev only): add or remove a name on a square through the dev server, then search
   // them right away.
@@ -1027,7 +1048,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   useEffect(() => {
     // "ready" belongs to this World only: React may run this twice (StrictMode in development, or a new dataUrl),
     // and a ready flag left over from the first one must not make the panel use the second one half-loaded.
-    const world = new World(dataUrl, () => redraw(), { questDb: questDbConfig({ url: supabaseUrl, key: supabaseKey }) });
+    const world = new World(dataUrl, () => redraw(), { questDb: dbCfg });
     worldRef.current = world;
     setReady(false);
     world.load().then(() => {
@@ -1041,7 +1062,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       viewChanged();
     }, (e) => { if (worldRef.current === world) setError(e.message); });
     return () => { worldRef.current = null; cancelAnimationFrame(frame.current); frame.current = 0; };
-  }, [dataUrl, supabaseUrl, supabaseKey, redraw, viewChanged]);
+  }, [dataUrl, dbCfg, redraw, viewChanged]);
 
   // A link pasted into the same tab (only the hash changes) moves the view there.
   useEffect(() => {
@@ -1755,11 +1776,15 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           />
         )}
         {questsOpen && world && ready && (
-          <QuestList world={world} selected={questSel?.quest} onQuest={onQuest} onPick={(q) => goToQuest(q, 0)} onClose={() => setQuestsOpen(false)} />
+          <QuestList
+            world={world} selected={questSel?.quest} onQuest={onQuest} onPick={(q) => goToQuest(q, 0)} onClose={() => setQuestsOpen(false)}
+            login={dbCfg ? login : null} onLogIn={() => logIn(dbCfg)} onLogOut={() => logOut(dbCfg)}
+          />
         )}
         {questSel && world && (
           <QuestWindow
             world={world} chest={questSel} editable={!!world.questEditable} onEdit={editQuest} onQuest={onQuest} setOn={setOnQuest}
+            onSave={login.editor ? saveDbQuest : null}
             onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
           />
         )}

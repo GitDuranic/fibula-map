@@ -407,6 +407,9 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 ### Slice 13b: quest list from the database (built 2026-11-19)
 - Quests live in Supabase (`map_quests` + `map_quest_history`, `supabase/migrations/0001_map_quests.sql`); the Quests button is for everyone now, with search and "I'm on this quest". Ryndean must pass `supabaseUrl` / `supabaseKey` to `<TibiaMap>` (same values as the planner). Details: `docs/brainstorm-quest-guides.md`, 13b.
 
+### Slice 13c: editing quests (built 2026-11-20)
+- The two editors log in with Discord (link at the bottom of the quest list) and get an Edit button in the quest window: name, level, area, rewards, notes, checked. Database step 2 (`supabase/migrations/0002_map_quest_editors.sql`) holds their Discord IDs. New npm import `@supabase/supabase-js` (already on Ryndean's site for the planner). Details: `docs/brainstorm-quest-guides.md`, 13c.
+
 ### Slice 13a: NPC conversations from the scripts (built 2026-11-19)
 - Every NPC's script as what you can say (copy buttons) and what it answers, conditions and effects in plain words, in a window that comes out of the NPC on the map (Conversation button in the NPC window); a folded tree that opens one path at a time. Details and the choices made: `docs/brainstorm-quest-guides.md`, 13a.
 
