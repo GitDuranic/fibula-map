@@ -3,7 +3,35 @@
 // what happens and its conditions) to the dialog and moves on to what you can say next, or back to the start when
 // the line has no follow-ups. Lines can be removed, and a line typed by hand added (for things not in the script).
 // The dialog is a copy of the lines: it stays as it was checked when the scripts change.
-// line: { say, reply?, fx?: [text], cond?: [text], free?: true }
+// line: { say, reply?, fx?: [text], cond?: [text], alts?: [alt], free?: true }
+// alt (13g, "if it goes wrong"): what else can happen at that point: the same words with other conditions
+// { cond, reply, fx }, or the NPC's answer to anything else you say there { other: true, reply, fx }.
+
+// The other outcomes when you say words w at a point of the conversation (entries: that level), chosen: the entry
+// the dialog follows.
+function altsFor(entries, chosen, w) {
+  const said = sayText(w);
+  return entries
+    .filter((o) => o !== chosen && (o.k ? o.k.some((ow) => sayText(ow) === said) : !o.s))
+    .map((o) => ({ ...(o.k ? {} : { other: true }), ...(o.c?.length ? { cond: o.c } : {}), ...(o.r ? { reply: o.r } : {}), ...(o.x?.length ? { fx: o.x } : {}) }))
+    .filter((a) => a.reply || a.fx);
+}
+
+// The muted "if it goes wrong" lines under a dialog line (13g).
+export function Alts({ alts, npcName }) {
+  if (!alts?.length) return null;
+  return (
+    <div className="tm-dialog-alts">
+      {alts.map((a, i) => (
+        <div key={i}>
+          <span className="tm-dialog-alt-when">{a.other ? 'If you say anything else' : `If ${(a.cond || ['other conditions']).join(', ')}`}:</span>
+          {a.reply && <> {npcName}: {a.reply}</>}
+          {a.fx && <span className="tm-dialog-alt-fx"> ({a.fx.join(', ')})</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
 import React, { useEffect, useState } from 'react';
 import { sayText, has } from './NpcTalk.jsx';
 
@@ -28,7 +56,8 @@ export default function DialogBuilder({ world, npc, lines: start, onDone, onClos
   const shown = here.filter((e) => e.k && (!query || has(e, query))); // "anything else" lines can't be said
   const add = (e, j) => {
     const cond = [...(e.c || []), ...(e.kc?.[j] || [])];
-    setLines([...lines, { say: sayText(e.k[j]), ...(e.r ? { reply: e.r } : {}), ...(e.x?.length ? { fx: e.x } : {}), ...(cond.length ? { cond } : {}) }]);
+    const alts = altsFor(here, e, e.k[j]);
+    setLines([...lines, { say: sayText(e.k[j]), ...(e.r ? { reply: e.r } : {}), ...(e.x?.length ? { fx: e.x } : {}), ...(cond.length ? { cond } : {}), ...(alts.length ? { alts } : {}) }]);
     setLevel(e.n?.length ? e.n : null);
     setQ('');
   };
@@ -81,6 +110,7 @@ export default function DialogBuilder({ world, npc, lines: start, onDone, onClos
                 {l.cond && <div className="tm-talk-cond">{l.cond.join(', ')}</div>}
                 {l.reply && <div className="tm-talk-reply">{l.reply}</div>}
                 {l.fx && <div className="tm-talk-fx">{l.fx.join(', ')}</div>}
+                <Alts alts={l.alts} npcName={npc?.n || 'NPC'} />
               </li>
             ))}
           </ol>
@@ -123,6 +153,7 @@ export function DialogView({ npcName, lines, copied, onCopy, full, onFull, onClo
               {full && l.cond && <div className="tm-talk-cond">only {l.cond.join(', ')}</div>}
               {full && l.reply && <div className="tm-talk-reply"><b>{npcName}:</b> {l.reply}</div>}
               {full && l.fx && <div className="tm-talk-fx">{l.fx.join(', ')}</div>}
+              {full && <Alts alts={l.alts} npcName={npcName} />}
             </li>
           ))}
         </ol>

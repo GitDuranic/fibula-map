@@ -388,3 +388,7 @@
 .tm-dialog-read > li { padding-bottom: 3px; }
 .tm-dialog-read .tm-say { font-size: 12px; }
 .tm-dialog-mine > li { padding-bottom: 0; }
+/* "if it goes wrong" (13g): muted, under the line it belongs to */
+.tm-dialog-alts { margin: 2px 0 0 6px; padding-left: 6px; border-left: 1px solid #5a5a5a; color: #8a8a8a; font-size: 10px; }
+.tm-dialog-alt-when { color: #a08a6a; }
+.tm-dialog-alt-fx { color: #8a7a50; }

@@ -140,6 +140,7 @@ Each slice adds something you can use on its own (user: small slices of function
 ### 13g. "If it goes wrong" replies
 - Muted lines in the full conversation: what the NPC says when an item is missing or a part is already done, and what that means.
 - **Useful because:** players can see why an NPC doesn't react.
+- **Built (2026-11-21, not yet browser-tested):** when the builder adds a line it also copies the other outcomes at that point of the script into the line (`alts`): the same words with other conditions (Riddler's "yes" when quest 212 is already 1) and the NPC's answer to anything else said there ("WRONG!", ends the conversation, teleports you). Shown muted under the line (grey, a thin bar on the left) in the full conversation and in the builder: "If quest 212 is 1: Riddler: …" / "If you say anything else: Riddler: WRONG! (…)". Only mode "Only my lines" hides them. Dialogs built before this have no alts: remove and add their lines again in the builder. Conditions still read as the scripts' numbers ("quest 212 is 1") until quest values get names.
 
 ### 13h. Bring list
 - Per segment, worked out from the data: NPC items, keys for doors on the route, rope and shovel.
