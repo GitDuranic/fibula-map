@@ -18,22 +18,23 @@ function altsFor(entries, chosen, w) {
 }
 
 // The muted "if it goes wrong" lines under a dialog line (13g).
-export function Alts({ alts, npcName }) {
+// raw: an editor (quest values shown); players get "another point of the quest" for an alt that only depends on them.
+export function Alts({ alts, npcName, raw }) {
   if (!alts?.length) return null;
   return (
     <div className="tm-dialog-alts">
       {alts.map((a, i) => (
         <div key={i}>
-          <span className="tm-dialog-alt-when">{a.other ? 'If you say anything else' : `If ${(a.cond || ['other conditions']).join(', ')}`}:</span>
+          <span className="tm-dialog-alt-when">{a.other ? 'If you say anything else' : forPlayers(a.cond, raw) ? `If ${forPlayers(a.cond, raw).join(', ')}` : a.cond ? "If you're at another point of the quest" : 'Otherwise'}:</span>
           {a.reply && <> {npcName}: {a.reply}</>}
-          {a.fx && <span className="tm-dialog-alt-fx"> ({a.fx.join(', ')})</span>}
+          {forPlayers(a.fx, raw) && <span className="tm-dialog-alt-fx"> ({forPlayers(a.fx, raw).join(', ')})</span>}
         </div>
       ))}
     </div>
   );
 }
 import React, { useEffect, useState } from 'react';
-import { sayText, has } from './NpcTalk.jsx';
+import { sayText, has, forPlayers } from './NpcTalk.jsx';
 
 // npc: the NPC ({ n, t }); lines: the dialog so far; onDone(lines): keep these (the step form saves them);
 // onClose(): leave without keeping.
@@ -110,7 +111,7 @@ export default function DialogBuilder({ world, npc, lines: start, onDone, onClos
                 {l.cond && <div className="tm-talk-cond">{l.cond.join(', ')}</div>}
                 {l.reply && <div className="tm-talk-reply">{l.reply}</div>}
                 {l.fx && <div className="tm-talk-fx">{l.fx.join(', ')}</div>}
-                <Alts alts={l.alts} npcName={npc?.n || 'NPC'} />
+                <Alts alts={l.alts} npcName={npc?.n || 'NPC'} raw />
               </li>
             ))}
           </ol>
@@ -133,7 +134,7 @@ export default function DialogBuilder({ world, npc, lines: start, onDone, onClos
 // conversation (your lines, the NPC's answers, what happens and the conditions) or only your lines. Clicking a line
 // copies it and marks it green (the same marks as on the step's card); clicking a green line unmarks it.
 // lines: the step's dialog; copied: the marked line indexes; onCopy(index): copy / unmark; full / onFull: the mode.
-export function DialogView({ npcName, lines, copied, onCopy, full, onFull, onClose }) {
+export function DialogView({ npcName, lines, copied, onCopy, full, onFull, onClose, raw }) {
   return (
     <div className="tm-panel tm-window tm-dialog-build tm-dialog-view" onClick={(e) => e.stopPropagation()}>
       <div className="tm-window-title">
@@ -150,10 +151,10 @@ export function DialogView({ npcName, lines, copied, onCopy, full, onFull, onClo
           {lines.map((l, i) => (
             <li key={i}>
               <button type="button" className={`tm-say${copied.includes(i) ? ' tm-copied' : ''}`} onClick={() => onCopy(i)} title={copied.includes(i) ? 'Unmark' : 'Copy'}>{l.say}</button>
-              {full && l.cond && <div className="tm-talk-cond">only {l.cond.join(', ')}</div>}
+              {full && forPlayers(l.cond, raw) && <div className="tm-talk-cond">only {forPlayers(l.cond, raw).join(', ')}</div>}
               {full && l.reply && <div className="tm-talk-reply"><b>{npcName}:</b> {l.reply}</div>}
-              {full && l.fx && <div className="tm-talk-fx">{l.fx.join(', ')}</div>}
-              {full && <Alts alts={l.alts} npcName={npcName} />}
+              {full && forPlayers(l.fx, raw) && <div className="tm-talk-fx">{forPlayers(l.fx, raw).join(', ')}</div>}
+              {full && <Alts alts={l.alts} npcName={npcName} raw={raw} />}
             </li>
           ))}
         </ol>

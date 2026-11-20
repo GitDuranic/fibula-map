@@ -296,6 +296,7 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                       )}
                       {viewing === t.id && (
                         <DialogView
+                          raw={!!ed}
                           npcName={t.npc || 'the NPC'} lines={t.dialog} copied={copied[t.id] || []} full={full} onFull={setFull}
                           onCopy={(j) => toggleCopied(t.id, j, t.dialog[j].say)} onClose={() => setViewing(null)}
                         />

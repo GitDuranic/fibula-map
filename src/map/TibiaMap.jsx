@@ -1991,7 +1991,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           }}
         />
         {!ready && <div className="tm-loading">Loading map...</div>}
-        {talkNpc && world && <NpcTalk world={world} npc={talkNpc} elRef={talkEl} zoom={uiScale / dpr} onResize={redraw} onClose={() => openTalk(null)} />}
+        {talkNpc && world && <NpcTalk world={world} npc={talkNpc} raw={!!login.editor} elRef={talkEl} zoom={uiScale / dpr} onResize={redraw} onClose={() => openTalk(null)} />}
         {menu && (
           <>
             <div className="tm-menu-catcher" onPointerDown={() => setMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMenu(null); }} />

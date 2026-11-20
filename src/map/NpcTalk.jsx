@@ -11,6 +11,11 @@ export const sayText = (words) => words.map((w) => (w === '#' ? '<number>' : w))
 const below = (e, q) => (e.r || '').toLowerCase().includes(q) || (e.x || []).some((x) => x.includes(q))
   || (e.n || []).some((n) => has(n, q));
 // ... or anywhere in it, its words included?
+// The server's quest values ("quest 212 is 0", "quest 212 becomes 1": your progress, stored on the character) mean
+// nothing to players (user 2026-11-21): shown only to editors (raw). Returns the list without them, or null if empty.
+const QUEST_VALUE = /^quest d+/;
+export const forPlayers = (list, raw) => { if (!list?.length) return null; const out = raw ? list : list.filter((t) => !QUEST_VALUE.test(t)); return out.length ? out : null; };
+
 export const has = (e, q) => (e.k || []).some((w) => sayText(w).includes(q)) || below(e, q);
 
 function copyText(text, done) {
@@ -18,7 +23,7 @@ function copyText(text, done) {
 }
 
 // One level of the tree. q: the filter text (lower case): entries that hold it open by themselves.
-function TalkLevel({ entries, q }) {
+function TalkLevel({ entries, q, raw }) {
   const [open, setOpen] = useState(null);
   const [copied, setCopied] = useState(null); // "entry:way" just copied
   return entries.map((e, i) => {
@@ -42,7 +47,7 @@ function TalkLevel({ entries, q }) {
                   type="button" className={`tm-say${copied === `${i}:${j}` ? ' tm-copied' : ''}`}
                   onClick={() => say(w, j)} title={`Say "${sayText(w)}" (copies it)`}
                 >{sayText(w)}</button>
-                {e.kc?.[j]?.length > 0 && <span className="tm-talk-cond"> ({e.kc[j].join(', ')})</span>}
+                {forPlayers(e.kc?.[j], raw) && <span className="tm-talk-cond"> ({forPlayers(e.kc[j], raw).join(', ')})</span>}
               </React.Fragment>
             )) : (
               <button type="button" className="tm-talk-else" onClick={toggle}>
@@ -50,14 +55,14 @@ function TalkLevel({ entries, q }) {
               </button>
             )}
             {e.s === 'greet' && <span className="tm-talk-cond"> (greeting)</span>}
-            {e.c && <span className="tm-talk-cond"> ({e.c.join(', ')})</span>}
+            {forPlayers(e.c, raw) && <span className="tm-talk-cond"> ({forPlayers(e.c, raw).join(', ')})</span>}
           </span>
         </div>
         {isOpen && (
           <div className="tm-talk-more">
             {e.r && <div className="tm-talk-reply">{e.r}</div>}
-            {e.x && <div className="tm-talk-fx">{e.x.join(', ')}</div>}
-            {e.n && <div className="tm-talk-next"><TalkLevel entries={e.n} q={q} /></div>}
+            {forPlayers(e.x, raw) && <div className="tm-talk-fx">{forPlayers(e.x, raw).join(', ')}</div>}
+            {e.n && <div className="tm-talk-next"><TalkLevel entries={e.n} q={q} raw={raw} /></div>}
           </div>
         )}
       </div>
@@ -67,7 +72,8 @@ function TalkLevel({ entries, q }) {
 
 // The window. elRef: the outer element, positioned by the map next to the NPC; zoom: client pixels to CSS pixels
 // (as the side panel), on the inner window so the position stays in CSS pixels.
-export default function NpcTalk({ world, npc, elRef, zoom, onResize, onClose }) {
+// raw: an editor is logged in (quest values shown).
+export default function NpcTalk({ world, npc, elRef, zoom, onResize, onClose, raw }) {
   const [talk, setTalk] = useState(null);
   const [failed, setFailed] = useState(false);
   const [q, setQ] = useState('');
@@ -99,7 +105,7 @@ export default function NpcTalk({ world, npc, elRef, zoom, onResize, onClose }) 
           <input className="tm-input tm-talk-filter" value={q} onChange={(ev) => setQ(ev.target.value)} placeholder="Find a word" spellCheck={false} />
           {failed && <div className="tm-talk-cond">Could not load the conversation.</div>}
           {!talk && !failed && <div className="tm-talk-cond">Loading...</div>}
-          {shown && <TalkLevel key={`${npc.t}|${query}`} entries={shown} q={query} />}
+          {shown && <TalkLevel key={`${npc.t}|${query}`} entries={shown} q={query} raw={raw} />}
           {shown && !shown.length && <div className="tm-talk-cond">Nothing found.</div>}
         </div>
       </div>
