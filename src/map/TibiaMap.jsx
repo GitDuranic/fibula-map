@@ -10,7 +10,7 @@ import QuestWindow from './QuestWindow.jsx';
 import QuestList from './QuestList.jsx';
 import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
-import { createRouter } from './engine/router.js';
+import { createRouter, routeTime } from './engine/router.js';
 import { drawText, textWidth } from './engine/text.js';
 import { questDbConfig, questOn, setQuestOn } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest } from './engine/questauth.js';
@@ -928,6 +928,35 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         ctx.restore();
       }
     }
+    // The quest route (13e): the guide's legs, on the floor you're looking at (the surface ones also from the other
+    // surface floors, fainter, as the route). The leg to the step you're on bright, the ones still to do dimmer, done
+    // legs faint; the leg in the Route panel is drawn as the route below. Floor changes and boats: only the line.
+    if (questPaths.current?.length) {
+      const fq = ([x, y, z]) => (v.z <= 7 && z <= 7 ? [x - (v.z - z), y - (v.z - z)] : [x, y]);
+      const atq = (pt) => { const f = fq(pt); return [ox + (f[0] + 0.5) * s, oy + (f[1] + 0.5) * s]; };
+      const order = { done: 0, todo: 1, cur: 2 };
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.setLineDash([]);
+      for (const q of [...questPaths.current].sort((a, b) => order[a.state] - order[b.state])) {
+        const p = q.path, base = q.state === 'cur' ? 1 : q.state === 'todo' ? 0.55 : 0.25;
+        for (const here of [false, true]) { // other surface floors first, this floor on top
+          ctx.beginPath();
+          let any = false;
+          for (let i = 1; i < p.length; i++) {
+            const a = p[i - 1], b = p[i];
+            if (a[2] !== b[2] || !['walk', 'diagonal', 'onto', 'use'].includes(b[3])) continue;
+            const on = a[2] === v.z;
+            if (on !== here || (!on && !(a[2] <= 7 && v.z <= 7))) continue;
+            const [ax, ay] = atq(a), [bx, by] = atq(b);
+            ctx.moveTo(ax, ay); ctx.lineTo(bx, by); any = true;
+          }
+          if (!any) continue;
+          ctx.globalAlpha = here ? base : base * ROUTE_SURFACE_ALPHA;
+          if (q.state === 'cur') { ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 5 * k; ctx.stroke(); }
+          ctx.strokeStyle = '#ffd700'; ctx.lineWidth = (q.state === 'cur' ? 3 : 2) * k; ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
     // The route: a line through the tiles, bright on this floor, fainter dashes on other floors (see routeAlpha);
     // markers where the floor changes, green at the start, red at the end. Line widths in client pixels.
     const rp = routePath.current;
@@ -1442,6 +1471,77 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   }, [oracleLevel, climb, doorsKey, updateRoute]);
   const clearRoute = () => { routeSeq.current++; router.current?.cancel(); routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
 
+  // ---------- the quest route (13e) ----------
+  // The legs of the guide on the map (markQ, as its markers): step to step through its current segment, steps
+  // without a spot skipped. [{ step, n (its number, from 1), from, to: [x, y, z], state: 'done' | 'cur' | 'todo' }]
+  const questLegs = useMemo(() => {
+    const world = worldRef.current;
+    if (!ready || !markQ || !markGuide?.steps.length || !world) return null;
+    const steps = markGuide.steps, cur = qg.currentIndex(markGuide, markAt);
+    const seg = steps[Math.min(cur, steps.length - 1)].segment_id;
+    const legs = [];
+    let prev = null;
+    steps.forEach((t, i) => {
+      const pos = t.segment_id === seg && qg.stepPos(world, t);
+      if (!pos) return;
+      if (prev) legs.push({ step: t, n: i + 1, from: prev, to: pos, state: i === cur ? 'cur' : i < cur ? 'done' : 'todo' });
+      prev = pos;
+    });
+    return { quest: markQ, legs };
+  }, [ready, markQ, markGuide, markAt]);
+  // The legs found (fastest only), by where they go and what the router was told (as the panel searches again).
+  // Asked one at a time, and only while the Route panel isn't searching: a leg's search in the shared worker would
+  // stop the panel's cheapest search.
+  const legBase = `${oracleLevel}:${climb}:${doorsKey}`;
+  const legKey = (l) => `${l.from}>${l.to}|${legBase}`;
+  const [legRes, setLegRes] = useState({}); // legKey -> { path } | { error, locked }
+  const legBusy = useRef(false);
+  useEffect(() => {
+    if (!questLegs || legBusy.current || route.busy || route.cheapBusy) return;
+    const l = questLegs.legs.find((x) => !(legKey(x) in legRes));
+    if (!l) return;
+    const key = legKey(l), c = charRef.current;
+    legBusy.current = true;
+    router.current ||= createRouter(dataUrl);
+    router.current.route(l.from, l.to, speedOf(c), Number(c.level) || 1, doorsRef.current, climbOf(c)).then((res) => {
+      legBusy.current = false;
+      setLegRes((all) => ({ ...all, [key]: res.routes ? { path: res.routes[0].path } : { error: res.error || 'No route found.', locked: res.locked } }));
+    });
+  }, [questLegs, legRes, legBase, route.busy, route.cheapBusy, dataUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+  // For draw(): the legs found, except the one shown in the Route panel (drawn as the route).
+  const questPaths = useRef(null); // [{ path, state }]
+  useEffect(() => {
+    const inPanel = (l) => routePath.current && `${route.from?.pos}` === `${l.from}` && `${route.to?.pos}` === `${l.to}`;
+    questPaths.current = questLegs?.legs.filter((l) => legRes[legKey(l)]?.path && !inPanel(l)).map((l) => ({ path: legRes[legKey(l)].path, state: l.state })) || null;
+    redraw();
+  }, [questLegs, legRes, legBase, route]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Per step of the guide's quest: the leg to it ({ time } | { error, locked } | { busy }), the segment's total and
+  // Show route (fits the view to all of it).
+  const speedNow = speedOf(char);
+  const legInfo = questLegs && (() => {
+    const byStep = {};
+    let total = 0, all = true;
+    for (const l of questLegs.legs) {
+      const r = legRes[legKey(l)];
+      byStep[l.step.id] = !r ? { busy: true } : r.path ? { time: routeTime(r.path, speedNow) } : { error: r.error, locked: r.locked };
+      if (r?.path) total += byStep[l.step.id].time; else all = false;
+    }
+    const paths = questLegs.legs.map((l) => legRes[legKey(l)]?.path).filter(Boolean);
+    return { quest: questLegs.quest, byStep, total, all, show: paths.length ? () => showRoute(paths.flat()) : null };
+  })();
+  // Puts the leg to a step into the Route panel: To the step, From the step with a spot before it in its segment
+  // (the first step of a segment keeps the From that's there).
+  const routeToStep = (gd, stepId) => {
+    const world = worldRef.current, steps = gd?.steps || [];
+    const i = steps.findIndex((t) => t.id === stepId), pos = i >= 0 && world && qg.stepPos(world, steps[i]);
+    if (!pos) return;
+    const label = (j) => `${j + 1}. ${qg.stepTitle(world, steps[j])}`.slice(0, 60);
+    let j = i - 1;
+    while (j >= 0 && steps[j].segment_id === steps[i].segment_id && !qg.stepPos(world, steps[j])) j--;
+    const from = j >= 0 && steps[j].segment_id === steps[i].segment_id ? { label: label(j), pos: qg.stepPos(world, steps[j]) } : null;
+    updateRoute({ ...(from ? { from } : {}), to: { label: label(i), pos } });
+  };
+
   // Opens an NPC's conversation next to it (or closes it: null).
   const openTalk = useCallback((n) => { talkRef.current = n; setTalkNpc(n); redraw(); }, [redraw]);
   const selectNpc = useCallback((n) => {
@@ -1932,7 +2032,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             guide={dbCfg && questSel.quest.db ? {
               guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
               ed: guideEd, editStep, setEditStep, onGo: (p) => jump({ x: p[0], y: p[1], z: p[2] }),
-              at: atOf(questSel.quest.db.id), setAt: (id) => setAt(questSel.quest.db.id, id),
+              at: atOf(questSel.quest.db.id),
+              // Moving on in the guide on the map puts the leg to the step you're on now in the Route panel (13e).
+              setAt: (id) => {
+                setAt(questSel.quest.db.id, id);
+                if (markQ?.db.id === questSel.quest.db.id && markGuide) routeToStep(markGuide, id ?? markGuide.steps[0]?.id);
+              },
+              legs: legInfo?.quest.db.id === questSel.quest.db.id ? legInfo : null,
+              onLeg: (id) => markGuide && routeToStep(markGuide, id),
             } : null}
             onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
           />

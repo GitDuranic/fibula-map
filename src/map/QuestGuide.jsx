@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { ItemIcon } from './NpcWindow.jsx';
 import { ItemPicker } from './QuestWindow.jsx';
 import { KINDS, stepPos, stepTitle, currentIndex } from './engine/questguide.js';
+import { fmtTime } from './RoutePanel.jsx';
 
 // The editors' form for one step. onSave(changes), onDelete(), onDone().
 function StepEdit({ world, step, onSave, onDelete, onDone }) {
@@ -79,7 +80,10 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
 // beforeId), addSegment(), renameSegment(id, name), deleteSegment(id). editStep / setEditStep: the step whose form
 // is open (TibiaMap keeps it, for "Move step here"). onGo(pos): go to a spot. at / setAt(step id | 'done' | null):
 // where you are in this guide (TibiaMap keeps it in the browser, and the map's markers follow it, 13d-2).
-export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt }) {
+// legs (13e, only for the guide on the map): { byStep: { [step id]: { time } | { error, locked } | { busy } }, total,
+// all (every leg found), show() } for the walk to each step of the current segment; onLeg(step id): that leg into
+// the Route panel.
+export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onLeg }) {
   const [open, setOpen] = useState({}); // segment id -> shown (default: the segment you're on; every one for editors)
   const [drag, setDrag] = useState(null); // the step being dragged (id)
   const [renaming, setRenaming] = useState(null); // { id, name }
@@ -112,6 +116,12 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
       {steps.length > 0 && (
         <div className="tm-muted" title="Steps an editor went through and found right">
           {checked} of {steps.length} steps checked{cur >= steps.length ? ' · all done' : ''}
+        </div>
+      )}
+      {legs && Object.keys(legs.byStep).length > 0 && (
+        <div className="tm-guide-route" title="Walking time through this part with your character's speed (Route panel settings), fastest way">
+          Route: {legs.total ? fmtTime(legs.total) : ''}{legs.all ? '' : legs.total ? ' + …' : '…'}
+          {legs.show && <> · <button type="button" className="tm-link" onClick={legs.show}>Show route</button></>}
         </div>
       )}
       {steps.length > 0 && (cur > 0) && (
@@ -159,6 +169,18 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                       <span className={`tm-step-kind tm-kind-${t.kind}`}>{KINDS[t.kind]}</span>
                       <span className="tm-step-text">{stepTitle(world, t)}</span>
                     </button>
+                    {legs?.byStep[t.id] && (() => {
+                      const l = legs.byStep[t.id];
+                      const why = l.locked?.length ? `Locked doors are in the way: ${l.locked.map((d) => (d.key ? `key ${d.key}` : `a door at ${d.p.join(', ')}`)).join(', ')}` : l.error;
+                      return (
+                        <button
+                          type="button" className={`tm-link tm-step-leg${l.error ? ' tm-step-leg-err' : ''}`} onClick={() => onLeg(t.id)}
+                          title={`${l.error ? why : 'Walking time from the step before'}. Click: this leg in the Route panel`}
+                        >
+                          {l.busy ? '…' : l.error ? 'no route' : fmtTime(l.time)}
+                        </button>
+                      );
+                    })()}
                     {!t.checked && <span className="tm-step-unchecked" title="Not checked yet: may be wrong">•</span>}
                     {ed && editStep !== t.id && <button type="button" className="tm-link" onClick={() => setEditStep(t.id)} title="Change this step">edit</button>}
                   </div>

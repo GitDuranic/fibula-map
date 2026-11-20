@@ -107,6 +107,16 @@ Each slice adds something you can use on its own (user: small slices of function
 - The route from step to step in order, drawn with the existing router (locked doors, boats, climbing).
 - The current leg brightest.
 - **Useful because:** you can see how to get from step to step.
+- **Agreed (user, 2026-11-20):**
+  - For the guide on the map (the same quest as the markers): every leg of the current segment is drawn, from step to step in order (steps without a spot are skipped; the leg starts at the last step with one). Done legs faint, legs still to do dimmer, the leg to the step you're on bright.
+  - The leg to the step you're on **fills the Route panel** (From = the step before, To = the step you're on), so the panel shows its time, haste casts, boats and locked doors. That happens when you tick a step, go Back a step or Start over, or click a leg's time in the guide. The first step of a segment has no leg: only To is filled. Not on page load (the panel doesn't pop open by itself); until then the current leg is drawn bright by the guide.
+  - **Fastest route only** per leg (no cheapest search).
+  - The guide shows each step's **walking time from the step before** (your character's speed, like the Route panel) and the segment's **total**, with **Show route** to fit the view to the whole segment. A leg that can't be found says why (locked doors, not connected).
+- **Built (2026-11-20, not yet browser-tested: Chrome extension offline):**
+  - The legs are searched in TibiaMap (`questLegs`, `legRes`) with the panel's router worker, one at a time and only while the Route panel isn't searching: the worker's searches share their bookkeeping, so a leg search would stop the panel's cheapest search. Found legs are kept per from/to + Oracle level/climbing/doors (like the panel, they're searched again when those change); times follow the character's speed straight away.
+  - Drawn under the panel's route as plain gold lines on the floor you look at (surface legs also from the other surface floors, fainter): the leg to the step you're on with a black edge, legs still to do at 55 %, done legs at 25 %. Floor changes and boat arcs are only drawn for the leg in the Route panel. The leg that's in the panel isn't drawn twice.
+  - In the guide: "Route: 4 min 10 s · Show route" under the checked count (" + …" while legs are still being searched), and each step's time on its row (orange "no route" with the reason in its tooltip). Clicking a time puts that leg into the Route panel.
+  - The panel itself still offers fastest and cheapest for the leg it shows (it's the normal Route panel).
 
 ### 13f. Quest dialogs
 - In a talk step, build the dialog by clicking through the NPC's keywords from 13a, in a wider pop-out window.
