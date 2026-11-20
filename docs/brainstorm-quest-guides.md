@@ -147,6 +147,7 @@ Each slice adds something you can use on its own (user: small slices of function
 ### 13i. Old quest system moved over and removed
 - Quest spots become draft Get steps of their quests; the quest window, gold rings and checklist go away. Locked doors and keys stay.
 - **Useful because:** one quest system instead of two, and existing spot work isn't lost.
+- **Started early (user, 2026-11-20):** the quest window's "Spots on the map" section, the spot details (object, gives) and the "Spots checked" tick are gone ("replaced by the steps"); the spots stay in the data (and their gold rings on the map) until this slice turns them into steps. The reward moved to the top, under the quest's level/area line ("Reward: …", the TibiaWiki reward under it when it differs).
 
 ### 13j. AI drafts from the wiki
 - AI-drafted segments and steps for every quest, written to the database as unchecked steps: real NPCs, keywords and spots only; "needs placing" notes otherwise; the source sentence on each step.

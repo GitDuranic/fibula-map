@@ -298,6 +298,8 @@
   border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); color: #fff;
 }
 .tm-quest-notes { margin-top: 4px; white-space: pre-wrap; }
+.tm-quest-reward { color: #e0e0e0; overflow-wrap: anywhere; }
+.tm-quest-reward-label { color: #c8b070; }
 .tm-goto-tools { display: flex; gap: 4px; }
 .tm-goto-tools .tm-btn { flex: 1; }
 

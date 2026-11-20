@@ -1,7 +1,6 @@
-// The quest window in the side panel (slices 10, 12): a quest, its spots on the map and what each spot gives.
-// In development (world.questEditable) it's also the quest editor: tick a quest as checked, add, change or remove
-// the items of a spot and its object, remove a spot (spots are added by right-clicking the map). Changes are saved
-// to tools/data/fibula-quests.json through the dev server.
+// The quest window in the quest panel (slices 10, 12, 13): a quest, its reward, "I'm on this quest" and its guide.
+// The slice 10/12 spots section was removed (user 2026-11-20: replaced by the steps); the spots themselves stay in
+// the data until 13i turns them into steps.
 import React, { useState } from 'react';
 import { ItemIcon } from './NpcWindow.jsx';
 import QuestGuide from './QuestGuide.jsx';
@@ -91,15 +90,14 @@ function QuestEdit({ row, onSave, onDone, hasSteps }) {
 const markText = (q) => (!q.onList ? 'Not on your Fibula list' : q.mark ? '✅ on your list' : '⬜ on your list');
 
 // chest: a spot { p, id, items: [[item id, count, key?]], quest, i }, or { quest, i: null } for a quest without one.
-// onEdit(quest, change(raw), select spot index?): saves a change (see TibiaMap editQuest). onGo(spot): go to a spot.
+// onEdit, onGo, onItem: from the removed spots section (unused for now; 13i).
 // onQuest: the quest you're on (name) and setOn(name | null) for "I'm on this quest" (slice 13b).
 // onSave(quest, changes): an editor is logged in (13c), so the quest's database row can be edited.
 // guide: the props for QuestGuide (13d) when this quest has a database row, else null.
 // onBack: back to the quest list (the quest panel shows the list OR a quest, 13f-0b).
 export default function QuestWindow({ world, chest, editable, onEdit, onGo, onItem, onClose, onBack, onQuest, setOn, onSave, guide }) {
   const [editing, setEditing] = useState(null); // the quest whose form is open (13c)
-  const q = chest.quest, spot = chest.i == null ? null : q.chests[chest.i];
-  const editSpot = (fn) => onEdit(q, (raw) => fn(raw.spots[chest.i]), chest.i);
+  const q = chest.quest;
   const d = q.db; // the quest database's row (13b), if there is one
   const level = d ? d.level : q.level, area = d ? d.area : q.area, version = d?.wiki_version || q.v;
   const info = [level ? `Level ${level}` : null, area || null, version ? `came in ${version}` : null].filter(Boolean).join(' · ');
@@ -116,6 +114,9 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
         {editing === q && d && onSave ? <QuestEdit row={d} onSave={(changes) => onSave(q, changes)} onDone={() => setEditing(null)} hasSteps={!!guide?.guide?.steps.length} /> : (
         <>
         {editable ? <div className="tm-muted">{markText(q)}{info ? ` · ${info}` : ''}</div> : info && <div className="tm-muted">{info}</div>}
+        {/* The reward with the quest's information at the top (user 2026-11-20). */}
+        <div className="tm-quest-reward"><span className="tm-quest-reward-label">Reward:</span> {rewards || wiki || 'not known'}</div>
+        {rewards && wiki && rewards !== wiki && <div className="tm-muted">TibiaWiki: {wiki}</div>}
         {d && d.status !== 'checked' && <div className="tm-quest-draft" title="Nobody has gone through this quest's guide yet: it may be wrong">Not checked yet</div>}
         {q.listed && setOn && (
           <button type="button" className={`tm-btn tm-quest-follow${isOn ? ' tm-pressed' : ''}`} onClick={() => setOn(isOn ? null : q.n)}
@@ -124,70 +125,8 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
         )}
         {d?.notes && <div className="tm-quest-notes">{d.notes}</div>}
         {d && onSave && <button type="button" className="tm-btn tm-quest-follow" onClick={() => setEditing(q)} title="Change this quest (saved for everyone)">Edit</button>}
-        {editable && (
-          <label className="tm-check" title="You went through this quest on the map and its spots and items are right">
-            <input type="checkbox" checked={q.checked} onChange={(e) => onEdit(q, (raw) => { raw.checked = e.target.checked; }, chest.i)} /> Spots checked
-          </label>
-        )}
         {guide && <QuestGuide world={world} {...guide} />}
-        <div className="tm-section">
-          <div className="tm-section-title">Reward</div>
-          <div>{rewards || wiki || 'Not known'}</div>
-          {rewards && wiki && <div className="tm-muted">TibiaWiki: {wiki}</div>}
-        </div>
         </>
-        )}
-        {(q.chests.length > 0 || editable) && (
-        <div className="tm-section">
-          <div className="tm-section-title">Spots on the map ({q.chests.length})</div>
-          {q.chests.length === 0 && <div className="tm-muted">None yet.{editable ? ' Right-click the map: "Add quest spot here".' : ''}</div>}
-          <div className="tm-quest-spots">
-            {q.chests.map((c, i) => (
-              <button
-                type="button" key={i} className={i === chest.i ? 'tm-btn tm-pressed' : 'tm-btn'} onClick={() => onGo(i)}
-                title={`Go to ${c.p.join(', ')}`}
-              >{i + 1}</button>
-            ))}
-          </div>
-        </div>
-        )}
-        {spot && (
-          <div className="tm-section">
-            <div className="tm-section-title">Spot {chest.i + 1}: {spot.p.join(', ')}</div>
-            <div className="tm-offer tm-quest-object" title="The object shown on the map for this spot">
-              <div className="tm-slot">{spot.id ? <ItemIcon world={world} id={spot.id} count={1} /> : null}</div>
-              <span className="tm-offer-name">{spot.id ? world.itemName(spot.id) : 'No object'}</span>
-            </div>
-            {editable && <ItemPicker world={world} placeholder="Change the object (chest, crate, body...)" onPick={(id) => editSpot((s) => { s.id = id; })} />}
-            <div className="tm-section-title tm-quest-gives">Gives</div>
-            {spot.items.length === 0 && <div className="tm-muted">Nothing yet.</div>}
-            {spot.items.map(([id, count, key], j) => {
-              const name = world.itemName(id);
-              return (
-                <div className="tm-offer tm-quest-item" key={`${id}:${key || ''}:${j}`}>
-                  <button type="button" className="tm-loot tm-quest-item-name" onClick={() => onItem(id)} title={`Who buys ${name}`}>
-                    <div className="tm-slot"><ItemIcon world={world} id={id} count={count} /></div>
-                    <span className="tm-offer-name">{name}{key ? <span className="tm-town"> (key {key})</span> : null}</span>
-                  </button>
-                  {editable ? (
-                    <>
-                      <input
-                        className="tm-input tm-quest-count" type="number" min={1} max={10000} value={count} title="How many"
-                        onChange={(e) => { const n = Math.max(1, Math.min(10000, parseInt(e.target.value, 10) || 1)); editSpot((s) => { s.items[j][1] = n; }); }}
-                      />
-                      <button type="button" className="tm-close tm-quest-remove" onClick={() => editSpot((s) => { s.items.splice(j, 1); })} title="Remove this item" aria-label="Remove this item">×</button>
-                    </>
-                  ) : <span className="tm-offer-price">{count > 1 ? `${count}x` : ''}</span>}
-                </div>
-              );
-            })}
-            {editable && <ItemPicker world={world} placeholder="Add an item" onPick={(id) => editSpot((s) => { s.items.push([id, 1]); })} />}
-            {editable && (
-              <button type="button" className="tm-btn tm-quest-del" onClick={() => onEdit(q, (raw) => { raw.spots.splice(chest.i, 1); }, Math.max(0, chest.i - 1))}>
-                Remove this spot
-              </button>
-            )}
-          </div>
         )}
       </div>
     </div>
