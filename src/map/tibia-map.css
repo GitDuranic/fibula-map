@@ -382,3 +382,9 @@
   .tm-dialog-build { position: fixed; left: 4px; right: 4px; top: 4px; width: auto; margin: 0; }
   .tm-dialog-cols { flex-direction: column; }
 }
+/* the dialog window for players (13f-2) */
+.tm-dialog-view { width: 380px; }
+.tm-dialog-view .tm-window-body { display: flex; flex-direction: column; gap: 4px; line-height: 1.35; }
+.tm-dialog-read > li { padding-bottom: 3px; }
+.tm-dialog-read .tm-say { font-size: 12px; }
+.tm-dialog-mine > li { padding-bottom: 0; }

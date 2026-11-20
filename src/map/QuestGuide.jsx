@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ItemIcon } from './NpcWindow.jsx';
 import { MonsterIcon } from './MonsterWindow.jsx';
-import DialogBuilder from './DialogBuilder.jsx';
+import DialogBuilder, { DialogView } from './DialogBuilder.jsx';
 import { ItemPicker } from './QuestWindow.jsx';
 import { KINDS, CHEST_ICON, stepPos, stepTitle, currentIndex } from './engine/questguide.js';
 import { fmtTime } from './RoutePanel.jsx';
@@ -170,6 +170,10 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
   // Dialog lines you copied (13f-1): { [step id]: [line index] }, kept in the browser; a copied line turns green,
   // clicking it again unmarks it (without copying).
   const [copied, setCopiedState] = useState(() => { try { return JSON.parse(localStorage.getItem(COPIED_KEY)) || {}; } catch { return {}; } });
+  // The dialog window (13f-2): which Talk step's dialog is open, and full conversation or only your lines (kept).
+  const [viewing, setViewing] = useState(null);
+  const [full, setFullState] = useState(() => { try { return localStorage.getItem('tm-dialog-mode') !== 'mine'; } catch { return true; } });
+  const setFull = (v) => { setFullState(v); try { localStorage.setItem('tm-dialog-mode', v ? 'full' : 'mine'); } catch { /* private mode */ } };
   const toggleCopied = (id, j, text) => {
     const was = copied[id] || [], on = was.includes(j);
     if (!on) navigator.clipboard?.writeText(text).catch(() => {});
@@ -284,6 +288,17 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                             );
                           })}
                         </ol>
+                      )}
+                      {t.kind === 'talk' && t.dialog?.length > 0 && (
+                        <button type="button" className="tm-link tm-step-more" onClick={() => setViewing(viewing === t.id ? null : t.id)} title="The whole conversation, with what the NPC answers">
+                          {viewing === t.id ? 'close conversation' : 'conversation'}
+                        </button>
+                      )}
+                      {viewing === t.id && (
+                        <DialogView
+                          npcName={t.npc || 'the NPC'} lines={t.dialog} copied={copied[t.id] || []} full={full} onFull={setFull}
+                          onCopy={(j) => toggleCopied(t.id, j, t.dialog[j].say)} onClose={() => setViewing(null)}
+                        />
                       )}
                       {c.items && (
                         <div className="tm-step-items">

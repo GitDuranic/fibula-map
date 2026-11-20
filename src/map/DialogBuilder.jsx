@@ -98,3 +98,35 @@ export default function DialogBuilder({ world, npc, lines: start, onDone, onClos
     </div>
   );
 }
+
+// The dialog window for players (slice 13f-2): a Talk step's dialog next to the quest panel, as the full
+// conversation (your lines, the NPC's answers, what happens and the conditions) or only your lines. Clicking a line
+// copies it and marks it green (the same marks as on the step's card); clicking a green line unmarks it.
+// lines: the step's dialog; copied: the marked line indexes; onCopy(index): copy / unmark; full / onFull: the mode.
+export function DialogView({ npcName, lines, copied, onCopy, full, onFull, onClose }) {
+  return (
+    <div className="tm-panel tm-window tm-dialog-build tm-dialog-view" onClick={(e) => e.stopPropagation()}>
+      <div className="tm-window-title">
+        <span className="tm-window-name">Dialog with {npcName}</span>
+        <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>
+      </div>
+      <div className="tm-window-body">
+        <div className="tm-route-choice" role="tablist">
+          <button type="button" role="tab" aria-selected={full} className={full ? 'tm-btn tm-pressed' : 'tm-btn'} onClick={() => onFull(true)}>Full conversation</button>
+          <button type="button" role="tab" aria-selected={!full} className={!full ? 'tm-btn tm-pressed' : 'tm-btn'} onClick={() => onFull(false)}>Only my lines</button>
+        </div>
+        <div className="tm-muted">Click a line to copy it (it turns green); click it again to unmark it.</div>
+        <ol className={`tm-dialog-list tm-dialog-read${full ? '' : ' tm-dialog-mine'}`}>
+          {lines.map((l, i) => (
+            <li key={i}>
+              <button type="button" className={`tm-say${copied.includes(i) ? ' tm-copied' : ''}`} onClick={() => onCopy(i)} title={copied.includes(i) ? 'Unmark' : 'Copy'}>{l.say}</button>
+              {full && l.cond && <div className="tm-talk-cond">only {l.cond.join(', ')}</div>}
+              {full && l.reply && <div className="tm-talk-reply"><b>{npcName}:</b> {l.reply}</div>}
+              {full && l.fx && <div className="tm-talk-fx">{l.fx.join(', ')}</div>}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
+}
