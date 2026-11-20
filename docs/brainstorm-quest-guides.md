@@ -131,6 +131,7 @@ Each slice adds something you can use on its own (user: small slices of function
   - Open/closed is kept in localStorage `tm-quests-open`. The Quests button opens and closes it; the list's × closes the panel and the open quest. Opening a quest (list, search, step marker, Back) opens the panel.
   - The quest window no longer closes when you open an NPC, monster or door window, and opening a quest no longer closes those: they're in different panels now.
   - Phones (≤ 600 px): the quest panel goes under the map (at most half the screen high), above the other panel.
+  - **Clean for players (user, 2026-11-20):** the development tools showed whenever the dev server ran. They now need the editor login too: the slice 12 list filters and ✅/⬜ / spot columns, "Spots checked", spot object and item editing, Remove this spot, right-click "Add quest spot here", "Add location here" and "Remove '<name>'". The "Spots on the map" section only shows when the quest has spots (or for editors). On Ryndean's site there's no dev server, so they never show there.
 
 ### 13g. "If it goes wrong" replies
 - Muted lines in the full conversation: what the NPC says when an item is missing or a part is already done, and what that means.

@@ -1570,6 +1570,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     redraw();
   }, [redraw]); // eslint-disable-line react-hooks/exhaustive-deps
   const closeQuests = () => { setQuestsOpen(false); selectQuest(null); };
+  // The development tools (slice 12 spot editing, named locations; only on the dev server) show only to a logged-in
+  // editor (user 2026-11-20: players should see a clean quest panel).
+  const devTools = !!login.editor;
   // A quest's window: on spot i (going there), or without a spot when it has none (slice 12).
   const goToQuest = useCallback((q, i = 0) => {
     const c = worldRef.current?.questChests.find((x) => x.quest === q && x.i === i);
@@ -1913,13 +1916,13 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         <div className="tm-side tm-left" style={{ zoom: uiScale / dpr }}>
           {world && ready && (
             <QuestList
-              world={world} selected={questSel?.quest} onQuest={onQuest} onPick={(q) => goToQuest(q, 0)} onClose={closeQuests}
+              world={world} dev={devTools && !!world.questEditable} selected={questSel?.quest} onQuest={onQuest} onPick={(q) => goToQuest(q, 0)} onClose={closeQuests}
               login={dbCfg ? login : null} onLogIn={() => logIn(dbCfg)} onLogOut={() => logOut(dbCfg)}
             />
           )}
           {questSel && world && (
             <QuestWindow
-              world={world} chest={questSel} editable={!!world.questEditable} onEdit={editQuest} onQuest={onQuest} setOn={setOnQuest}
+              world={world} chest={questSel} editable={devTools && !!world.questEditable} onEdit={editQuest} onQuest={onQuest} setOn={setOnQuest}
               onSave={login.editor ? saveDbQuest : null}
               guide={dbCfg && questSel.quest.db ? {
                 guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
@@ -1985,11 +1988,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
                 ['Route from here', () => updateRoute({ from: { label: menu.tile.join(', '), pos: menu.tile } })],
                 ['Route to here', () => updateRoute({ to: { label: menu.tile.join(', '), pos: menu.tile } })],
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
-                ...(world?.customEditable ? [['Add location here', () => { setLocName(''); setMenu({ ...menu, adding: true }); }, true]] : []),
+                ...(devTools && world?.customEditable ? [['Add location here', () => { setLocName(''); setMenu({ ...menu, adding: true }); }, true]] : []),
                 ...(guideEd && !guide.guide.missing ? [[`Add step here (${guide.quest.n.replace(/ Quest$/, '')})`, () => addGuideStep({ kind: 'go', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] })]] : []),
                 ...(guideEd && editStep ? [['Move step here', () => moveEditStep(menu.tile)]] : []),
-                ...(world?.questEditable ? [['Add quest spot here', () => { setLocName(''); setMenu({ ...menu, addingQuest: true }); }, true]] : []),
-                ...(world?.customEditable ? world.customAt(...menu.tile).map((n) => [`Remove '${n}'`, () => saveLocation({ remove: { n, p: menu.tile } })]) : []),
+                ...(devTools && world?.questEditable ? [['Add quest spot here', () => { setLocName(''); setMenu({ ...menu, addingQuest: true }); }, true]] : []),
+                ...(devTools && world?.customEditable ? world.customAt(...menu.tile).map((n) => [`Remove '${n}'`, () => saveLocation({ remove: { n, p: menu.tile } })]) : []),
               ].map(([label, act, keepOpen]) => (
                 <button type="button" key={label} className="tm-menu-item" onClick={() => { if (!keepOpen) setMenu(null); act(); }}>{label}</button>
               ))}

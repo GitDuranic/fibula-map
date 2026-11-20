@@ -135,6 +135,7 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
         </div>
         </>
         )}
+        {(q.chests.length > 0 || editable) && (
         <div className="tm-section">
           <div className="tm-section-title">Spots on the map ({q.chests.length})</div>
           {q.chests.length === 0 && <div className="tm-muted">None yet.{editable ? ' Right-click the map: "Add quest spot here".' : ''}</div>}
@@ -147,6 +148,7 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
             ))}
           </div>
         </div>
+        )}
         {spot && (
           <div className="tm-section">
             <div className="tm-section-title">Spot {chest.i + 1}: {spot.p.join(', ')}</div>

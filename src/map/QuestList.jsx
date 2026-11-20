@@ -2,7 +2,7 @@
 // (or the converted list without one). A search field, the quest you're on at the top, rows with name and level
 // (area and rewards in the tooltip: the side panel is narrow). Clicking a row opens the quest (and goes to its
 // first spot).
-// In development (world.questEditable) the slice 12 checklist filters and columns stay, for checking spots.
+// dev: the slice 12 checklist filters and columns, for checking spots (dev server + logged-in editor only).
 import React, { useState } from 'react';
 import { displayName } from './engine/questauth.js';
 
@@ -21,10 +21,9 @@ const matches = (q, text) => [q.n, areaOf(q), rewardsOf(q)].some((s) => (s || ''
 
 // login (13c): null without the quest database, else { user, editor }: a small line at the bottom to log in with
 // Discord (only the two editors can edit; anyone else who logs in is told so).
-export default function QuestList({ world, selected, onQuest, onPick, onClose, login, onLogIn, onLogOut }) {
+export default function QuestList({ world, dev, selected, onQuest, onPick, onClose, login, onLogIn, onLogOut }) {
   const [filter, setFilter] = useState('all');
   const [text, setText] = useState('');
-  const dev = !!world.questEditable;
   const quests = world.quests || [];
   const listed = quests.filter((q) => q.listed);
   const t = text.trim().toLowerCase();
