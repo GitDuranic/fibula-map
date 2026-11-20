@@ -573,6 +573,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     addSegment: () => editGuide((gd) => qg.addSegment(dbCfg, gd)),
     renameSegment: (id, name) => editGuide(() => qg.renameSegment(dbCfg, id, name)),
     deleteSegment: (id) => editGuide(() => qg.deleteSegment(dbCfg, id)),
+    saveBring: (id, bring) => editGuide(() => qg.saveBring(dbCfg, id, bring)),
   } : null;
   // The top item on a tile that isn't ground (a Reward step's chest, box or corpse), or null.
   const topItemAt = ([x, y, z]) => {
@@ -1571,7 +1572,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       if (r?.path) total += byStep[l.step.id].time; else all = false;
     }
     const paths = questLegs.legs.map((l) => legRes[legKey(l)]?.path).filter(Boolean);
-    return { quest: questLegs.quest, byStep, total, all, show: paths.length ? () => showRoute(paths.flat()) : null };
+    return { quest: questLegs.quest, byStep, total, all, paths, show: paths.length ? () => showRoute(paths.flat()) : null };
   })();
   // The route the map draws as "the route": the Route panel's, else the quest's current leg.
   const shownPath = () => routePath.current || questCur.current;

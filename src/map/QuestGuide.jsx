@@ -7,7 +7,7 @@ import { ItemIcon } from './NpcWindow.jsx';
 import { MonsterIcon } from './MonsterWindow.jsx';
 import DialogBuilder, { DialogView } from './DialogBuilder.jsx';
 import { ItemPicker } from './QuestWindow.jsx';
-import { KINDS, CHEST_ICON, stepPos, stepTitle, currentIndex } from './engine/questguide.js';
+import { KINDS, CHEST_ICON, stepPos, stepTitle, currentIndex, bringList } from './engine/questguide.js';
 import { fmtTime } from './RoutePanel.jsx';
 
 // An NPC's outfit, fitted into a 32x32 slot like an item icon (13f-0b).
@@ -54,6 +54,60 @@ function stepCard(world, t) {
   // Reward (user 2026-11-20): the chest (its object) as the icon, its items as icons, a gold card.
   if (t.kind === 'reward') return { icon: <ItemIcon world={world} id={t.object || CHEST_ICON} count={1} />, title: 'Reward', text: t.text, items: t.items.length ? t.items : null };
   return { icon: <ItemIcon world={world} id={t.kind === 'go' ? MAP_ICON : SCROLL_ICON} count={1} />, title: stepTitle(world, t), text: null };
+}
+
+// The bring list of the segment you're on (13h): item icons with counts; players tick what they've packed (click a
+// slot; kept in the browser), editors hide worked-out entries that are wrong, add items by hand and can show the
+// hidden ones again. paths: the segment's route (for keys, rope, shovel and fares), when known.
+const PACKED_KEY = 'tm-bring-packed';
+function BringBox({ world, guide, seg, paths, ed, onErr }) {
+  const [packed, setPackedState] = useState(() => { try { return JSON.parse(localStorage.getItem(PACKED_KEY)) || {}; } catch { return {}; } });
+  const [showHidden, setShowHidden] = useState(false);
+  const list = bringList(world, guide, seg.id, paths || [], !!ed && showHidden);
+  const hiddenCount = ed ? bringList(world, guide, seg.id, paths || [], true).filter((e) => e.hidden).length : 0;
+  const mine = packed[seg.id] || [];
+  const toggle = (key) => {
+    const next = { ...packed, [seg.id]: mine.includes(key) ? mine.filter((k) => k !== key) : [...mine, key] };
+    if (!next[seg.id].length) delete next[seg.id];
+    setPackedState(next);
+    try { localStorage.setItem(PACKED_KEY, JSON.stringify(next)); } catch { /* private mode */ }
+  };
+  const canEdit = ed && seg.bring !== undefined; // database step 8 run (0008_map_quest_bring.sql)
+  const b = seg.bring || {};
+  const save = (bring) => ed.saveBring(seg.id, bring).catch((e) => onErr(e.message || String(e)));
+  const hide = (e) => save(e.auto
+    ? { ...b, hide: e.hidden ? (b.hide || []).filter((k) => k !== e.key) : [...(b.hide || []), e.key] }
+    : { ...b, add: (b.add || []).filter((_, j) => j !== e.j) });
+  if (!list.length && !ed) return null;
+  return (
+    <div className="tm-bring">
+      <div className="tm-section-title">Bring</div>
+      {!list.length && <div className="tm-muted">Nothing worked out for this part.</div>}
+      <div className="tm-bring-items">
+        {list.map((e) => {
+          const name = e.label || world.itemName(e.id), done = mine.includes(e.key);
+          return (
+            <div className={`tm-bring-item${done ? ' tm-bring-packed' : ''}${e.hidden ? ' tm-bring-hidden' : ''}`} key={e.key}>
+              <button type="button" className="tm-slot" onClick={() => toggle(e.key)} title={`${e.count > 1 ? `${e.count} ` : ''}${name}: ${e.why}. Click: ${done ? 'not packed yet' : 'packed'}`}>
+                <ItemIcon world={world} id={e.id} count={e.count} />
+              </button>
+              {done && <span className="tm-bring-tick">✓</span>}
+              {canEdit && (
+                <button type="button" className="tm-close tm-bring-x" onClick={() => hide(e)} title={e.hidden ? 'Show it again' : e.auto ? 'Wrong: hide it for everyone' : 'Remove it'} aria-label="Hide">{e.hidden ? '+' : '×'}</button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {canEdit && (
+        <>
+          <ItemPicker world={world} placeholder="Add to the bring list" onPick={(id) => save({ ...b, add: [...(b.add || []), [id, 1]] })} />
+          {(hiddenCount > 0 || showHidden) && <button type="button" className="tm-link" onClick={() => setShowHidden(!showHidden)}>{showHidden ? 'hide the hidden ones' : `show hidden (${hiddenCount})`}</button>}
+        </>
+      )}
+      {ed && seg.bring === undefined && <div className="tm-quest-error">Run database step 8 (0008_map_quest_bring.sql) to change the bring list.</div>}
+    </div>
+  );
 }
 
 // The editors' form for one step. onSave(changes), onDelete(), onDone().
@@ -244,6 +298,7 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                 {ed && !s.steps.length && <button type="button" className="tm-link" onClick={() => tryEd(() => ed.deleteSegment(s.id))}>delete</button>}
               </div>
             ))}
+            {shown && s.id === curSeg && <BringBox world={world} guide={guide} seg={s} paths={legs?.paths} ed={ed} onErr={setErr} />}
             {s.steps.map((t) => {
               const i = n++;
               if (!shown) return null;

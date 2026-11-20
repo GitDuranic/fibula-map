@@ -119,3 +119,66 @@ export function currentIndex(guide, at) {
   const i = guide.steps.findIndex((t) => t.id === at);
   return i < 0 ? 0 : i;
 }
+
+// ---------- the bring list (slice 13h) ----------
+export async function saveBring(cfg, segId, bring) {
+  return run((await dbClient(cfg)).from('map_quest_segments').update({ bring }).eq('id', segId).select().single());
+}
+
+const ROPE = 3003, SHOVEL = 3457, GOLD = 3031;
+// Item names (lower case) -> id, the first id per name (kept on the world).
+function itemByName(world, name) {
+  if (!world.bringNames) {
+    world.bringNames = new Map();
+    for (const [id, d] of Object.entries(world.defs || {})) if (d?.n && !world.bringNames.has(d.n.toLowerCase())) world.bringNames.set(d.n.toLowerCase(), +id);
+  }
+  const n = name.toLowerCase().trim().replace(/^(a|an|the) /, '');
+  for (const c of [n, n.replace(/s$/, ''), n.replace(/es$/, ''), n.replace(/ies$/, 'y')]) if (world.bringNames.has(c)) return world.bringNames.get(c);
+  return null;
+}
+
+// A segment's bring list: [{ key, id, count, label?, why, auto }]. Worked out (auto): items the NPCs take or check in
+// the segment's dialogs ("takes 7 red apples", "if you have 1 X"; items a Get or Reward step gave earlier in the
+// segment left out), and from its route (paths: the legs found, only for the guide on the map): keys for the
+// locked doors it goes through, rope and shovel, gold coins for passages. Then the editors' changes (segment.bring:
+// add [[id, count]], hide [key]); hidden entries come back with hidden: true when showHidden.
+export function bringList(world, guide, segId, paths = [], showHidden = false) {
+  const seg = guide.segments.find((s) => s.id === segId);
+  if (!seg) return [];
+  const out = new Map();
+  const put = (key, e) => { const o = out.get(key); if (o) o.count = Math.max(o.count, e.count); else out.set(key, { key, auto: true, ...e }); };
+  // Dialog items: per item, what's taken added up, at least the most any line checks for.
+  const got = new Set(), taken = new Map(), checked = new Map();
+  for (const t of seg.steps) {
+    if (t.kind === 'get' || t.kind === 'reward') for (const [id] of t.items || []) got.add(id);
+    if (t.kind !== 'talk') continue;
+    for (const l of t.dialog || []) {
+      for (const fx of l.fx || []) {
+        const m = /^takes (?:(\d+) )?(.+)$/.exec(fx), id = m && itemByName(world, m[2]);
+        if (id && !got.has(id)) taken.set(id, (taken.get(id) || 0) + (+m[1] || 1));
+      }
+      for (const c of l.cond || []) {
+        const m = /^if you have (\d+) (.+)$/.exec(c), id = m && itemByName(world, m[2]);
+        if (id && !got.has(id)) checked.set(id, Math.max(checked.get(id) || 0, +m[1]));
+      }
+    }
+  }
+  for (const id of new Set([...taken.keys(), ...checked.keys()])) put(`i${id}`, { id, count: Math.max(taken.get(id) || 0, checked.get(id) || 0), why: 'an NPC asks for it' });
+  // From the route.
+  let gold = 0;
+  for (const p of paths) {
+    for (const e of p) {
+      if (e[3] === 'rope') put(`i${ROPE}`, { id: ROPE, count: 1, why: 'a rope spot on the way' });
+      if (e[3] === 'dig') put(`i${SHOVEL}`, { id: SHOVEL, count: 1, why: 'a hole to dig on the way' });
+      if (e[3] === 'npc' && e[6]) gold += e[6][2] || 0;
+      const d = world.doorAt?.get(`${e[0]},${e[1]},${e[2]}`);
+      if (d) put(d.key ? `k${d.key}` : `d${d.p.join(',')}`, { id: d.keyId || 2970, count: 1, label: d.key ? `key ${d.key}` : 'key (number not known)', why: 'a locked door on the way' });
+    }
+  }
+  if (gold) put('gold', { id: GOLD, count: gold, why: 'boat or carpet fares' });
+  // The editors' changes.
+  const hide = new Set(seg.bring?.hide || []);
+  const list = [...out.values()].map((e) => (hide.has(e.key) ? { ...e, hidden: true } : e)).filter((e) => showHidden || !e.hidden);
+  (seg.bring?.add || []).forEach(([id, count], j) => list.push({ key: `a${j}`, id, count, why: 'added by an editor', auto: false, j }));
+  return list;
+}

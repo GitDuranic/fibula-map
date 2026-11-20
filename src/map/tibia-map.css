@@ -392,3 +392,12 @@
 .tm-dialog-alts { margin: 2px 0 0 6px; padding-left: 6px; border-left: 1px solid #5a5a5a; color: #8a8a8a; font-size: 10px; }
 .tm-dialog-alt-when { color: #a08a6a; }
 .tm-dialog-alt-fx { color: #8a7a50; }
+/* the bring list (13h) */
+.tm-bring { margin: 2px 0 4px; padding: 3px; border: 1px solid #3a3a3a; display: flex; flex-direction: column; gap: 3px; }
+.tm-bring-items { display: flex; flex-wrap: wrap; gap: 3px; }
+.tm-bring-item { position: relative; }
+.tm-bring-item .tm-slot { cursor: pointer; }
+.tm-bring-packed .tm-slot { opacity: 0.45; }
+.tm-bring-tick { position: absolute; left: 2px; top: 0; color: #8fd88f; font-weight: bold; pointer-events: none; }
+.tm-bring-hidden { opacity: 0.4; }
+.tm-bring-x { position: absolute; right: -3px; top: -3px; }
