@@ -878,3 +878,10 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - water and other animations (phase 0 only)
   - roofs cut away per building
   - the client's bitmap font
+
+## Before release (checklist)
+Things to do on Ryndean's site and in Supabase before the map (with the quest guides) goes live. Add to this list whenever something comes up.
+- [ ] **Supabase redirect URL for the map's page:** Authentication → URL Configuration → Redirect URLs: add the map's page on Ryndean's site (e.g. `https://www.ryndean.info/<map page>/**`). Without it the editors' Discord login lands on the Site URL, which is the house planner (found 2026-11-20 with localhost).
+- [ ] Ryndean passes `supabaseUrl` / `supabaseKey` to `<TibiaMap>` (same values as the planner) (13b).
+- [ ] Ryndean has `@supabase/supabase-js` in his package.json (already there for the planner) (13c).
+- [ ] Database steps run in Supabase: step 1 (`0001_map_quests.sql`, done 2026-11-19), step 2 (`0002_map_quest_editors.sql`, with both editors' Discord IDs filled in).
