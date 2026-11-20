@@ -534,8 +534,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (!g?.guide) return null;
     const out = await fn(g.guide);
     const data = await loadGuide(g.quest);
-    if (data?.steps.length) {
-      const status = data.steps.every((t) => t.checked) ? 'checked' : 'not checked';
+    // (deleting the last step leaves it not checked: nothing has been gone through)
+    if (data && (data.steps.length || g.guide.steps.length)) {
+      const status = data.steps.length && data.steps.every((t) => t.checked) ? 'checked' : 'not checked';
       if (status !== g.quest.db.status) await saveDbQuest(g.quest, { status }).catch(() => {});
     }
     return out;

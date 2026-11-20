@@ -94,7 +94,8 @@ Each slice adds something you can use on its own (user: small slices of function
   - Clicking a step goes to its spot (a Talk step without a spot: the NPC's).
   - **Editors:** right-click the map **Add step here (quest)** adds a Go step at that tile; the NPC window gets **Add talk step**; the guide has **Add note step** and **Add segment**. New steps go to the end of the last segment and open their form. The form: kind, what to do, NPC or monster (with name suggestions) or items (item picker + counts), the spot ("Move step here" in the right-click menu while the form is open, "remove spot"), Checked, Save / Cancel / Delete. Drag a step onto another to put it before it, or onto a segment to put it at the end. Segments: rename, delete when empty.
   - The guide belongs to the last opened quest that's in the database and stays while the quest window is closed, so "Add talk step" works from an NPC window.
-  - **Checked status:** a quest with steps is checked when all its steps are; the editors' changes keep `map_quests.status` in step, and the quest's own Checked tick only shows while it has no steps.
+  - **Checked status:** a quest with steps is checked when all its steps are; the editors' changes keep `map_quests.status` in step, and the quest's own Checked tick only shows while it has no steps. Deleting the last step makes the quest not checked.
+  - Tested 2026-11-20 on Paradox Tower: Add step here (creates Part 1), Add talk step (Riddler), Add note step, edit + save, drag to reorder and into another segment, ticks / Back a step (kept in localStorage), all steps checked -> "Not checked yet" gone, add / rename / delete segment, delete steps. Test data removed afterwards.
 
 ### 13e. Route through the segment
 - The route from step to step in order, drawn with the existing router (locked doors, boats, climbing).
