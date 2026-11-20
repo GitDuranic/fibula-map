@@ -6,6 +6,7 @@
 --
 -- Only two Discord accounts may edit quests: their Discord user IDs are written into map_is_editor() below
 -- (hard-coded on purpose: no editors table). To change who may edit, change the IDs and run this again.
+-- The repo keeps the placeholders: the real IDs are only in Supabase (user, 2026-11-20).
 --
 -- A Discord user ID is the long number Discord shows with "Copy User ID" (Settings -> Advanced -> Developer Mode,
 -- then right-click your name). Someone who logged in to the planner can also be found with:
