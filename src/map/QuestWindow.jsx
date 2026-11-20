@@ -44,11 +44,12 @@ export function ItemPicker({ world, placeholder, onPick }) {
 
 // The editors' form (slice 13c): name, level, area, rewards, notes and the checked status of a quest's database row.
 // onSave(changes) saves it (throws with a message when it can't).
-function QuestEdit({ row, onSave, onDone, hasSteps }) {
+function QuestEdit({ world, row, onSave, onDone, hasSteps }) {
   const [f, setF] = useState(() => ({
     name: row.name, level: row.level == null ? '' : String(row.level), area: row.area || '', rewards: row.rewards || '',
-    notes: row.notes || '', checked: row.status === 'checked',
+    notes: row.notes || '', checked: row.status === 'checked', items: row.reward_items || [],
   }));
+  const hasItems = row.reward_items !== undefined; // database step 4 run (0004_map_quest_reward_items.sql)
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
@@ -60,7 +61,10 @@ function QuestEdit({ row, onSave, onDone, hasSteps }) {
     const blank = (s) => s.trim() || null;
     setBusy(true); setErr(null);
     try {
-      await onSave({ name, level, area: blank(f.area), rewards: blank(f.rewards), notes: blank(f.notes), ...(hasSteps ? {} : { status: f.checked ? 'checked' : 'not checked' }) });
+      await onSave({
+        name, level, area: blank(f.area), rewards: blank(f.rewards), notes: blank(f.notes),
+        ...(hasItems ? { reward_items: f.items } : {}), ...(hasSteps ? {} : { status: f.checked ? 'checked' : 'not checked' }),
+      });
       onDone();
     } catch (e) { setErr(e.message || String(e)); setBusy(false); }
   };
@@ -71,7 +75,24 @@ function QuestEdit({ row, onSave, onDone, hasSteps }) {
         <label className="tm-quest-field tm-quest-level">Level<input className="tm-input" value={f.level} onChange={set('level')} inputMode="numeric" maxLength={3} /></label>
         <label className="tm-quest-field">Area<input className="tm-input" value={f.area} onChange={set('area')} maxLength={60} spellCheck={false} /></label>
       </div>
-      <label className="tm-quest-field">Rewards<textarea className="tm-input" rows={3} value={f.rewards} onChange={set('rewards')} maxLength={500} /></label>
+      <label className="tm-quest-field">Rewards<textarea className="tm-input" rows={2} value={f.rewards} onChange={set('rewards')} maxLength={500} placeholder="e.g. Choice of two of these rewards:" /></label>
+      {row.wiki_reward && <div className="tm-muted" title="For reference: TibiaWiki describes today's Tibia, often not 7.x">TibiaWiki: {row.wiki_reward}</div>}
+      {hasItems ? (
+        <div className="tm-quest-field">Reward items (shown as icons under the text)
+          {f.items.map(([id, count], j) => (
+            <div className="tm-offer tm-quest-item" key={`${id}:${j}`}>
+              <div className="tm-slot"><ItemIcon world={world} id={id} count={count} /></div>
+              <span className="tm-offer-name">{world.itemName(id)}</span>
+              <input
+                className="tm-input tm-quest-count" type="number" min={1} max={10000} value={count} title="How many"
+                onChange={(e) => { const n = Math.max(1, Math.min(10000, parseInt(e.target.value, 10) || 1)); setF({ ...f, items: f.items.map((it, k) => (k === j ? [it[0], n] : it)) }); }}
+              />
+              <button type="button" className="tm-close tm-quest-remove" onClick={() => setF({ ...f, items: f.items.filter((_, k) => k !== j) })} title="Remove this item" aria-label="Remove this item">×</button>
+            </div>
+          ))}
+          <ItemPicker world={world} placeholder="Add a reward item" onPick={(id) => setF({ ...f, items: [...f.items, [id, 1]] })} />
+        </div>
+      ) : <div className="tm-quest-error">Run database step 4 (0004_map_quest_reward_items.sql) to add reward items.</div>}
       <label className="tm-quest-field">Notes<textarea className="tm-input" rows={3} value={f.notes} onChange={set('notes')} maxLength={2000} /></label>
       {!hasSteps && (
         <label className="tm-check" title="Someone went through this quest and the information is right (a quest with steps is checked when all its steps are)">
@@ -111,12 +132,23 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
         <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>
       </div>
       <div className="tm-window-body">
-        {editing === q && d && onSave ? <QuestEdit row={d} onSave={(changes) => onSave(q, changes)} onDone={() => setEditing(null)} hasSteps={!!guide?.guide?.steps.length} /> : (
+        {editing === q && d && onSave ? <QuestEdit world={world} row={d} onSave={(changes) => onSave(q, changes)} onDone={() => setEditing(null)} hasSteps={!!guide?.guide?.steps.length} /> : (
         <>
         {editable ? <div className="tm-muted">{markText(q)}{info ? ` · ${info}` : ''}</div> : info && <div className="tm-muted">{info}</div>}
         {/* The reward with the quest's information at the top (user 2026-11-20). */}
-        <div className="tm-quest-reward"><span className="tm-quest-reward-label">Reward:</span> {rewards || wiki || 'not known'}</div>
-        {rewards && wiki && rewards !== wiki && <div className="tm-muted">TibiaWiki: {wiki}</div>}
+        {/* Free text with the items as icons under it (user 2026-11-20); TibiaWiki's reward (today's Tibia) only for
+            editors, as a reference. */}
+        <div className="tm-quest-reward"><span className="tm-quest-reward-label">Reward:</span> {rewards || (d ? (d.reward_items?.length ? '' : 'not known') : wiki || 'not known')}</div>
+        {d?.reward_items?.length > 0 && (
+          <div className="tm-quest-reward-items">
+            {d.reward_items.map(([id, count], j) => (
+              <button type="button" className="tm-slot tm-quest-reward-item" key={j} onClick={() => onItem(id)} title={`${count > 1 ? `${count} ` : ''}${world.itemName(id)}: who buys it`}>
+                <ItemIcon world={world} id={id} count={count} />
+              </button>
+            ))}
+          </div>
+        )}
+        {onSave && wiki && <div className="tm-muted" title="Only editors see this: TibiaWiki describes today's Tibia">TibiaWiki: {wiki}</div>}
         {d && d.status !== 'checked' && <div className="tm-quest-draft" title="Nobody has gone through this quest's guide yet: it may be wrong">Not checked yet</div>}
         {q.listed && setOn && (
           <button type="button" className={`tm-btn tm-quest-follow${isOn ? ' tm-pressed' : ''}`} onClick={() => setOn(isOn ? null : q.n)}
