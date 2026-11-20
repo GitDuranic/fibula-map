@@ -308,3 +308,25 @@
 .tm-quest-error { color: #e06060; }
 .tm-quest-edit-buttons { display: flex; gap: 4px; }
 .tm-quest-edit-buttons .tm-btn { flex: 1; }
+
+/* the guide in the quest window (slice 13d) */
+.tm-guide { display: flex; flex-direction: column; gap: 2px; }
+.tm-guide-seg { display: flex; flex-direction: column; gap: 1px; }
+.tm-guide-seg-head { display: flex; gap: 6px; align-items: baseline; margin-top: 3px; }
+.tm-guide-seg-name { flex: 1; min-width: 0; background: none; border: 0; padding: 0; font: inherit; color: #e0e0e0; text-align: left; cursor: pointer; }
+.tm-guide-rename { margin-top: 3px; }
+.tm-step { border: 1px solid transparent; padding: 1px 0; }
+.tm-step-cur { border-color: #5a5a5a; background: rgba(255, 255, 255, 0.06); }
+.tm-step-done .tm-step-text { color: #808080; text-decoration: line-through; }
+.tm-step-drag { opacity: 0.4; }
+.tm-step-row { display: flex; gap: 3px; align-items: flex-start; }
+.tm-step-row input[type=checkbox] { margin: 1px 0 0; flex: none; }
+.tm-step-main { flex: 1; min-width: 0; display: flex; gap: 3px; align-items: baseline; background: none; border: 0; padding: 0; font: inherit; color: var(--tm-text); text-align: left; cursor: pointer; }
+.tm-step-main:hover .tm-step-text { color: #fff; }
+.tm-step-num { flex: none; color: #a0a0a0; }
+.tm-step-kind { flex: none; font-size: 9px; padding: 0 2px; border: 1px solid #5a5a5a; color: #c8b070; }
+.tm-step-text { min-width: 0; overflow-wrap: anywhere; }
+.tm-step-unchecked { flex: none; color: #d8a860; }
+.tm-step-items { display: flex; flex-wrap: wrap; gap: 1px; margin-left: 17px; }
+.tm-step-edit { margin: 3px 0 4px 17px; }
+.tm-step-row .tm-link { flex: none; }

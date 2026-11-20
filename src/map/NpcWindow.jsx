@@ -32,7 +32,8 @@ function Offers({ world, title, offers }) {
 }
 
 // onTalk: opens the NPC's conversation next to it on the map (NpcTalk.jsx), for NPCs that have one (npc.t).
-export default function NpcWindow({ world, npc, onClose, onTravel, onRoute, onTalk }) {
+// addStepTo: an editor has a quest's guide open (its name): "Add talk step" adds this NPC to it (onAddStep).
+export default function NpcWindow({ world, npc, onClose, onTravel, onRoute, onTalk, addStepTo, onAddStep }) {
   const [x, y, z] = npc.p;
   const nothing = !npc.sells.length && !npc.buys.length && !npc.travel.length;
   return (
@@ -47,6 +48,7 @@ export default function NpcWindow({ world, npc, onClose, onTravel, onRoute, onTa
           <button type="button" className="tm-btn" onClick={onRoute} title="Find the way to this NPC">Route here</button>
           {npc.t && <button type="button" className="tm-btn" onClick={onTalk} title="What you can say to this NPC and what it answers">Conversation</button>}
         </div>
+        {addStepTo && <button type="button" className="tm-btn tm-quest-follow" onClick={onAddStep} title={`Add a talk step with ${npc.n} to ${addStepTo}`}>Add talk step</button>}
         {npc.sells.length > 0 && <Offers world={world} title="Sells" offers={npc.sells} />}
         {npc.buys.length > 0 && <Offers world={world} title="Buys" offers={npc.buys} />}
         {npc.travel.length > 0 && (

@@ -84,6 +84,17 @@ Each slice adds something you can use on its own (user: small slices of function
 - Editing: right-click "Add step here", click an NPC for "Add talk step", drag to reorder, a checked tick per step.
 - The guide: numbered markers for the current segment, a step list with ticks, Back a step, "not checked" marks and "12 of 18 steps checked".
 - **Useful because:** the first fully guided quests, entered by hand.
+- **Split in two (user, 2026-11-20):** 13d-1 the steps as a list (usable on its own as a written guide), 13d-2 the numbered markers on the map.
+- **13d-1 built (2026-11-20):**
+  - **Database step 3:** `supabase/migrations/0003_map_quest_steps.sql`: `map_quest_segments` (quest, sort, name; null name shows as "Part N") and `map_quest_steps` (quest, segment, sort, kind talk/go/get/kill/note, text, x/y/z, npc, monster, items [[id, count]], any_group, checked, source for 13j). Everyone reads; editors write. Changes go into `map_quest_history` too (new columns `tbl` = quest/segment/step and `row_id`; `quest_id` stays the quest so a quest's whole history is together). Sort numbers in gaps of 10; a move renumbers the segment.
+  - Players read steps over REST (no npm package); editors write through the Supabase client (`src/map/engine/questguide.js`).
+  - **Guide** section in the quest window (`src/map/QuestGuide.jsx`), between the Edit button and Reward. Steps numbered through the whole quest, with a kind tag (Talk, Go, Get, Kill, Note) and their text; without text: "Talk to Riddler", "Kill Dragon", "Get 2 Gold Coin", "Go here". An orange dot marks a step that isn't checked; "12 of 18 steps checked" on top.
+  - **Progress:** a tick per step; ticking it means done and moves you to the next step, unticking one goes back to it. **Back a step** and **Start over**. The step you're on has a frame, done steps are struck through. Kept in localStorage `tm-quest-progress` per quest id (survives renaming).
+  - **Segments:** headers only when there's more than one (always for editors), folded except the one you're on.
+  - Clicking a step goes to its spot (a Talk step without a spot: the NPC's).
+  - **Editors:** right-click the map **Add step here (quest)** adds a Go step at that tile; the NPC window gets **Add talk step**; the guide has **Add note step** and **Add segment**. New steps go to the end of the last segment and open their form. The form: kind, what to do, NPC or monster (with name suggestions) or items (item picker + counts), the spot ("Move step here" in the right-click menu while the form is open, "remove spot"), Checked, Save / Cancel / Delete. Drag a step onto another to put it before it, or onto a segment to put it at the end. Segments: rename, delete when empty.
+  - The guide belongs to the last opened quest that's in the database and stays while the quest window is closed, so "Add talk step" works from an NPC window.
+  - **Checked status:** a quest with steps is checked when all its steps are; the editors' changes keep `map_quests.status` in step, and the quest's own Checked tick only shows while it has no steps.
 
 ### 13e. Route through the segment
 - The route from step to step in order, drawn with the existing router (locked doors, boats, climbing).

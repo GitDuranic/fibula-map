@@ -76,3 +76,6 @@ export async function saveQuest(cfg, id, changes) {
   if (!data) throw new Error('Not saved: this account may not edit quests.');
   return data;
 }
+
+// The Supabase client, for the guide's writes (questguide.js).
+export const dbClient = (cfg) => sb(cfg);

@@ -14,6 +14,7 @@ import { createRouter } from './engine/router.js';
 import { drawText, textWidth } from './engine/text.js';
 import { questDbConfig, questOn, setQuestOn } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest } from './engine/questauth.js';
+import * as qg from './engine/questguide.js';
 import './tibia-map.css';
 
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
@@ -510,6 +511,63 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     worldRef.current?.buildSearch();
     setQuestRev((r) => r + 1);
     redraw();
+  };
+  // The guide (13d): the segments and steps of the last quest opened that's in the database. It stays when the
+  // quest window closes, so an editor can click an NPC and add a talk step to it. { quest, guide, error }
+  const [guide, setGuide] = useState(null);
+  const [editStep, setEditStep] = useState(null); // the step whose form is open (editors)
+  const loadGuide = useCallback(async (q) => {
+    if (!dbCfg || !q?.db) return;
+    setGuide((g) => (g?.quest === q ? g : { quest: q, guide: null, error: null }));
+    try {
+      const data = await qg.fetchGuide(dbCfg, q.db.id);
+      setGuide((g) => (g && g.quest !== q ? g : { quest: q, guide: data, error: null }));
+      return data;
+    } catch (e) {
+      setGuide((g) => (g && g.quest !== q ? g : { quest: q, guide: null, error: e.message || String(e) }));
+      return null;
+    }
+  }, [dbCfg]);
+  // An editor's change to the guide, then the guide again; a quest with steps is checked when all its steps are.
+  const editGuide = async (fn) => {
+    const g = guide;
+    if (!g?.guide) return null;
+    const out = await fn(g.guide);
+    const data = await loadGuide(g.quest);
+    if (data?.steps.length) {
+      const status = data.steps.every((t) => t.checked) ? 'checked' : 'not checked';
+      if (status !== g.quest.db.status) await saveDbQuest(g.quest, { status }).catch(() => {});
+    }
+    return out;
+  };
+  const guideEd = login.editor && guide?.guide ? { // (without database step 3 the panel says so and offers nothing)
+    addNote: (segId) => editGuide((gd) => qg.addStep(dbCfg, gd, { kind: 'note' }, segId)).then((t) => t && setEditStep(t.id)),
+    saveStep: (id, c) => editGuide(() => qg.updateStep(dbCfg, id, c)),
+    deleteStep: (id) => editGuide(() => qg.deleteStep(dbCfg, id)),
+    moveStep: (id, segId, beforeId) => editGuide((gd) => qg.moveStep(dbCfg, gd, id, segId, beforeId)),
+    addSegment: () => editGuide((gd) => qg.addSegment(dbCfg, gd)),
+    renameSegment: (id, name) => editGuide(() => qg.renameSegment(dbCfg, id, name)),
+    deleteSegment: (id) => editGuide(() => qg.deleteSegment(dbCfg, id)),
+  } : null;
+  // Adds a step to the guide's quest (right-click "Add step here", NPC "Add talk step") and opens its form in the
+  // quest window.
+  const addGuideStep = async (fields) => {
+    const q = guide?.quest;
+    try {
+      const t = await editGuide((gd) => qg.addStep(dbCfg, gd, fields));
+      if (selectedQuest.current?.quest !== q) selectQuest({ quest: q, i: null });
+      if (t) setEditStep(t.id);
+    } catch (e) { setLocNote(`Could not add the step: ${e.message || e}`); }
+  };
+  // Opening a quest that's in the database loads its guide (another quest's step form closes).
+  const questSelQ = questSel?.quest;
+  useEffect(() => {
+    if (!questSelQ?.db) return;
+    if (guide?.quest !== questSelQ) { setEditStep(null); loadGuide(questSelQ); }
+  }, [questSelQ]); // eslint-disable-line react-hooks/exhaustive-deps
+  const moveEditStep = (p) => {
+    const id = editStep;
+    editGuide(() => qg.updateStep(dbCfg, id, { x: p[0], y: p[1], z: p[2] })).catch((e) => setLocNote(`Could not move the step: ${e.message || e}`));
   };
   const [locNote, setLocNote] = useState(null); // a failed save, shown under the search
   // Named locations (the user's own, dev only): add or remove a name on a square through the dev server, then search
@@ -1698,6 +1756,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
                 ['Route to here', () => updateRoute({ to: { label: menu.tile.join(', '), pos: menu.tile } })],
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
                 ...(world?.customEditable ? [['Add location here', () => { setLocName(''); setMenu({ ...menu, adding: true }); }, true]] : []),
+                ...(guideEd && !guide.guide.missing ? [[`Add step here (${guide.quest.n.replace(/ Quest$/, '')})`, () => addGuideStep({ kind: 'go', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] })]] : []),
+                ...(guideEd && editStep ? [['Move step here', () => moveEditStep(menu.tile)]] : []),
                 ...(world?.questEditable ? [['Add quest spot here', () => { setLocName(''); setMenu({ ...menu, addingQuest: true }); }, true]] : []),
                 ...(world?.customEditable ? world.customAt(...menu.tile).map((n) => [`Remove '${n}'`, () => saveLocation({ remove: { n, p: menu.tile } })]) : []),
               ].map(([label, act, keepOpen]) => (
@@ -1785,6 +1845,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           <QuestWindow
             world={world} chest={questSel} editable={!!world.questEditable} onEdit={editQuest} onQuest={onQuest} setOn={setOnQuest}
             onSave={login.editor ? saveDbQuest : null}
+            guide={dbCfg && questSel.quest.db ? {
+              guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
+              ed: guideEd, editStep, setEditStep, onGo: (p) => jump({ x: p[0], y: p[1], z: p[2] }),
+            } : null}
             onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
           />
         )}
@@ -1805,6 +1869,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           <NpcWindow
             world={world} npc={npc} onClose={() => selectNpc(null)} onTravel={(t) => jump({ x: t[2], y: t[3], z: t[4] })}
             onRoute={() => updateRoute({ to: { label: npc.n, pos: npc.p } })} onTalk={() => openTalk(npc)}
+            addStepTo={guideEd && !guide.guide.missing ? guide.quest.n : null} onAddStep={() => addGuideStep({ kind: 'talk', npc: npc.n, x: npc.p[0], y: npc.p[1], z: npc.p[2] })}
           />
         )}
         {item && world && (
