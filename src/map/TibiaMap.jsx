@@ -350,6 +350,10 @@ function searchedRect(kd, f, ox, oy, s, k) {
   return { x: Math.round(cx + (16 - w0 - kd.d[0]) * sc), y: Math.round(cy + (16 - h0 - kd.d[1]) * sc), w: Math.round(w0 * sc), h: Math.round(h0 * sc), sc, cx, cy, r: Math.max(10 * k, 18 * sc) };
 }
 
+// The old quest spots (slices 10, 12) are switched off (user 2026-11-20: replaced by the steps; a Reward step gets its
+// own look). Their data stays until 13i turns them into steps.
+const OLD_QUEST_SPOTS = false;
+
 // Quest chests (slice 10): a chest icon in a gold ring on each quest chest, and the quest's name above each group
 // of its chests, from QUESTS_FROM, where their floor is shown (as NPCs, npcFrame).
 const QUESTS_FROM = 16;
@@ -570,6 +574,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     renameSegment: (id, name) => editGuide(() => qg.renameSegment(dbCfg, id, name)),
     deleteSegment: (id) => editGuide(() => qg.deleteSegment(dbCfg, id)),
   } : null;
+  // The top item on a tile that isn't ground (a Reward step's chest, box or corpse), or null.
+  const topItemAt = ([x, y, z]) => {
+    const world = worldRef.current, items = world?.tile(x, y, z)?.items || [];
+    for (let i = items.length - 1; i >= 0; i--) if (!world.defs[items[i].id]?.f?.GROUND) return items[i].id;
+    return null;
+  };
   // Adds a step to the guide's quest (right-click "Add step here", NPC "Add talk step") and opens its form in the
   // quest window.
   const addGuideStep = async (fields) => {
@@ -839,7 +849,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     }
 
     // Quest chests (slice 10): the chest in a gold ring (white when its window is open), then the quests' names.
-    {
+    if (OLD_QUEST_SPOTS) {
       const kq = Math.max(1, Math.round(window.devicePixelRatio || 1));
       for (const { c, f } of visibleQuestChests(world, v, left, top, right, bottom)) {
         const r = questRing(f, ox, oy, s, kq), sel = selectedQuest.current === c;
@@ -880,6 +890,25 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         if (!f || f[0] < left - 2 || f[0] > right + 2 || f[1] < top - 2 || f[1] > bottom + 2) continue;
         const r = stepRing(f, ox, oy, s, kq, m.state);
         ctx.globalAlpha = m.state === 'done' ? 0.45 : 1;
+        if (m.step.kind === 'reward') {
+          // A Reward step (user 2026-11-20): its chest (object) in a gold ring, white when it's the step you're on,
+          // with the step number small at the top right.
+          const rr = Math.max(r.r, questRing(f, ox, oy, s, kq).r);
+          ctx.beginPath(); ctx.arc(r.cx, r.cy, rr, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fill();
+          ctx.strokeStyle = m.state === 'cur' ? '#ffffff' : '#ffd700'; ctx.lineWidth = (m.state === 'cur' ? 3 : 2) * kq; ctx.stroke();
+          const size = Math.round(rr * 1.5);
+          ctx.imageSmoothingEnabled = size < 32;
+          ctx.drawImage(world.iconCanvas(m.step.object || qg.CHEST_ICON), Math.round(r.cx - size / 2), Math.round(r.cy - size / 2), size, size);
+          ctx.imageSmoothingEnabled = false;
+          const t = String(m.n);
+          ctx.save();
+          ctx.translate(Math.round(r.cx + rr * 0.6), Math.round(r.cy - rr - (world.font.cellH * kq) / 2));
+          ctx.scale(kq, kq);
+          drawText(ctx, world.font, t, 0, 0, m.state === 'cur' ? '#ffffff' : '#ffd700');
+          ctx.restore();
+          continue;
+        }
         ctx.beginPath(); ctx.arc(r.cx, r.cy, r.r, 0, Math.PI * 2);
         ctx.fillStyle = m.state === 'cur' ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.6)'; ctx.fill();
         ctx.strokeStyle = m.state === 'cur' ? '#ffffff' : '#ffd700'; ctx.lineWidth = (m.state === 'cur' ? 3 : 2) * kq; ctx.stroke();
@@ -1185,7 +1214,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   // The quest chest at canvas point p (inside its ring), or null.
   const questAtPoint = (p) => {
     const world = worldRef.current, c = canvasRef.current, v = view.current, s = anim.current.s, b = viewBox.current;
-    if (!world?.questChests || !c || !b) return null;
+    if (!OLD_QUEST_SPOTS || !world?.questChests || !c || !b) return null;
     const ox = Math.round(c.width / 2 - v.x * s), oy = Math.round(c.height / 2 - v.y * s);
     const k = Math.max(1, Math.round(window.devicePixelRatio || 1));
     for (const { c: ch, f } of visibleQuestChests(world, v, b.left, b.top, b.right, b.bottom)) {
@@ -1579,7 +1608,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const devTools = !!login.editor;
   // A quest's window: on spot i (going there), or without a spot when it has none (slice 12).
   const goToQuest = useCallback((q, i = 0) => {
-    const c = worldRef.current?.questChests.find((x) => x.quest === q && x.i === i);
+    const c = OLD_QUEST_SPOTS && worldRef.current?.questChests.find((x) => x.quest === q && x.i === i);
     if (c) { jump({ x: c.p[0], y: c.p[1], z: c.p[2] }); selectQuest(c); }
     else selectQuest({ quest: q, i: null });
   }, [jump, selectQuest]);
@@ -2003,8 +2032,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
                 ...(devTools && world?.customEditable ? [['Add location here', () => { setLocName(''); setMenu({ ...menu, adding: true }); }, true]] : []),
                 ...(guideEd && !guide.guide.missing ? [[`Add step here (${guide.quest.n.replace(/ Quest$/, '')})`, () => addGuideStep({ kind: 'go', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] })]] : []),
+                // A Reward step (database step 6): the chest's spot; the object is the item on that tile when there is one.
+                ...(guideEd && !guide.guide.missing ? [['Add reward step here', () => addGuideStep({ kind: 'reward', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2], object: topItemAt(menu.tile) })]] : []),
                 ...(guideEd && editStep ? [['Move step here', () => moveEditStep(menu.tile)]] : []),
-                ...(devTools && world?.questEditable ? [['Add quest spot here', () => { setLocName(''); setMenu({ ...menu, addingQuest: true }); }, true]] : []),
+                ...(OLD_QUEST_SPOTS && devTools && world?.questEditable ? [['Add quest spot here', () => { setLocName(''); setMenu({ ...menu, addingQuest: true }); }, true]] : []),
                 ...(devTools && world?.customEditable ? world.customAt(...menu.tile).map((n) => [`Remove '${n}'`, () => saveLocation({ remove: { n, p: menu.tile } })]) : []),
               ].map(([label, act, keepOpen]) => (
                 <button type="button" key={label} className="tm-menu-item" onClick={() => { if (!keepOpen) setMenu(null); act(); }}>{label}</button>

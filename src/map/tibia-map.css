@@ -346,6 +346,8 @@
 .tm-step-leg-err { color: #d8a860; }
 /* step cards (13f-0b): icon, bold title, text; big enough to read without opening */
 .tm-step-card { padding: 3px 2px; margin-bottom: 2px; border-color: #3a3a3a; }
+.tm-step-reward { border-color: #a08030; background: rgba(255, 215, 0, 0.06); } /* Reward steps: a gold card */
+.tm-step-reward .tm-step-title { color: #ffd700; }
 .tm-step-card .tm-step-row { gap: 5px; align-items: center; }
 .tm-step-icon { flex: none; padding: 0; cursor: pointer; }
 .tm-step-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }

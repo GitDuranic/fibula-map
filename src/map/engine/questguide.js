@@ -5,7 +5,9 @@
 // step:  { id, segment_id, sort, kind, text, x, y, z, npc, monster, items: [[id, count]], any_group, checked, source }
 import { dbClient } from './questauth.js';
 
-export const KINDS = { talk: 'Talk', go: 'Go', get: 'Get', kill: 'Kill', note: 'Note' };
+export const KINDS = { talk: 'Talk', go: 'Go', get: 'Get', kill: 'Kill', reward: 'Reward', note: 'Note' };
+// A Reward step's object on the map when it has none of its own (database step 6: map_quest_steps.object).
+export const CHEST_ICON = 2472;
 const GAP = 10; // sort numbers leave gaps
 
 // Reads a quest's guide (REST with the public key, like the quest list: no npm package for players).
@@ -45,6 +47,7 @@ export function stepTitle(world, step) {
     case 'kill': return step.monster ? `Kill ${step.monster}` : 'Kill';
     case 'get': return step.items.length ? `Get ${step.items.map(([id, n]) => `${n > 1 ? `${n} ` : ''}${world.itemName(id)}`).join(', ')}` : 'Get';
     case 'go': return 'Go here';
+    case 'reward': return 'Reward';
     default: return 'Note';
   }
 }

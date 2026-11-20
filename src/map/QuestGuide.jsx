@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ItemIcon } from './NpcWindow.jsx';
 import { MonsterIcon } from './MonsterWindow.jsx';
 import { ItemPicker } from './QuestWindow.jsx';
-import { KINDS, stepPos, stepTitle, currentIndex } from './engine/questguide.js';
+import { KINDS, CHEST_ICON, stepPos, stepTitle, currentIndex } from './engine/questguide.js';
 import { fmtTime } from './RoutePanel.jsx';
 
 // An NPC's outfit, fitted into a 32x32 slot like an item icon (13f-0b).
@@ -48,6 +48,8 @@ function stepCard(world, t) {
       title: stepTitle(world, { ...t, text: '' }), text: t.text, items: t.items.length > 1 ? t.items : null,
     };
   }
+  // Reward (user 2026-11-20): the chest (its object) as the icon, its items as icons, a gold card.
+  if (t.kind === 'reward') return { icon: <ItemIcon world={world} id={t.object || CHEST_ICON} count={1} />, title: 'Reward', text: t.text, items: t.items.length ? t.items : null };
   return { icon: <ItemIcon world={world} id={t.kind === 'go' ? MAP_ICON : SCROLL_ICON} count={1} />, title: stepTitle(world, t), text: null };
 }
 
@@ -55,7 +57,10 @@ function stepCard(world, t) {
 function StepEdit({ world, step, onSave, onDelete, onDone }) {
   const [f, setF] = useState(() => ({
     kind: step.kind, text: step.text || '', npc: step.npc || '', monster: step.monster || '', items: step.items || [], checked: step.checked,
+    object: step.object ?? null,
   }));
+  const hasReward = step.object !== undefined; // database step 6 run (0006_map_quest_reward_steps.sql)
+  const withItems = f.kind === 'get' || f.kind === 'reward';
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
@@ -65,13 +70,14 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
   };
   const save = () => act(() => onSave({
     kind: f.kind, text: f.text.trim() || null, npc: f.kind === 'talk' ? f.npc.trim() || null : null,
-    monster: f.kind === 'kill' ? f.monster.trim() || null : null, items: f.kind === 'get' ? f.items : [], checked: f.checked,
+    monster: f.kind === 'kill' ? f.monster.trim() || null : null, items: withItems ? f.items : [], checked: f.checked,
+    ...(hasReward ? { object: f.kind === 'reward' ? f.object : null } : {}),
   }));
   return (
     <div className="tm-quest-edit tm-step-edit" onClick={(e) => e.stopPropagation()}>
       <label className="tm-quest-field">Kind
         <select className="tm-input tm-select" value={f.kind} onChange={set('kind')}>
-          {Object.entries(KINDS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+          {Object.entries(KINDS).filter(([k]) => k !== 'reward' || hasReward || step.kind === 'reward').map(([k, label]) => <option key={k} value={k}>{label}</option>)}
         </select>
       </label>
       <label className="tm-quest-field">What to do<textarea className="tm-input" rows={2} value={f.text} onChange={set('text')} maxLength={1000} placeholder={stepTitle(world, { ...step, ...f, text: '' })} /></label>
@@ -85,8 +91,18 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
           <input className="tm-input" value={f.monster} onChange={set('monster')} list="tm-monster-names" maxLength={40} spellCheck={false} />
         </label>
       )}
-      {f.kind === 'get' && (
-        <div className="tm-quest-field">Items
+      {f.kind === 'reward' && (
+        <div className="tm-quest-field">Object on the map
+          <div className="tm-offer tm-quest-item">
+            <div className="tm-slot"><ItemIcon world={world} id={f.object || CHEST_ICON} count={1} /></div>
+            <span className="tm-offer-name">{f.object ? world.itemName(f.object) : 'chest (default)'}</span>
+            {f.object && <button type="button" className="tm-close tm-quest-remove" onClick={() => setF({ ...f, object: null })} title="Back to the default chest" aria-label="Back to the default chest">×</button>}
+          </div>
+          <ItemPicker world={world} placeholder="Chest, box, corpse..." onPick={(id) => setF({ ...f, object: id })} />
+        </div>
+      )}
+      {withItems && (
+        <div className="tm-quest-field">{f.kind === 'reward' ? 'What it gives' : 'Items'}
           {f.items.map(([id, count], j) => (
             <div className="tm-offer tm-quest-item" key={`${id}:${j}`}>
               <div className="tm-slot"><ItemIcon world={world} id={id} count={count} /></div>
@@ -204,7 +220,7 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
               const long = c.text && c.text.length > 90;
               return (
                 <div
-                  key={t.id} className={`tm-step tm-step-card${i === cur ? ' tm-step-cur' : ''}${done ? ' tm-step-done' : ''}${drag === t.id ? ' tm-step-drag' : ''}`}
+                  key={t.id} className={`tm-step tm-step-card${t.kind === 'reward' ? ' tm-step-reward' : ''}${i === cur ? ' tm-step-cur' : ''}${done ? ' tm-step-done' : ''}${drag === t.id ? ' tm-step-drag' : ''}`}
                   draggable={!!ed && editStep !== t.id} onDragStart={() => setDrag(t.id)} onDragEnd={() => setDrag(null)}
                   onDragOver={ed ? (e) => e.preventDefault() : undefined} onDrop={ed ? drop(s.id, t.id) : undefined}
                 >
