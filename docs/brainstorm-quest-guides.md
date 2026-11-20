@@ -76,6 +76,7 @@ Each slice adds something you can use on its own (user: small slices of function
   - **Editor login** is a small link at the bottom of the quest list (only when the map has database settings); logged in it shows the Discord name with "· editor" or "· not an editor", and Log out. Players see only the link.
   - **Edit** button in the quest window for editors: name, level, area, rewards, notes and a **Checked** tick (the quest's status; from 13d a quest is checked when all its steps are, so this tick is temporary). Save writes the row (the history trigger from step 1 keeps the old one) and the map uses the saved row straight away; a renamed quest you're on stays the one you're on. Errors (name taken, not an editor) show in the form.
   - A renamed quest loses its slice 10/12 spots (they're matched by name) until 13i moves the spots to steps.
+  - Tested 2026-11-20 on the test server: login, Edit, Save (note saved with the editor as updated_by), "name taken" error. The development tick for slice 12 spots is now labelled "Spots checked" so it isn't confused with the quest's Checked status.
   - Supabase's allowed redirect URLs must include the map's addresses (local test ports and the page on Ryndean's site).
 
 ### 13d. Steps and segments on the map

@@ -120,7 +120,7 @@ export default function QuestWindow({ world, chest, editable, onEdit, onGo, onIt
         {d && onSave && <button type="button" className="tm-btn tm-quest-follow" onClick={() => setEditing(q)} title="Change this quest (saved for everyone)">Edit</button>}
         {editable && (
           <label className="tm-check" title="You went through this quest on the map and its spots and items are right">
-            <input type="checkbox" checked={q.checked} onChange={(e) => onEdit(q, (raw) => { raw.checked = e.target.checked; }, chest.i)} /> Checked
+            <input type="checkbox" checked={q.checked} onChange={(e) => onEdit(q, (raw) => { raw.checked = e.target.checked; }, chest.i)} /> Spots checked
           </label>
         )}
         <div className="tm-section">
