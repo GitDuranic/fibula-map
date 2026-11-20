@@ -80,10 +80,10 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
 // beforeId), addSegment(), renameSegment(id, name), deleteSegment(id). editStep / setEditStep: the step whose form
 // is open (TibiaMap keeps it, for "Move step here"). onGo(pos): go to a spot. at / setAt(step id | 'done' | null):
 // where you are in this guide (TibiaMap keeps it in the browser, and the map's markers follow it, 13d-2).
-// legs (13e, only for the guide on the map): { byStep: { [step id]: { time } | { error, locked } | { busy } }, total,
-// all (every leg found), show() } for the walk to each step of the current segment; onLeg(step id): that leg into
-// the Route panel.
-export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onLeg }) {
+// legs (13e, only for the guide on the map): { byStep: { [step id]: { time, show() } | { error, locked } | { busy } },
+// total, all (every leg found), show() } for the walk to each step of the current segment (show: fit the view to it).
+// onRouteTo(label, pos): the step you're on as the Route panel's To (only when you ask; the guide's route is separate).
+export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onRouteTo }) {
   const [open, setOpen] = useState({}); // segment id -> shown (default: the segment you're on; every one for editors)
   const [drag, setDrag] = useState(null); // the step being dragged (id)
   const [renaming, setRenaming] = useState(null); // { id, name }
@@ -172,15 +172,17 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                     {legs?.byStep[t.id] && (() => {
                       const l = legs.byStep[t.id];
                       const why = l.locked?.length ? `Locked doors are in the way: ${l.locked.map((d) => (d.key ? `key ${d.key}` : `a door at ${d.p.join(', ')}`)).join(', ')}` : l.error;
+                      if (l.busy) return <span className="tm-step-leg tm-muted" title="Finding the way from the step before">…</span>;
+                      if (l.error) return <span className="tm-step-leg tm-step-leg-err" title={why}>no route</span>;
                       return (
-                        <button
-                          type="button" className={`tm-link tm-step-leg${l.error ? ' tm-step-leg-err' : ''}`} onClick={() => onLeg(t.id)}
-                          title={`${l.error ? why : 'Walking time from the step before'}. Click: this leg in the Route panel`}
-                        >
-                          {l.busy ? '…' : l.error ? 'no route' : fmtTime(l.time)}
+                        <button type="button" className="tm-link tm-step-leg" onClick={l.show} title="Walking time from the step before (fastest way). Click: show this leg">
+                          {fmtTime(l.time)}
                         </button>
                       );
                     })()}
+                    {i === cur && pos && onRouteTo && (
+                      <button type="button" className="tm-link tm-step-leg" onClick={() => onRouteTo(`${i + 1}. ${stepTitle(world, t)}`, pos)} title="Plan a route from where you are (Route panel) to this step">route here</button>
+                    )}
                     {!t.checked && <span className="tm-step-unchecked" title="Not checked yet: may be wrong">•</span>}
                     {ed && editStep !== t.id && <button type="button" className="tm-link" onClick={() => setEditStep(t.id)} title="Change this step">edit</button>}
                   </div>

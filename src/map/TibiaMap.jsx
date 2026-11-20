@@ -692,7 +692,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       }
       // See-through along the route (5c): the floors above and below where the route goes show through.
       const g = { ox, oy, s, W, H, left, top, right, bottom, C, ts };
-      if (routePath.current && ROUTE_OTHER_FLOORS) seeThrough(ctx, world, v, routePath.current, g, budget, offRef);
+      if (shownPath() && ROUTE_OTHER_FLOORS) seeThrough(ctx, world, v, shownPath(), g, budget, offRef);
       // Hover preview (5d): where the hole, stairs or ladder under the mouse leads, also with a route (user), on top.
       const hl = hoverLink.current, hoverTele = hl && world.isTeleport(hl);
       if (hl && !hoverTele && hl[2] === v.z && !(hl[5] < v.z && v.z <= 7 && hl[5] >= v.cut)) {
@@ -959,7 +959,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     }
     // The route: a line through the tiles, bright on this floor, fainter dashes on other floors (see routeAlpha);
     // markers where the floor changes, green at the start, red at the end. Line widths in client pixels.
-    const rp = routePath.current;
+    const rp = shownPath();
     if (rp && rp.length > 1) {
       const fr = ([x, y, z]) => (v.z <= 7 && z <= 7 ? [x - (v.z - z), y - (v.z - z)] : [x, y]);
       const at = (pt) => { const f = fr(pt); return [ox + (f[0] + 0.5) * s, oy + (f[1] + 0.5) * s]; };
@@ -1508,39 +1508,34 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       setLegRes((all) => ({ ...all, [key]: res.routes ? { path: res.routes[0].path } : { error: res.error || 'No route found.', locked: res.locked } }));
     });
   }, [questLegs, legRes, legBase, route.busy, route.cheapBusy, dataUrl]); // eslint-disable-line react-hooks/exhaustive-deps
-  // For draw(): the legs found, except the one shown in the Route panel (drawn as the route).
+  // For draw(): the leg to the step you're on is drawn as the route (floor-change markers, boat arcs, see-through),
+  // unless the Route panel has a route of its own: that one wins and the leg is a plain bright line with the others.
+  // The quest route never touches the Route panel (user 2026-11-20: filling it overwrote your own From/To).
   const questPaths = useRef(null); // [{ path, state }]
+  const questCur = useRef(null); // the current leg's path while it's drawn as the route
   useEffect(() => {
-    const inPanel = (l) => routePath.current && `${route.from?.pos}` === `${l.from}` && `${route.to?.pos}` === `${l.to}`;
-    questPaths.current = questLegs?.legs.filter((l) => legRes[legKey(l)]?.path && !inPanel(l)).map((l) => ({ path: legRes[legKey(l)].path, state: l.state })) || null;
+    const found = questLegs?.legs.filter((l) => legRes[legKey(l)]?.path).map((l) => ({ path: legRes[legKey(l)].path, state: l.state })) || [];
+    const cur = found.find((q) => q.state === 'cur');
+    questCur.current = cur && !routePath.current ? cur.path : null;
+    questPaths.current = found.filter((q) => !(questCur.current && q === cur));
     redraw();
   }, [questLegs, legRes, legBase, route]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Per step of the guide's quest: the leg to it ({ time } | { error, locked } | { busy }), the segment's total and
-  // Show route (fits the view to all of it).
+  // Per step of the guide's quest: the leg to it ({ time, show } | { error, locked } | { busy }; show fits the view to
+  // it), the segment's total and Show route (fits the view to all of it).
   const speedNow = speedOf(char);
   const legInfo = questLegs && (() => {
     const byStep = {};
     let total = 0, all = true;
     for (const l of questLegs.legs) {
       const r = legRes[legKey(l)];
-      byStep[l.step.id] = !r ? { busy: true } : r.path ? { time: routeTime(r.path, speedNow) } : { error: r.error, locked: r.locked };
+      byStep[l.step.id] = !r ? { busy: true } : r.path ? { time: routeTime(r.path, speedNow), show: () => showRoute(r.path) } : { error: r.error, locked: r.locked };
       if (r?.path) total += byStep[l.step.id].time; else all = false;
     }
     const paths = questLegs.legs.map((l) => legRes[legKey(l)]?.path).filter(Boolean);
     return { quest: questLegs.quest, byStep, total, all, show: paths.length ? () => showRoute(paths.flat()) : null };
   })();
-  // Puts the leg to a step into the Route panel: To the step, From the step with a spot before it in its segment
-  // (the first step of a segment keeps the From that's there).
-  const routeToStep = (gd, stepId) => {
-    const world = worldRef.current, steps = gd?.steps || [];
-    const i = steps.findIndex((t) => t.id === stepId), pos = i >= 0 && world && qg.stepPos(world, steps[i]);
-    if (!pos) return;
-    const label = (j) => `${j + 1}. ${qg.stepTitle(world, steps[j])}`.slice(0, 60);
-    let j = i - 1;
-    while (j >= 0 && steps[j].segment_id === steps[i].segment_id && !qg.stepPos(world, steps[j])) j--;
-    const from = j >= 0 && steps[j].segment_id === steps[i].segment_id ? { label: label(j), pos: qg.stepPos(world, steps[j]) } : null;
-    updateRoute({ ...(from ? { from } : {}), to: { label: label(i), pos } });
-  };
+  // The route the map draws as "the route": the Route panel's, else the quest's current leg.
+  const shownPath = () => routePath.current || questCur.current;
 
   // Opens an NPC's conversation next to it (or closes it: null).
   const openTalk = useCallback((n) => { talkRef.current = n; setTalkNpc(n); redraw(); }, [redraw]);
@@ -1669,7 +1664,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   // change [x, y, z, tx, ty, tz, -1], so its arrow can be hovered and clicked like stairs (user). Kept per route.
   const climbCache = useRef({ path: null, list: [] });
   const routeClimbAt = (x, y, z) => {
-    const rp = routePath.current;
+    const rp = shownPath();
     if (!rp) return null;
     if (climbCache.current.path !== rp) {
       const list = [];
@@ -2046,14 +2041,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             guide={dbCfg && questSel.quest.db ? {
               guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
               ed: guideEd, editStep, setEditStep, onGo: (p) => jump({ x: p[0], y: p[1], z: p[2] }),
-              at: atOf(questSel.quest.db.id),
-              // Moving on in the guide on the map puts the leg to the step you're on now in the Route panel (13e).
-              setAt: (id) => {
-                setAt(questSel.quest.db.id, id);
-                if (markQ?.db.id === questSel.quest.db.id && markGuide) routeToStep(markGuide, id ?? markGuide.steps[0]?.id);
-              },
+              at: atOf(questSel.quest.db.id), setAt: (id) => setAt(questSel.quest.db.id, id),
               legs: legInfo?.quest.db.id === questSel.quest.db.id ? legInfo : null,
-              onLeg: (id) => markGuide && routeToStep(markGuide, id),
+              // "Route here": the Route panel's To becomes the step (your own From stays), only when asked (13e).
+              onRouteTo: (label, pos) => updateRoute({ to: { label: label.slice(0, 60), pos } }),
             } : null}
             onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
           />
