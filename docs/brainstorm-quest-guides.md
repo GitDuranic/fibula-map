@@ -122,6 +122,15 @@ Each slice adds something you can use on its own (user: small slices of function
 - In a talk step, build the dialog by clicking through the NPC's keywords from 13a, in a wider pop-out window.
 - The guide's dialog window: full conversation or only your lines; copy buttons; copied lines change colour (click again to undo).
 - **Useful because:** the heart of the feature: say exactly the right things.
+- **Agreed (user, 2026-11-20):** three slices.
+  - **13f-0 Quest panel on the left:** the quest list and the open quest (info, guide, steps, times) move out of the right panel into their own panel left of the map, about 260 px wide, so steps and dialogs have room. It opens with the Quests button, a step marker or opening a quest, has a close button, and stays open (remembered in the browser) until closed; the map gets narrower while it's open. The right panel keeps search, route and the NPC / monster / item / door windows.
+  - **13f-1 Building dialogs + your lines:** "Build dialog" in a talk step's form opens a wider pop-out with the NPC's conversation tree; clicking a word adds that line (with the NPC's answer and what happens) to the step's dialog; lines can be removed and a free line added for things not in the script. The dialog is stored as a **copy of the lines** in the step (stays as checked when the 7.2 scripts replace the TVP ones; a later check can flag lines no longer in the script). Players see your lines under the talk step in the left panel, each with a copy button; copied lines change colour, click again to undo.
+  - **13f-2 Dialog window:** full conversation (NPC answers + what happens) or only your lines.
+- **13f-0 built (2026-11-20, not yet browser-tested: Chrome extension offline):**
+  - `.tm-left` (260 client px, scaled like the right panel) before the map holds the quest list (top, at most 40 % high; the whole height when no quest is open) and the quest window (the rest).
+  - Open/closed is kept in localStorage `tm-quests-open`. The Quests button opens and closes it; the list's × closes the panel and the open quest. Opening a quest (list, search, step marker, Back) opens the panel.
+  - The quest window no longer closes when you open an NPC, monster or door window, and opening a quest no longer closes those: they're in different panels now.
+  - Phones (≤ 600 px): the quest panel goes under the map (at most half the screen high), above the other panel.
 
 ### 13g. "If it goes wrong" replies
 - Muted lines in the full conversation: what the NPC says when an item is missing or a part is already done, and what that means.

@@ -70,6 +70,9 @@
 @media (max-width: 600px) {
   .tm { flex-direction: column; }
   .tm-side { width: auto; flex-direction: row; padding: 0 4px 4px; }
+  .tm .tm-left { order: 2; width: auto; flex-direction: column; max-height: 50vh; padding: 0 4px 4px; } /* the quest panel under the map too */
+  .tm-map { order: 1; }
+  .tm-side:not(.tm-left) { order: 3; }
 }
 
 /* NPC window (side panel): title bar, scrolling body with Sells / Buys / Travel */
@@ -246,6 +249,10 @@
 .tm-menu-quests { display: flex; flex-direction: column; max-height: 220px; overflow-y: auto; }
 .tm-menu-quests-wrap { flex-direction: column; align-items: stretch; }
 .tm-quest-list { flex: 0 1 auto; min-height: 110px; max-height: 30%; }
+/* the quest panel left of the map (13f-0): wider than the right one, for steps and dialogs */
+.tm-left { width: 260px; padding: 4px 0 4px 4px; }
+.tm-left .tm-quest-list { max-height: 40%; }
+.tm-left .tm-quest-list:only-child { flex: 1; max-height: none; }
 
 /* The side panel must fit (user 2026-11-15: route and quest windows fell off the screen): the route panel shrinks
    and its result (the legs) scrolls; the quest list and window share what's left, each scrolling inside. */

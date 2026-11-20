@@ -497,7 +497,14 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   };
   const [menu, setMenu] = useState(null); // the right-click menu: { x, y (CSS px in the map), tile: [x,y,z], adding }
   const [locName, setLocName] = useState(''); // the name being typed for "Add location here"
-  const [questsOpen, setQuestsOpen] = useState(false); // the quest list (13b; the slice 12 checklist in development)
+  // The quest panel left of the map (13f-0; the list from 13b, the slice 12 checklist in development): open until
+  // closed, remembered in the browser.
+  const [questsOpen, setQuestsOpenState] = useState(() => { try { return localStorage.getItem('tm-quests-open') === '1'; } catch { return false; } });
+  const setQuestsOpen = (fn) => setQuestsOpenState((o) => {
+    const n = typeof fn === 'function' ? fn(o) : fn;
+    try { localStorage.setItem('tm-quests-open', n ? '1' : '0'); } catch { /* private mode */ }
+    return n;
+  });
   const [onQuest, setOnQuestState] = useState(questOn); // "I'm on this quest" (13b), kept in the browser
   const setOnQuest = (name) => { setQuestOn(name); setOnQuestState(name); };
   // The quest database's settings, and the editors' Discord login (13c): { user, editor } (editor: may edit quests).
@@ -1374,6 +1381,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     selectedMon.current = sn.mon; setMon(sn.mon);
     selectedDoor.current = sn.door; setDoor(sn.door);
     selectedQuest.current = sn.quest || null; setQuestSel(sn.quest || null);
+    if (sn.quest) setQuestsOpen(true);
     setItem(sn.item);
     viewChanged();
   };
@@ -1543,23 +1551,25 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (n && talkRef.current && n !== talkRef.current) openTalk(null); // another NPC: its conversation closes
     selected.current = n;
     setNpc(n);
-    if (n) { setItem(null); selectedDoor.current = null; setDoor(null); selectedMon.current = null; setMon(null); selectedQuest.current = null; setQuestSel(null); }
+    if (n) { setItem(null); selectedDoor.current = null; setDoor(null); selectedMon.current = null; setMon(null); }
     redraw();
   }, [redraw, openTalk]);
   // Opens the monster window ({ kind | 'all', group }) or closes it (null).
   const selectMonster = useCallback((m) => {
     selectedMon.current = m;
     setMon(m);
-    if (m) { setItem(null); selected.current = null; setNpc(null); selectedDoor.current = null; setDoor(null); selectedQuest.current = null; setQuestSel(null); }
+    if (m) { setItem(null); selected.current = null; setNpc(null); selectedDoor.current = null; setDoor(null); }
     redraw();
   }, [redraw]);
   // Opens the quest window for a quest chest, or closes it (null).
   const selectQuest = useCallback((c) => {
     selectedQuest.current = c;
     setQuestSel(c);
-    if (c) { setItem(null); selected.current = null; setNpc(null); selectedDoor.current = null; setDoor(null); selectedMon.current = null; setMon(null); }
+    // The quest is in its own panel (13f-0): the right panel's windows stay; opening a quest opens the panel.
+    if (c) setQuestsOpen(true);
     redraw();
-  }, [redraw]);
+  }, [redraw]); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeQuests = () => { setQuestsOpen(false); selectQuest(null); };
   // A quest's window: on spot i (going there), or without a spot when it has none (slice 12).
   const goToQuest = useCallback((q, i = 0) => {
     const c = worldRef.current?.questChests.find((x) => x.quest === q && x.i === i);
@@ -1601,7 +1611,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const selectDoor = useCallback((d) => {
     selectedDoor.current = d;
     setDoor(d);
-    if (d) { setItem(null); selected.current = null; setNpc(null); selectedMon.current = null; setMon(null); selectedQuest.current = null; setQuestSel(null); }
+    if (d) { setItem(null); selected.current = null; setNpc(null); selectedMon.current = null; setMon(null); }
     redraw();
   }, [redraw]);
   // Unlocking and locking: the doors are drawn again (open or closed) and the route searched again.
@@ -1897,6 +1907,33 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
 
   return (
     <div className="tm" style={{ ...skin, height }}>
+      {/* The quest panel (13f-0): the quest list and the open quest, left of the map (the right panel is too narrow
+          for steps and dialogs). Open until closed; the map gets narrower. */}
+      {questsOpen && (
+        <div className="tm-side tm-left" style={{ zoom: uiScale / dpr }}>
+          {world && ready && (
+            <QuestList
+              world={world} selected={questSel?.quest} onQuest={onQuest} onPick={(q) => goToQuest(q, 0)} onClose={closeQuests}
+              login={dbCfg ? login : null} onLogIn={() => logIn(dbCfg)} onLogOut={() => logOut(dbCfg)}
+            />
+          )}
+          {questSel && world && (
+            <QuestWindow
+              world={world} chest={questSel} editable={!!world.questEditable} onEdit={editQuest} onQuest={onQuest} setOn={setOnQuest}
+              onSave={login.editor ? saveDbQuest : null}
+              guide={dbCfg && questSel.quest.db ? {
+                guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
+                ed: guideEd, editStep, setEditStep, onGo: (p) => jump({ x: p[0], y: p[1], z: p[2] }),
+                at: atOf(questSel.quest.db.id), setAt: (id) => setAt(questSel.quest.db.id, id),
+                legs: legInfo?.quest.db.id === questSel.quest.db.id ? legInfo : null,
+                // "Route here": the Route panel's To becomes the step (your own From stays), only when asked (13e).
+                onRouteTo: (label, pos) => updateRoute({ to: { label: label.slice(0, 60), pos } }),
+              } : null}
+              onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
+            />
+          )}
+        </div>
+      )}
       <div className="tm-map" ref={wrapRef} tabIndex={0} onKeyDown={onKeyDown}>
         <canvas
           ref={canvasRef} className="tm-canvas"
@@ -2015,7 +2052,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           {/* Route and Quests on their own row: with Back and Home they don't fit the panel's width */}
           <div className="tm-goto-tools">
             <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
-            <button type="button" className="tm-btn" onClick={() => setQuestsOpen((o) => !o)} disabled={!ready} title="The quests, to look up and follow">Quests</button>
+            <button type="button" className="tm-btn" onClick={() => (questsOpen ? closeQuests() : setQuestsOpen(true))} disabled={!ready} title="The quests, to look up and follow (a panel left of the map)">Quests</button>
           </div>
         </form>
         {locNote && <div className="tm-panel tm-error">{locNote}</div>}
@@ -2026,27 +2063,6 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             onSwap={() => updateRoute({ from: route.to, to: route.from })}
             onShow={() => showRoute(route.result?.routes?.[route.pick]?.path)} onPick={pickRoute}
             onClose={clearRoute} doorsAll={doors.all} onDoorsAll={(all) => setDoors({ ...doors, all })}
-          />
-        )}
-        {questsOpen && world && ready && (
-          <QuestList
-            world={world} selected={questSel?.quest} onQuest={onQuest} onPick={(q) => goToQuest(q, 0)} onClose={() => setQuestsOpen(false)}
-            login={dbCfg ? login : null} onLogIn={() => logIn(dbCfg)} onLogOut={() => logOut(dbCfg)}
-          />
-        )}
-        {questSel && world && (
-          <QuestWindow
-            world={world} chest={questSel} editable={!!world.questEditable} onEdit={editQuest} onQuest={onQuest} setOn={setOnQuest}
-            onSave={login.editor ? saveDbQuest : null}
-            guide={dbCfg && questSel.quest.db ? {
-              guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
-              ed: guideEd, editStep, setEditStep, onGo: (p) => jump({ x: p[0], y: p[1], z: p[2] }),
-              at: atOf(questSel.quest.db.id), setAt: (id) => setAt(questSel.quest.db.id, id),
-              legs: legInfo?.quest.db.id === questSel.quest.db.id ? legInfo : null,
-              // "Route here": the Route panel's To becomes the step (your own From stays), only when asked (13e).
-              onRouteTo: (label, pos) => updateRoute({ to: { label: label.slice(0, 60), pos } }),
-            } : null}
-            onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
           />
         )}
         {mon && world && (
