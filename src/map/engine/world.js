@@ -399,13 +399,24 @@ export class World {
 
   // Draws an item as a 32x32 icon (bottom-right anchored, like the client's inventory slots).
   // count: stack size, or the fluid type for fluid containers.
+  // An item bigger than one tile (a 2x2 tree, a big chest) is drawn whole and shrunk into the 32x32 square (user
+  // 2026-11-21: a dead tree as a Reward step's object showed only its bottom-right corner).
   drawIcon(ctx, id, count = 1, dx = 0, dy = 0) {
     const per = this.sheetCells * this.sheetCells;
-    const drawSprite = (slot, x, y) => {
+    const draw = (c) => (slot, x, y) => {
       const sheet = this.sheets[Math.floor(slot / per)], i = slot % per;
-      ctx.drawImage(sheet, (i % this.sheetCells) * TILE, Math.floor(i / this.sheetCells) * TILE, TILE, TILE, x, y, TILE, TILE);
+      c.drawImage(sheet, (i % this.sheetCells) * TILE, Math.floor(i / this.sheetCells) * TILE, TILE, TILE, x, y, TILE, TILE);
     };
-    drawTile(this.defs, { x: 0, y: 0, z: 0, items: [{ id, count }] }, dx, dy, drawSprite);
+    const d = this.defs[id], big = Math.max(d?.w || 1, d?.h || 1);
+    if (big > 1 && !dx && !dy && typeof document !== 'undefined') {
+      const tmp = document.createElement('canvas');
+      tmp.width = tmp.height = TILE * big;
+      drawTile(this.defs, { x: 0, y: 0, z: 0, items: [{ id, count }] }, TILE * (big - 1), TILE * (big - 1), draw(tmp.getContext('2d')));
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, 0, 0, TILE, TILE);
+      return;
+    }
+    drawTile(this.defs, { x: 0, y: 0, z: 0, items: [{ id, count }] }, dx, dy, draw(ctx));
   }
 
   // ---------- walk data (router) ----------
