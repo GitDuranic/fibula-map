@@ -2,10 +2,10 @@
 // (the tick moves the guide on; it never moves by itself), go Back a step or start over; their place is kept in
 // the browser. Clicking a step goes to its spot. Editors also add, change, reorder (drag) and delete steps, tick
 // each one as checked, and add, rename and delete segments.
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ItemIcon } from './NpcWindow.jsx';
 import { ItemPicker } from './QuestWindow.jsx';
-import { KINDS, stepPos, stepTitle, progressOf, setProgress, currentIndex } from './engine/questguide.js';
+import { KINDS, stepPos, stepTitle, currentIndex } from './engine/questguide.js';
 
 // The editors' form for one step. onSave(changes), onDelete(), onDone().
 function StepEdit({ world, step, onSave, onDelete, onDone }) {
@@ -77,11 +77,9 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
 // guide: from fetchGuide (null while loading); error: why it couldn't load. ed: the editors' actions (null for
 // players), each returning a promise: addNote(segId), saveStep(id, changes), deleteStep(id), moveStep(id, segId,
 // beforeId), addSegment(), renameSegment(id, name), deleteSegment(id). editStep / setEditStep: the step whose form
-// is open (TibiaMap keeps it, for "Move step here"). onGo(pos): go to a spot.
-export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo }) {
-  const questId = guide?.questId;
-  const [at, setAt] = useState(() => (questId ? progressOf(questId) : null));
-  useEffect(() => { setAt(questId ? progressOf(questId) : null); }, [questId]);
+// is open (TibiaMap keeps it, for "Move step here"). onGo(pos): go to a spot. at / setAt(step id | 'done' | null):
+// where you are in this guide (TibiaMap keeps it in the browser, and the map's markers follow it, 13d-2).
+export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt }) {
   const [open, setOpen] = useState({}); // segment id -> shown (default: the segment you're on; every one for editors)
   const [drag, setDrag] = useState(null); // the step being dragged (id)
   const [renaming, setRenaming] = useState(null); // { id, name }
@@ -95,7 +93,7 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
   const cur = currentIndex(guide, at);
   const go = (i) => { // i: the step you're on now (steps.length: all done)
     const id = i <= 0 ? null : i >= steps.length ? 'done' : steps[i].id;
-    setProgress(questId, id); setAt(id);
+    setAt(id);
   };
   const curSeg = steps[Math.min(cur, steps.length - 1)]?.segment_id;
   const isOpen = (s) => open[s.id] ?? (!!ed || s.id === curSeg || guide.segments.length === 1);

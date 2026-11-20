@@ -365,6 +365,12 @@ function visibleQuestChests(world, v, left, top, right, bottom) {
 // A quest chest's ring on the canvas: centre and radius.
 const questRing = (f, ox, oy, s, k) => ({ cx: ox + (f[0] + 0.5) * s, cy: oy + (f[1] + 0.5) * s, r: Math.max(9 * k, s * 0.55) });
 
+// The guide's step markers (13d-2), from zoom STEPS_FROM: a circle over the step's tile; the step you're on larger.
+const STEPS_FROM = 4;
+const stepRing = (f, ox, oy, s, k, state) => ({
+  cx: ox + (f[0] + 0.5) * s, cy: oy + (f[1] + 0.5) * s, r: Math.max((state === 'cur' ? 10 : 8) * k, s * (state === 'cur' ? 0.6 : 0.45)),
+});
+
 // The character's settings before the user changes them (user, 2026-11-13).
 // levitate / parcels: may routes climb and drop with exani hur up/down or 3 parcels (slice 11; off by default).
 // The quests offered for "Add quest spot here" (slice 12): the list's quests first, narrowed by the typed text.
@@ -512,22 +518,29 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     setQuestRev((r) => r + 1);
     redraw();
   };
-  // The guide (13d): the segments and steps of the last quest opened that's in the database. It stays when the
-  // quest window closes, so an editor can click an NPC and add a talk step to it. { quest, guide, error }
-  const [guide, setGuide] = useState(null);
+  // The guides (13d): segments and steps per quest, fetched when needed: { [quest id]: { guide, error } }.
+  // guideQ: the last opened quest that's in the database, the one editors add steps to; it stays when the quest
+  // window closes, so an editor can click an NPC and add a talk step to it.
+  const [guides, setGuides] = useState({});
+  const [guideQ, setGuideQ] = useState(null);
+  const guide = guideQ ? { quest: guideQ, guide: guides[guideQ.db.id]?.guide ?? null, error: guides[guideQ.db.id]?.error ?? null } : null;
   const [editStep, setEditStep] = useState(null); // the step whose form is open (editors)
   const loadGuide = useCallback(async (q) => {
-    if (!dbCfg || !q?.db) return;
-    setGuide((g) => (g?.quest === q ? g : { quest: q, guide: null, error: null }));
+    if (!dbCfg || !q?.db) return null;
+    const id = q.db.id;
     try {
-      const data = await qg.fetchGuide(dbCfg, q.db.id);
-      setGuide((g) => (g && g.quest !== q ? g : { quest: q, guide: data, error: null }));
+      const data = await qg.fetchGuide(dbCfg, id);
+      setGuides((all) => ({ ...all, [id]: { guide: data, error: null } }));
       return data;
     } catch (e) {
-      setGuide((g) => (g && g.quest !== q ? g : { quest: q, guide: null, error: e.message || String(e) }));
+      setGuides((all) => ({ ...all, [id]: { guide: all[id]?.guide ?? null, error: e.message || String(e) } }));
       return null;
     }
   }, [dbCfg]);
+  // Where you are in each guide (kept in the browser): { [quest id]: step id | 'done' | null }.
+  const [progress, setProgressState] = useState({});
+  const atOf = (qid) => (qid in progress ? progress[qid] : qg.progressOf(qid));
+  const setAt = (qid, stepId) => { qg.setProgress(qid, stepId); setProgressState((p) => ({ ...p, [qid]: stepId })); };
   // An editor's change to the guide, then the guide again; a quest with steps is checked when all its steps are.
   const editGuide = async (fn) => {
     const g = guide;
@@ -560,16 +573,42 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       if (t) setEditStep(t.id);
     } catch (e) { setLocNote(`Could not add the step: ${e.message || e}`); }
   };
-  // Opening a quest that's in the database loads its guide (another quest's step form closes).
+  // Opening a quest that's in the database makes it the guide's quest and loads its guide (another quest's step
+  // form closes).
   const questSelQ = questSel?.quest;
   useEffect(() => {
-    if (!questSelQ?.db) return;
-    if (guide?.quest !== questSelQ) { setEditStep(null); loadGuide(questSelQ); }
+    if (!questSelQ?.db || questSelQ === guideQ) return;
+    setEditStep(null); setGuideQ(questSelQ); loadGuide(questSelQ);
   }, [questSelQ]); // eslint-disable-line react-hooks/exhaustive-deps
   const moveEditStep = (p) => {
     const id = editStep;
     editGuide(() => qg.updateStep(dbCfg, id, { x: p[0], y: p[1], z: p[2] })).catch((e) => setLocNote(`Could not move the step: ${e.message || e}`));
   };
+  // The guide on the map (13d-2): the quest you're on, or for editors the quest whose window is open. Its current
+  // segment's steps get numbered markers (stepMarks, drawn by draw()).
+  const onQuestQ = ready && onQuest ? worldRef.current?.quests?.find((q) => q.n === onQuest && q.db) : null;
+  const markQ = (login.editor && questSelQ?.db) ? questSelQ : onQuestQ || null;
+  const markGuide = markQ ? guides[markQ.db.id]?.guide : null;
+  useEffect(() => {
+    if (markQ && !guides[markQ.db.id]) loadGuide(markQ);
+  }, [markQ, guides, loadGuide]);
+  const stepMarks = useRef(null); // { quest, marks: [{ step, n, pos, state: 'cur' | 'done' | 'todo' }] }
+  const markAt = markQ ? atOf(markQ.db.id) : null;
+  useEffect(() => {
+    const world = worldRef.current;
+    stepMarks.current = null;
+    if (markQ && markGuide?.steps.length && world) {
+      const steps = markGuide.steps, cur = qg.currentIndex(markGuide, markAt);
+      const seg = steps[Math.min(cur, steps.length - 1)].segment_id;
+      const marks = [];
+      steps.forEach((t, i) => {
+        const pos = t.segment_id === seg && qg.stepPos(world, t);
+        if (pos) marks.push({ step: t, n: i + 1, pos, state: i === cur ? 'cur' : i < cur ? 'done' : 'todo' });
+      });
+      stepMarks.current = { quest: markQ, marks };
+    }
+    redraw();
+  }, [markQ, markGuide, markAt]); // eslint-disable-line react-hooks/exhaustive-deps
   const [locNote, setLocNote] = useState(null); // a failed save, shown under the search
   // Named locations (the user's own, dev only): add or remove a name on a square through the dev server, then search
   // them right away.
@@ -820,6 +859,31 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       }
     }
 
+    // The guide's steps (13d-2): numbered circles on the current segment's steps (where their floor is shown, as
+    // NPCs). The step you're on is white and larger, done steps are faint, the ones still to do gold.
+    if (stepMarks.current && v.zoom >= STEPS_FROM) {
+      const kq = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      const fq = Math.max(kq, Math.round(s / 32));
+      ctx.imageSmoothingEnabled = false;
+      const order = { done: 0, todo: 1, cur: 2 }; // the step you're on drawn last (on top)
+      for (const m of [...stepMarks.current.marks].sort((a, b) => order[a.state] - order[b.state])) {
+        const f = npcFrame({ p: m.pos }, v.z, v.cut);
+        if (!f || f[0] < left - 2 || f[0] > right + 2 || f[1] < top - 2 || f[1] > bottom + 2) continue;
+        const r = stepRing(f, ox, oy, s, kq, m.state);
+        ctx.globalAlpha = m.state === 'done' ? 0.45 : 1;
+        ctx.beginPath(); ctx.arc(r.cx, r.cy, r.r, 0, Math.PI * 2);
+        ctx.fillStyle = m.state === 'cur' ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.6)'; ctx.fill();
+        ctx.strokeStyle = m.state === 'cur' ? '#ffffff' : '#ffd700'; ctx.lineWidth = (m.state === 'cur' ? 3 : 2) * kq; ctx.stroke();
+        const t = String(m.n), w = textWidth(world.font, t) * fq;
+        ctx.save();
+        ctx.translate(Math.round(r.cx - w / 2), Math.round(r.cy - (world.font.cellH * fq) / 2));
+        ctx.scale(fq, fq);
+        drawText(ctx, world.font, t, 0, 0, m.state === 'cur' ? '#ffffff' : '#ffd700');
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    }
+
     // Locked doors: the key they need, over the door (faint when its number isn't known); a white frame on the
     // selected one. An unlocked door is drawn open by the World, its key stays.
     const kd = Math.max(1, Math.round(window.devicePixelRatio || 1));
@@ -1060,6 +1124,22 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       if (d > r.r) continue;
       const score = d - (m.here ? 1e6 : 0);
       if (score < bestD) { bestD = score; best = m; }
+    }
+    return best;
+  };
+
+  // The guide step marker at canvas point p, or null (the step you're on wins when they overlap).
+  const stepAtPoint = (p) => {
+    const world = worldRef.current, c = canvasRef.current, v = view.current, s = anim.current.s;
+    if (!world || !c || !stepMarks.current || v.zoom < STEPS_FROM) return null;
+    const ox = Math.round(c.width / 2 - v.x * s), oy = Math.round(c.height / 2 - v.y * s);
+    const k = Math.max(1, Math.round(window.devicePixelRatio || 1));
+    let best = null;
+    for (const m of stepMarks.current.marks) {
+      const f = npcFrame({ p: m.pos }, v.z, v.cut);
+      if (!f) continue;
+      const r = stepRing(f, ox, oy, s, k, m.state);
+      if (Math.hypot(p.x - r.cx, p.y - r.cy) <= r.r && (!best || m.state === 'cur')) best = m;
     }
     return best;
   };
@@ -1503,7 +1583,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       setHover(tileAt(p));
       const l = floorChangeAtPoint(p);
       setHoverLink(l);
-      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = npcAtPoint(p) || searchedAtPoint(p) || questAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
+      if (e.pointerType === 'mouse') e.currentTarget.style.cursor = stepAtPoint(p) || npcAtPoint(p) || searchedAtPoint(p) || questAtPoint(p) || monsterAtPoint(p) || doorAtPoint(p) || l ? 'pointer' : '';
       return;
     }
     setHoverLink(null);
@@ -1550,6 +1630,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (d && !d.moved) {
       // A click: open the NPC there, else the monster, else the locked door, else go to the floor a hole, stairs or
       // ladder leads to, else close.
+      // A guide step marker (13d-2) is on top of everything: it opens the guide's quest.
+      const st = stepAtPoint(toCanvas(e));
+      if (st) { const q = stepMarks.current.quest; if (selectedQuest.current?.quest !== q) selectQuest({ quest: q, i: null }); return; }
       const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p), qc = !n && !sm && questAtPoint(p);
       const m = !n && !sm && !qc && monsterAtPoint(p);
       const dr = !n && !sm && !qc && !m && doorAtPoint(p), l = !n && !sm && !qc && !m && !dr && floorChangeAtPoint(p);
@@ -1849,6 +1932,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             guide={dbCfg && questSel.quest.db ? {
               guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
               ed: guideEd, editStep, setEditStep, onGo: (p) => jump({ x: p[0], y: p[1], z: p[2] }),
+              at: atOf(questSel.quest.db.id), setAt: (id) => setAt(questSel.quest.db.id, id),
             } : null}
             onGo={(i) => goToQuest(questSel.quest, i)} onItem={(id) => setItem({ id, fluid: null })} onClose={() => selectQuest(null)}
           />

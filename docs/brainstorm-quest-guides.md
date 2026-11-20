@@ -96,6 +96,12 @@ Each slice adds something you can use on its own (user: small slices of function
   - The guide belongs to the last opened quest that's in the database and stays while the quest window is closed, so "Add talk step" works from an NPC window.
   - **Checked status:** a quest with steps is checked when all its steps are; the editors' changes keep `map_quests.status` in step, and the quest's own Checked tick only shows while it has no steps. Deleting the last step makes the quest not checked.
   - Tested 2026-11-20 on Paradox Tower: Add step here (creates Part 1), Add talk step (Riddler), Add note step, edit + save, drag to reorder and into another segment, ticks / Back a step (kept in localStorage), all steps checked -> "Not checked yet" gone, add / rename / delete segment, delete steps. Test data removed afterwards.
+- **13d-2 built (2026-11-20):**
+  - **Which guide shows on the map:** the quest you're on ("I'm on this quest"), also while its window is closed and you look at other quests; for editors, the quest whose window is open (so they see what they're building), else the one they're on. Players see no markers for quests they're only reading about.
+  - **Markers:** a numbered circle on each step of the current segment that has a spot (a Talk step without one: its NPC), from zoom 4, where its floor is shown (as NPCs). The step you're on: white ring and number, larger, drawn on top; steps still to do: gold; done steps: faint. Other segments don't show.
+  - Clicking a marker opens the quest's window (it's on top of NPCs and everything else on the map).
+  - Progress now lives in TibiaMap (per quest, still localStorage `tm-quest-progress`), so ticking in the window moves the markers straight away. The guides are kept per quest, so the quest you're on keeps its markers while an editor opens another.
+  - Tested 2026-11-20 on Paradox Tower (3 temporary steps, then removed): markers, done/current/to-do looks, markers stay with the window closed, clicking a marker opens the quest.
 
 ### 13e. Route through the segment
 - The route from step to step in order, drawn with the existing router (locked doors, boats, climbing).
