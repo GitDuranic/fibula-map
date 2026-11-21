@@ -1730,7 +1730,20 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         if (sn) { selectNpc(sn); openTalk(sn); return; }
         // A step on a hole or stairs (13j drafts put "go down" steps there): the click takes it too (user 2026-11-21).
         const sl = floorChangeAtPoint(toCanvas(e));
-        if (sl) takeLink(sl);
+        if (sl) { takeLink(sl); return; }
+        // No floor change on the clicked tile, but the marker covers its neighbours: a floor change of the drawn
+        // route right next to the step (the route ends beside a hole), else, when the step's next spot is on another
+        // floor, one floor towards it (a hole you make with a pick isn't on the map: Alawar's Vault, user 2026-11-21).
+        const [sx, sy, sz] = st.pos, rp = shownPath();
+        if (rp) for (let i = 1; i < rp.length; i++) {
+          const a = rp[i - 1];
+          if (rp[i][2] !== a[2] && a[2] === sz && Math.abs(a[0] - sx) <= 1 && Math.abs(a[1] - sy) <= 1 && worldRef.current.floors.includes(rp[i][2])) { setHoverLink(null); setFloor(rp[i][2]); return; }
+        }
+        const marks = stepMarks.current.marks, next = marks.slice(marks.indexOf(st) + 1).find((m) => m.pos);
+        if (st.step.kind === 'go' && next && next.pos[2] !== sz) {
+          const z = sz + Math.sign(next.pos[2] - sz);
+          if (worldRef.current.floors.includes(z)) setFloor(z);
+        }
         return;
       }
       const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p);
