@@ -8,10 +8,12 @@
 //           (a chest, a lever); a Go step without one isn't placed. kill: monster must be a monster kind.
 //   get     items: [[item id or name, count]], each a real item.
 //   note    just text.
+//   draft.dropOldRewards: true drops the quest's old-spot Reward steps (the draft has its own Reward step).
 //   rewards a marker, not a step: the quest's Reward steps from the old spots (database step 9) go here, in order;
 //           without the marker they go at the end.
-// Every step keeps its wiki sentence in source. A quest that already has steps other than old-spot Reward steps
-// (hand work, or drafts from an earlier run) is skipped in the SQL, so running it again changes nothing.
+// Every step keeps its wiki sentence in source. Earlier drafts of a quest are replaced, unless anything in it was
+// made, changed or ticked in the app (hand work): then the quest is skipped. Monsters only from the 7.1 spawn file
+// (a Kill step's monster must spawn near it; the wiki lists later monsters too, e.g. troll champions, 8.10).
 // Positions are also checked with the route finder: each step must be reachable from the one before it (all doors
 // open, rope and shovel); an unreachable one is only reported (exani hur, a boat...), it stays as it is.
 // Usage: node tools/drafts-to-sql.js <database step number> <file name part> [quest keys...]   (no keys: all drafts)
@@ -30,7 +32,7 @@ const json = (f) => JSON.parse(fs.readFileSync(f, 'utf8'));
 const env = Object.fromEntries(fs.readFileSync('.env.local', 'utf8').split(/\r?\n/).filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim()]));
 const rest = async (p) => { const r = await (await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/${p}`, { headers: { apikey: env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_ANON_KEY}` } })).json(); if (!Array.isArray(r)) throw new Error(JSON.stringify(r)); return r; };
 const dbQuests = new Map((await rest('map_quests?select=id,name')).map((q) => [questKey(q.name), q]));
-const dbSteps = await rest('map_quest_steps?select=quest_id,source,x,y,z,kind');
+const dbSteps = await rest('map_quest_steps?select=quest_id,source,x,y,z,kind,checked,updated_by');
 
 // What's real: NPCs, monsters, items, tiles.
 const npcs = json(`${DATA}/npcs.json`);
@@ -50,6 +52,8 @@ const realSpot = (p) => Array.isArray(p) && p.length === 3 && p.every(Number.isI
 const talks = new Map();
 const talkOf = (npc) => { if (!talks.has(npc.t)) talks.set(npc.t, fs.existsSync(`${DATA}/talk/${npc.t}.json`) ? json(`${DATA}/talk/${npc.t}.json`) : null); return talks.get(npc.t); };
 
+const { spawns } = json(`${DATA}/monsters.json`);
+const spawnsNear = (kind, [x, y, z], r) => spawns.some(([sx, sy, sz, k]) => k === kind && sz === z && Math.abs(sx - x) <= r && Math.abs(sy - y) <= r);
 const router = nodeRouter(DATA);
 const q = (s) => (s == null ? 'null' : `'${String(s).replace(/'/g, "''")}'`);
 const files = keys.length ? keys.map((k) => `${k}.json`) : fs.readdirSync(DRAFTS).filter((f) => f.endsWith('.json'));
@@ -61,8 +65,9 @@ for (const file of files) {
   const row = dbQuests.get(questKey(draft.quest));
   if (!row) { report.push(`--   ${draft.quest}: NOT IN THE DATABASE, left out`); continue; }
   const notes = [];
-  const handWork = dbSteps.some((s) => s.quest_id === row.id && s.source !== 'old quest spot');
-  const rewards = dbSteps.filter((s) => s.quest_id === row.id && s.source === 'old quest spot');
+  // Hand work: a step made in the app (no source), or any step changed or ticked there (updated_by / checked).
+  const handWork = dbSteps.some((s) => s.quest_id === row.id && (s.source == null || s.updated_by || s.checked));
+  const rewards = draft.dropOldRewards ? [] : dbSteps.filter((s) => s.quest_id === row.id && s.source === 'old quest spot');
   const needs = (st, why) => { notes.push(`${why}`); placing++; return { kind: 'note', text: `Needs placing: ${st.text || why}`, source: st.source, why }; };
 
   // Check each step; returns the row to insert (or a "needs placing" note).
@@ -95,6 +100,7 @@ for (const file of files) {
           const k = kinds.find((m) => m.n.toLowerCase() === (st.monster || '').toLowerCase());
           if (!k) return needs(st, `no monster "${st.monster}"`);
           monster = k.n;
+          if (st.at && !spawnsNear(kinds.indexOf(k), st.at, 12)) notes.push(`no ${k.n} spawns within 12 tiles of ${st.at}`);
         }
         for (const [it, n = 1] of st.items || []) {
           const id = typeof it === 'number' ? (defs[it] ? it : null) : itemByName.get(String(it).toLowerCase());
@@ -124,7 +130,7 @@ for (const file of files) {
 
   const n = segs.reduce((a, s) => a + s.steps.filter((t) => !t.rewards).length, 0);
   total += n;
-  report.push(`--   ${draft.quest}: ${segs.length} part${segs.length > 1 ? 's' : ''}, ${n} steps + ${rewards.length} Reward step${rewards.length === 1 ? '' : 's'}${handWork ? ' (HAS HAND-MADE STEPS: the SQL skips it)' : ''}`);
+  report.push(`--   ${draft.quest}: ${segs.length} part${segs.length > 1 ? 's' : ''}, ${n} steps + ${rewards.length} Reward step${rewards.length === 1 ? '' : 's'}${handWork ? ' (HAS HAND WORK: the SQL skips it)' : ''}`);
   for (const x of notes) report.push(`--       ${x}`);
 
   const parts = segs.map((s, i) => {
@@ -150,7 +156,9 @@ ${lines.join('\n')}`;
 do $$
 declare seg bigint; new_segs bigint[] := '{}'; sort_now integer;
 begin
-  if exists (select 1 from public.map_quest_steps where quest_id = ${row.id} and source is distinct from 'old quest spot') then return; end if;
+  if exists (select 1 from public.map_quest_steps where quest_id = ${row.id} and (source is null or updated_by is not null or checked)) then return; end if;
+  delete from public.map_quest_steps where quest_id = ${row.id} and source <> 'old quest spot';${draft.dropOldRewards ? `
+  delete from public.map_quest_steps where quest_id = ${row.id} and source = 'old quest spot';` : ''}
 ${parts.join('\n')}
   delete from public.map_quest_segments s where s.quest_id = ${row.id} and not (s.id = any(new_segs))
     and not exists (select 1 from public.map_quest_steps t where t.segment_id = s.id);
@@ -165,7 +173,7 @@ fs.writeFileSync(out, `-- ======================================================
 -- Needs steps 3, 6, 7 and 9. Written by tools/drafts-to-sql.js from tools/data/quest-drafts. Every step is a draft
 -- (not checked) with its wiki sentence as its source; what the checker couldn't tie to a real NPC, word, monster,
 -- item or spot is a Note "Needs placing: ...". The quest's Reward steps from the old spots are moved into the draft.
--- A quest that already has other steps (hand work, or this file run before) is skipped: safe to run again.
+-- Earlier drafts of these quests are replaced; a quest with anything made, changed or ticked in the app is skipped.
 --
 -- ${total} steps for ${blocks.length} quests (${placing} need placing):
 ${report.join('\n')}

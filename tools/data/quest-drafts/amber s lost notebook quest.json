@@ -1,14 +1,14 @@
 {
   "quest": "Amber's Lost Notebook Quest",
   "wiki": "https://tibia.fandom.com/wiki/Short_Sword_Quest/Spoiler",
+  "dropOldRewards": true,
   "segments": [
     {
       "name": null,
       "steps": [
-        { "kind": "note", "text": "Watch out for bugs, spiders and especially poison spiders near the dock.", "source": "Head to the dock east of Rookgaard town (Mapper Coords 125.172, 125.197, 7). Be careful of Bugs, Spiders, and especially Poison Spiders near the dock." },
-        { "kind": "rewards" },
-        { "kind": "talk", "text": "Bring the black book from the dock to Amber in the resting room under the Academy: she gives you a short sword for it.", "npc": "Amber", "say": ["hi", "book", "yes"], "source": "Take the book back to the Rookgaard Academy, and talk to Amber in the Resting Room under the Academy. Tell her you found her notebook, and she will trade you for a Short Sword. Say: Hi, Book, Yes." },
-        { "kind": "note", "text": "Black books other players threw away also work: each gets you another short sword (Obi buys them).", "source": "If you find black books that other people have thrown on the ground, you can trade them to Amber for more Short Swords. This is especially handy because Obi gives you some extra cash for it." }
+        { "kind": "get", "text": "Open the box on the dock east of Rookgaard: Amber's notebook is in it. Watch out for the poison spiders.", "at": [32173, 32197, 7], "items": [[2821, 1]], "source": "Head to the dock east of Rookgaard town (Mapper Coords 125.172, 125.197, 7). Be careful of Bugs, Spiders, and especially Poison Spiders near the dock. \"Use\" the chest on the dock to receive a black book." },
+        { "kind": "talk", "text": "Bring the notebook to Amber in the resting room under the Academy.", "npc": "Amber", "say": ["hi", "book", "yes"], "source": "Take the book back to the Rookgaard Academy, and talk to Amber in the Resting Room under the Academy. Tell her you found her notebook, and she will trade you for a Short Sword. Say: Hi, Book, Yes." },
+        { "kind": "reward", "text": "Amber gives you the short sword.", "at": [32103, 32182, 8], "object": 3294, "items": [[3294, 1]], "source": "Tell her you found her notebook, and she will trade you for a Short Sword." }
       ]
     }
   ]

@@ -216,7 +216,7 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
 // onRouteTo(label, pos): the step you're on as the Route panel's To (only when you ask; the guide's route is separate).
 // onTalk(npc): open that NPC's conversation (going to it), from a Talk step's icon or name (13f-0b).
 export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onRouteTo, onTalk }) {
-  const [open, setOpen] = useState({}); // segment id -> shown (default: the segment you're on; every one for editors)
+  const [open, setOpen] = useState({}); // segment id -> shown (default: all of them, user 2026-11-21)
   const [drag, setDrag] = useState(null); // the step being dragged (id)
   const [renaming, setRenaming] = useState(null); // { id, name }
   const [err, setErr] = useState(null);
@@ -248,7 +248,7 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
     setAt(id);
   };
   const curSeg = steps[Math.min(cur, steps.length - 1)]?.segment_id;
-  const isOpen = (s) => open[s.id] ?? (!!ed || s.id === curSeg || guide.segments.length === 1);
+  const isOpen = (s) => open[s.id] ?? true;
   const checked = steps.filter((t) => t.checked).length;
   const tryEd = async (fn) => { setErr(null); try { await fn(); } catch (e) { setErr(e.message || String(e)); } };
   const drop = (segId, beforeId) => (e) => {

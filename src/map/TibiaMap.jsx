@@ -123,6 +123,7 @@ const ROUTE_FADE = [1, 0.55, 0.3];
 // User 2026-11-15: better without ("maybe that feature is just not worth it"): false = the route only on the floor you're
 // looking at, no see-through band (5c) and no lines/dots on other floors (5b). true brings both back.
 const ROUTE_OTHER_FLOORS = false;
+// User 2026-11-21: the quest route (a guide's segment, 13e) does show on other floors, dashed (the Route panel's route not).
 // User 2026-11-15: on the surface or above it, the route on every surface floor (0-7) always shows, the parts on
 // other floors than yours dashed, at this alpha (also behind you; underground parts don't show).
 const ROUTE_SURFACE_ALPHA = 0.8;
@@ -959,7 +960,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         const z = rp[i][2];
         if (z === v.z) return 1;
         if (z <= 7 && v.z <= 7) return ROUTE_SURFACE_ALPHA; // the surface route always shows from the surface and above
-        return ROUTE_OTHER_FLOORS && (!onRoute || ahead[i]) ? routeAlpha(z, v.z) : 0;
+        return (ROUTE_OTHER_FLOORS || !routePath.current) && (!onRoute || ahead[i]) ? routeAlpha(z, v.z) : 0;
       };
       // Runs of tiles walked on one floor (path indices). The line goes onto stairs, holes and forcefields ('onto'); a
       // ladder, grate or rope spot used from next to it ('use') gets a short dashed line from where you stand.
@@ -1386,7 +1387,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const xs = path.map((pt) => pt[0]), ys = path.map((pt) => pt[1]);
     const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys), y2 = Math.max(...ys);
     const fit = [...ZOOMS].reverse().find((z) => z <= FLY_ZOOM && (x2 - x1 + 6) * z <= c.width * 0.9 && (y2 - y1 + 6) * z <= c.height * 0.9) ?? ZOOMS[0];
-    const z0 = path[0][2];
+    // The floor most of it is on (user 2026-11-21: a quest leg starts on the hole of the step before, so its first
+    // tile's floor showed only the hole, not the way to the next step).
+    const per = new Map();
+    for (const pt of path) per.set(pt[2], (per.get(pt[2]) || 0) + 1);
+    const z0 = [...per].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
     goTo({ x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2), z: z0 }, { zoom: fit, cut: fit >= MAIN_FROM && z0 <= 7 ? z0 : 0 });
   }, [goTo]);
 
@@ -1475,7 +1480,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const steps = markGuide.steps, cur = qg.currentIndex(markGuide, markAt);
     const seg = steps[Math.min(cur, steps.length - 1)].segment_id;
     const legs = [];
+    // The segment starts where the one before it ended (user 2026-11-21: its first step had no way to it).
+    const first = steps.findIndex((t) => t.segment_id === seg);
     let prev = null;
+    for (let i = first - 1; i >= 0 && !prev; i--) prev = qg.stepPos(world, steps[i]) || null;
     steps.forEach((t, i) => {
       const pos = t.segment_id === seg && qg.stepPos(world, t);
       if (!pos) return;
@@ -1503,16 +1511,17 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       setLegRes((all) => ({ ...all, [key]: res.routes ? { path: res.routes[0].path } : { error: res.error || 'No route found.', locked: res.locked } }));
     });
   }, [questLegs, legRes, legBase, route.busy, route.cheapBusy, dataUrl]); // eslint-disable-line react-hooks/exhaustive-deps
-  // For draw(): the leg to the step you're on is drawn as the route (floor-change markers, boat arcs, see-through),
-  // unless the Route panel has a route of its own: that one wins and the leg is a plain bright line with the others.
+  // For draw(): the whole segment's legs, one after another, are drawn as the route (floor-change markers, boat arcs,
+  // dashed lines on other floors, see-through; user 2026-11-21: was only the leg to the step you're on), unless the
+  // Route panel has a route of its own: that one wins and the legs are plain bright lines.
   // The quest route never touches the Route panel (user 2026-11-20: filling it overwrote your own From/To).
+  // A leg without a route leaves a gap (each leg starts with a 'start' entry, which ends a line).
   const questPaths = useRef(null); // [{ path, state }]
-  const questCur = useRef(null); // the current leg's path while it's drawn as the route
+  const questCur = useRef(null); // the segment's legs as one path while it's drawn as the route
   useEffect(() => {
     const found = questLegs?.legs.filter((l) => legRes[legKey(l)]?.path).map((l) => ({ path: legRes[legKey(l)].path, state: l.state })) || [];
-    const cur = found.find((q) => q.state === 'cur');
-    questCur.current = cur && !routePath.current ? cur.path : null;
-    questPaths.current = found.filter((q) => !(questCur.current && q === cur));
+    questCur.current = found.length && !routePath.current ? found.flatMap((q) => q.path) : null;
+    questPaths.current = questCur.current ? [] : found;
     redraw();
   }, [questLegs, legRes, legBase, route]); // eslint-disable-line react-hooks/exhaustive-deps
   // Per step of the guide's quest: the leg to it ({ time, show } | { error, locked } | { busy }; show fits the view to
@@ -1529,7 +1538,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const paths = questLegs.legs.map((l) => legRes[legKey(l)]?.path).filter(Boolean);
     return { quest: questLegs.quest, byStep, total, all, paths, show: paths.length ? () => showRoute(paths.flat()) : null };
   })();
-  // The route the map draws as "the route": the Route panel's, else the quest's current leg.
+  // The route the map draws as "the route": the Route panel's, else the quest's segment.
   const shownPath = () => routePath.current || questCur.current;
 
   // Opens an NPC's conversation next to it (or closes it: null).

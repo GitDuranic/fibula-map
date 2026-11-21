@@ -5,22 +5,95 @@
     {
       "name": "Down to the minotaurs",
       "steps": [
-        { "kind": "note", "text": "Bring a rope, and key 4601 for the bear room door (or a pick to get the key on the way).", "source": "Required Equipment: Rope. Key 4601 to bear room, or a Pick to get it." },
-        { "kind": "go", "text": "Go down the stairs in the abandoned building north of Rookgaard.", "at": [32094, 32137, 7], "source": "Go to the abandoned building a little north of Rookgaard and down the hole." },
-        { "kind": "go", "text": "Go east and down (trolls here).", "at": [32126, 32124, 8], "source": "Go east and down (Trolls here)." },
-        { "kind": "go", "text": "Go down again (a few orcs).", "at": [32136, 32114, 9], "source": "Go down again like it is shown on this map. There are a few Orcs here." },
-        { "kind": "go", "text": "Go down again (2-4 orcs, easy to outrun).", "at": [32126, 32118, 10], "source": "Go down again. There are 2-4 Orcs here. It's fairly easy to out run them." }
+        {
+          "kind": "note",
+          "text": "Bring a rope, and key 4601 for the bear room door (or a pick to get the key on the way).",
+          "source": "Required Equipment: Rope. Key 4601 to bear room, or a Pick to get it."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the stairs in the abandoned building north of Rookgaard.",
+          "at": [
+            32094,
+            32137,
+            7
+          ],
+          "source": "Go to the abandoned building a little north of Rookgaard and down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go east and down (trolls and spiders here).",
+          "at": [
+            32126,
+            32124,
+            8
+          ],
+          "source": "Go east and down (Trolls here)."
+        },
+        {
+          "kind": "go",
+          "text": "Go down again (orcs and skeletons).",
+          "at": [
+            32136,
+            32114,
+            9
+          ],
+          "source": "Go down again like it is shown on this map. There are a few Orcs here."
+        },
+        {
+          "kind": "go",
+          "text": "Go down again (orcs, easy to outrun).",
+          "at": [
+            32126,
+            32118,
+            10
+          ],
+          "source": "Go down again. There are 2-4 Orcs here. It's fairly easy to out run them."
+        }
       ]
     },
     {
       "name": "The bear room",
       "steps": [
-        { "kind": "note", "text": "No key 4601? Use a pick on the mud south of the small table (32148, 32109) and take the key from the chest downstairs. That room isn't on the 7.1 map: check in the game.", "source": "To retrieve the key, use a pick on the mud floor square directly south of the big table. A hole will appear for you to go down. Downstairs is a chest with Key 4601; take it and go back up the ladder." },
-        { "kind": "go", "text": "Pull the lever if the stone blocks the bear room door.", "at": [32148, 32105, 11], "source": "North of the big table is a switch which controls the stone which can block the door to the bear room further north. If the stone is blocking the door, remove it by using the switch." },
-        { "kind": "go", "text": "Open the door with key 4601.", "at": [32145, 32100, 11], "source": "Go through the door and kill the Bear" },
-        { "kind": "kill", "text": "Kill the bear in the room.", "monster": "Bear", "at": [32144, 32098, 11], "source": "Go through the door and kill the Bear, afterwards open all three boxes to get your reward." },
-        { "kind": "rewards" },
-        { "kind": "note", "text": "If someone blocked the way back: go down the sewer grate to a room with 4 spiders, then up the ladder to the south, back into the room with the minotaurs and orcs.", "source": "If someone has blocked the way back you can use the sewer grate to go down to a room with 4 Spiders, and then up the ladder to the south in order to get back into the central room with the Minotaurs and Orcs." }
+        {
+          "kind": "note",
+          "text": "No key 4601? Use a pick on the mud south of the small table (32148, 32109) and take the key from the chest downstairs. That room isn't on the 7.1 map: check in the game.",
+          "source": "To retrieve the key, use a pick on the mud floor square directly south of the big table. A hole will appear for you to go down. Downstairs is a chest with Key 4601; take it and go back up the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Pull the lever if the stone blocks the bear room door.",
+          "at": [
+            32148,
+            32105,
+            11
+          ],
+          "source": "North of the big table is a switch which controls the stone which can block the door to the bear room further north. If the stone is blocking the door, remove it by using the switch."
+        },
+        {
+          "kind": "go",
+          "text": "Open the door with key 4601.",
+          "at": [
+            32145,
+            32100,
+            11
+          ],
+          "source": "Go through the door and kill the Bear"
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the bear in the room (orcs and a minotaur in the rooms around it).",
+          "monster": "Bear",
+          "at": [
+            32144,
+            32098,
+            11
+          ],
+          "source": "Go through the door and kill the Bear, afterwards open all three boxes to get your reward."
+        },
+        {
+          "kind": "rewards"
+        }
       ]
     }
   ]
