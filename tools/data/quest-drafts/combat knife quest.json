@@ -1,0 +1,38 @@
+{
+  "quest": "Combat Knife Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Combat_Knife_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go down into the Rookgaard sewers.",
+          "at": [
+            32110,
+            32245,
+            7
+          ],
+          "source": "Go into the Rookgaard sewer entrance."
+        },
+        {
+          "kind": "reward",
+          "text": "Follow the path north, then west twice (rats). The box is partly hidden behind debris.",
+          "at": [
+            32102,
+            32235,
+            8
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3292,
+              1
+            ]
+          ],
+          "source": "Follow the path north and then turn west twice. You will encounter a number of rats. The quest box will be partially hidden behind some debris."
+        }
+      ]
+    }
+  ]
+}

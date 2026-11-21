@@ -1,0 +1,15 @@
+<!-- Combat Knife Quest | https://tibia.fandom.com/wiki/Combat_Knife_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Combat Knife Quest}}
+==Required Equipment==
+None
+
+==Method==
+* Go into the [[Rookgaard]] sewer entrance ({{Mapper Coords|125.117|125.221|7|8|text=here}}).
+
+* Follow the path north and then turn west twice. You will encounter a number of [[rat]]s. There will be 3 or 4 guarding the box
+
+* The quest box will be partially hidden behind some debris. "Use" the chest to receive the [[Combat Knife]].<br /><gallery mode="nolines">
+Combat_Knife_Entrance.png
+Combat_Knife_Minimap.png |{{Color Box|#ffff00}} Ramp<br />{{Color Box|#00ff00}} Ramp to Chest
+Combat_Knife_Chest.png
+</gallery>

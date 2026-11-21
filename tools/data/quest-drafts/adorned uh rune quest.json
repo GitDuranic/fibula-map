@@ -1,0 +1,98 @@
+{
+  "quest": "Adorned UH Rune Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Adorned_UH_Rune_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Required Equipment: Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Edron Hero Cave, north of Edron (wild warriors and hunters outside).",
+          "at": [
+            33164,
+            31636,
+            7
+          ],
+          "source": "First of all, you have to go to the Edron Hero Cave."
+        },
+        {
+          "kind": "go",
+          "text": "Kill the wild warriors and go down the next hole.",
+          "at": [
+            33161,
+            31624,
+            8
+          ],
+          "source": "When you enter to the undergrounds, you have to kill some wild warriors. Go to the next hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the stairs (demon skeletons, wild warriors, a priestess and a beholder).",
+          "at": [
+            33136,
+            31593,
+            9
+          ],
+          "source": "Now you have to kill some Demon Skeletons, Wild Warriors, Prietesses and Bonelords. Go with that way, and go downstairs."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the stairs again (demon skeletons, wild warriors, a monk).",
+          "at": [
+            33169,
+            31588,
+            10
+          ],
+          "source": "Now you have to go with that way, killing some Monks, Demon Skeletons and Wild Warriors. Go downstairs."
+        },
+        {
+          "kind": "go",
+          "text": "Kill the 3 dragons and go down the hole.",
+          "at": [
+            33150,
+            31595,
+            11
+          ],
+          "source": "Kill the 3 Dragons and 2 Dragon Hatchlings and enter that hole. (No dragon hatchlings in 7.1.)"
+        },
+        {
+          "kind": "go",
+          "text": "Go down the stairs (a hero and monks).",
+          "at": [
+            33144,
+            31589,
+            12
+          ],
+          "source": "Now you have to kill one Hero and two Monks. Go with that way and again, go downstairs."
+        },
+        {
+          "kind": "go",
+          "text": "Go down 2 floors to the last floor (priestesses, hunters and stalkers, then monks).",
+          "at": [
+            33137,
+            31599,
+            13
+          ],
+          "source": "Now you have to kill some Hunters, Demon Skeletons and Prietesses. Go downstairs. This is the last floor, it containts 5 Monks."
+        },
+        {
+          "kind": "reward",
+          "text": "The silver rune emblem is in the box (5 monks on this floor).",
+          "at": [
+            33136,
+            31601,
+            15
+          ],
+          "object": 2469,
+          "items": [],
+          "source": "The Silver Rune Emblem is in the box."
+        }
+      ]
+    }
+  ]
+}

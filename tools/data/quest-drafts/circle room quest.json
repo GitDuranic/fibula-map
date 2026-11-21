@@ -1,0 +1,131 @@
+{
+  "quest": "Circle Room Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Circle_Room_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Required Equipment: Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the dwarf mine west of Kazordoon.",
+          "at": [
+            32495,
+            31974,
+            7
+          ],
+          "source": "Go to Kazordoon, and enter the Dwarf mine located (Mapper Coords 126.239, 124.231, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Go down a level (dwarves).",
+          "at": [
+            32497,
+            31980,
+            8
+          ],
+          "source": "You will be in a very small cave with one or two Dwarves. Go down a level."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path north-east and go down the hole.",
+          "at": [
+            32518,
+            31965,
+            9
+          ],
+          "source": "Follow this path to the north-east, and go down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path north, then east, and go down the hole.",
+          "at": [
+            32540,
+            31948,
+            10
+          ],
+          "source": "Follow this path to the north, and then east, and go down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path south, west and north (groups of dwarf soldiers) and go down the hole.",
+          "at": [
+            32527,
+            31951,
+            11
+          ],
+          "source": "Follow this path to the south, west, and then north. Watch out for groups of Dwarf Soldiers. Go down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go straight south and down the hole.",
+          "at": [
+            32526,
+            31964,
+            12
+          ],
+          "source": "Go directly south, and go down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go south, west and north through the dwarf guards and the level 32 door. Have your rope ready: down this hole you're swarmed.",
+          "at": [
+            32509,
+            31953,
+            13
+          ],
+          "source": "Follow this path to the south, west, and north through the Dwarf Guards. Here you will have to go through the Level 32 Door of Expertise. Before going down the hole, get ready with your rope."
+        },
+        {
+          "kind": "kill",
+          "text": "Fight your way to the far south end of the room, along the east side (dwarf soldiers, guards and geomancers: kill the geomancers first).",
+          "at": [
+            32500,
+            31985,
+            14
+          ],
+          "monster": "Dwarf Geomancer",
+          "source": "Work your way through the Dwarves to the far south end of the room. By staying to the eastern side of the room, you will avoid most of the Dwarves. Kill the geomancers fast."
+        },
+        {
+          "kind": "reward",
+          "text": "Open the box: the dwarven axe.",
+          "at": [
+            32497,
+            31992,
+            14
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3323,
+              1
+            ]
+          ],
+          "source": "This room is where the quest boxes are. Work your way to the far south end of the room to get your reward."
+        },
+        {
+          "kind": "reward",
+          "text": "And the other box: the war hammer.",
+          "at": [
+            32495,
+            31992,
+            14
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3279,
+              1
+            ]
+          ],
+          "source": "This room is where the quest boxes are. Work your way to the far south end of the room to get your reward."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+<!-- Iron Helmet Quest | https://tibia.fandom.com/wiki/Iron_Helmet_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Iron Helmet Quest}}
+
+There is no real difficulty to this quest. There is simply a dead body partially obscured by a tree in the [[Plains of Havoc]].
+
+The dead body is just west of the [[Cyclops]] / [[Orc]] / [[Minotaur]] camp ({{Mapper Coords|128.19|125.232|7|3|text=here}}).
+
+There will usually be a lot of [[Leather Armor]]s, [[Letter]]s, and [[Worn Leather Boots]] lying on the ground near the tree.

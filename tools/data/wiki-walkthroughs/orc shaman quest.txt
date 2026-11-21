@@ -1,0 +1,17 @@
+<!-- Orc Shaman Quest | https://tibia.fandom.com/wiki/Orc_Shaman_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Orc Shaman Quest}}
+
+==Required Equipment==
+* [[Rope]]
+* [[Shovel]]
+
+==Method==
+* Make your way through the swamp to a small cave ({{Mapper Coords|129.31|125.30|7|3|text=here}}). You will need to go east from [[Venore]]'s south gate.
+<gallery mode="nolines">
+Image:Venore_shaman_quest.jpg|Correct path
+</gallery>
+* Use your [[Shovel]] to open a hole, and go down into it.
+* Once in the cave, head directly east and go down a level:
+[[Image:Orc Shaman Quest Map.jpg]]
+
+* On this level you will find a large number of [[Snake]]s, [[Orc]]s, [[Orc Spearman|Orc Spearmen]], and one [[Orc Shaman]]. The quest box is in the south-east corner of the room.

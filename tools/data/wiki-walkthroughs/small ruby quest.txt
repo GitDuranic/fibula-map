@@ -1,0 +1,21 @@
+<!-- Small Ruby Quest | https://tibia.fandom.com/wiki/Small_Ruby_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler| name=Small Ruby Quest}}
+This quest is a [[Daily Respawns|daily respawn]]. This means only one [[Character]] can get the rewards per [[Floor Reset]].<br />
+It is recommended to do this quest after [[Server Save]], so there is a higher chance nobody have gotten the reward before.
+==== Required Equipment ====
+
+* [[Shovel]]
+
+* [[Rope]] or [[Magic Rope]]
+
+==Method==
+
+* Follow the road to [[Route:Mintwallin]].
+
+* When you have come to [[Mintwallin]] you go south and up the stairs ({{Mapper Coords|126.169|125.136|15|8|text=here}}) to the '''throne room''' and you take the ladder slightly southwest from the stairs in there.
+
+* When you have gone down the ladder ({{Mapper Coords|126.179|125.172|13|8|text=here}}) in to '''the pit''', you will face 1 [[dragon]] and when you go down the hole ({{Mapper Coords|126.180|125.189|14|4|text=here}}) you will face 2 [[dragon]]s.
+
+* Browse the field on the fire located north of the room.
+
+[[File:Small_Ruby_Quest.jpg|thumb]][[File:Welcome_to_the_pit.jpg|thumb]]

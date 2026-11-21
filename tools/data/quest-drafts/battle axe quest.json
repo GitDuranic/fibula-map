@@ -1,0 +1,39 @@
+{
+  "quest": "Battle Axe Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Battle_Axe_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a pick and a rope.",
+          "source": "Requirements: Rope, Pick."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Thais sewers near the depot.",
+          "at": [
+            32310,
+            32248,
+            7
+          ],
+          "source": "Enter the Thais Sewers near the depot. You will face Rats here."
+        },
+        {
+          "kind": "go",
+          "text": "Go to the south-west end of the sewers and use your pick 2 squares north of the dead end on the east side. Go down the hole.",
+          "at": [
+            32302,
+            32257,
+            8
+          ],
+          "source": "Navigate to the south-west end of the cave (Mapper Coords 126.46, 126.1, 8). Use a pick on the tile 2 sqm north of the dead end on the eastern side. A hole should open."
+        },
+        {
+          "kind": "rewards"
+        }
+      ]
+    }
+  ]
+}

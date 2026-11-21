@@ -1,0 +1,103 @@
+{
+  "quest": "Crusader Helmet Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Crusader_Helmet_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope and a melee weapon for the spider webs.",
+          "source": "Required Equipment: Rope. Any melee weapon or a firebug to break the spider webs on the way."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Pick 'N Shovel Mine west of Kazordoon.",
+          "at": [
+            32549,
+            31987,
+            7
+          ],
+          "source": "Head to Pick 'N Shovel Mine west of Kazordoon, located (Mapper Coords 127.36, 124.243, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Head east and down the hole (dwarves).",
+          "at": [
+            32562,
+            31994,
+            8
+          ],
+          "source": "Head east and down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go straight down another hole.",
+          "at": [
+            32564,
+            31992,
+            9
+          ],
+          "source": "Immediately head down another hole and then head far to the west."
+        },
+        {
+          "kind": "go",
+          "text": "Head far to the west (dwarf soldiers), then north and west, and down.",
+          "at": [
+            32443,
+            31993,
+            10
+          ],
+          "source": "Immediately head down another hole and then head far to the west. Head to the north and west and continue down another hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go on down (dwarf soldiers).",
+          "at": [
+            32438,
+            31967,
+            11
+          ],
+          "source": "You will meet Dwarf Guards. Head east continuing further down in the mine."
+        },
+        {
+          "kind": "go",
+          "text": "Head east and further down (dwarf guards).",
+          "at": [
+            32470,
+            31973,
+            12
+          ],
+          "source": "Head east continuing further down in the mine (Mapper Coords 126.213, 124.228, 12)."
+        },
+        {
+          "kind": "go",
+          "text": "Go north through the level 35 gate and down the hole: giant spiders below, and spider webs to break.",
+          "at": [
+            32477,
+            31943,
+            13
+          ],
+          "source": "Go north and through the level 35 gate of expertise. Head down the hole (Mapper Coords 126.221, 124.199, 13) and prepare to face Giant Spiders. There are some spider webs blocking the way."
+        },
+        {
+          "kind": "reward",
+          "text": "The crusader helmet is in the skeleton at the far west end of the tunnel.",
+          "at": [
+            32427,
+            31943,
+            14
+          ],
+          "object": 4285,
+          "items": [
+            [
+              3391,
+              1
+            ]
+          ],
+          "source": "The reward (a Crusader Helmet) is located in a skeleton body at the far west end of the tunnel (Mapper Coords 126.170, 124.196, 14)."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+<!-- Explorer Brooch Quest | https://tibia.fandom.com/wiki/Explorer_Brooch_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler| name=Explorer Brooch Quest}}
+==Required equipment==
+*[[Rope]]
+
+==Method==
+*Go to [[The Jolly Axeman Tavern]] in [[Kazordoon]].({{Mapper Coords|127.125|124.144|9|4|text=here}})
+*In upper side of room you will see 4 sewer gates.
+*Go down, kill rat and take [[Explorer Brooch]] from body.
+[[File:ExplorerBroochQuest.gif]]
+
+You can trade the brooch with Mortimer in the explorer society building in Northport for 50 gp.
+
+== Transcripts ==
+{{Infobox Transcript|
+''Player:'' '''brooch'''<br />
+Mortimer: Our members travel to far away places and cross dangerous areas, many fall prey to enemies or the land ...<br />
+Sometimes the personal explorer brooches can be recovered. That way we learn about the fate of our members ...<br />
+We offer a reward for each brooch returned to us. Have you found an explorer brooch?<br />
+''Player:'' '''yes'''<br />
+Mortimer: It's always a sad day when we learn about the death of a member. But at least we learnt about his fate. Thank you, here is your reward.
+}}

@@ -1,0 +1,121 @@
+{
+  "quest": "Double Hero Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Double_Hero_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Required Equipment: Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Edron Hero Cave, north of Edron (wild warriors and hunters outside).",
+          "at": [
+            33164,
+            31636,
+            7
+          ],
+          "source": "First of all, you have to go to the Edron Hero Cave."
+        },
+        {
+          "kind": "go",
+          "text": "Kill the wild warriors and go down the next hole.",
+          "at": [
+            33161,
+            31624,
+            8
+          ],
+          "source": "When you enter to the undergrounds, you have to kill some wild warriors. Go to the next hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the stairs (demon skeletons, wild warriors, a priestess and a beholder).",
+          "at": [
+            33136,
+            31593,
+            9
+          ],
+          "source": "Now you have to kill some Demon Skeletons, Wild Warriors, Prietesses and Bonelords. Go with that way, and go downstairs."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the stairs again (demon skeletons, wild warriors, a monk).",
+          "at": [
+            33169,
+            31588,
+            10
+          ],
+          "source": "Now you have to go with that way, killing some Monks, Demon Skeletons and Wild Warriors. Go downstairs."
+        },
+        {
+          "kind": "go",
+          "text": "Kill the 3 dragons and go down the hole.",
+          "at": [
+            33150,
+            31595,
+            11
+          ],
+          "source": "Kill the 3 Dragons and enter that hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go down again (a hero and monks).",
+          "at": [
+            33113,
+            31592,
+            12
+          ],
+          "source": "Here, you will face 1 Hero and 2 or 3 Monks."
+        },
+        {
+          "kind": "kill",
+          "text": "Go south slowly: the room has 2 heroes, priestesses, demon skeletons and an orc shaman.",
+          "at": [
+            33110,
+            31675,
+            13
+          ],
+          "monster": "Hero",
+          "source": "In the room there are 2 Heroes, 1 Priestess, 2 Demon Skeletons, 1 Orc Shaman."
+        },
+        {
+          "kind": "reward",
+          "text": "Open the box in the south of the room: the red gem.",
+          "at": [
+            33109,
+            31679,
+            13
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3039,
+              1
+            ]
+          ],
+          "source": "In the south of the room there are 2 chests open both to recieve the Club Ring and the Red Gem."
+        },
+        {
+          "kind": "reward",
+          "text": "And the box next to it: the club ring.",
+          "at": [
+            33110,
+            31679,
+            13
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3093,
+              1
+            ]
+          ],
+          "source": "In the south of the room there are 2 chests open both to recieve the Club Ring and the Red Gem."
+        }
+      ]
+    }
+  ]
+}

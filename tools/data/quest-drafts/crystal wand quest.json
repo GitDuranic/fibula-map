@@ -1,0 +1,54 @@
+{
+  "quest": "Crystal Wand Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Crystal_Wand_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel and a rope.",
+          "source": "Required Equipment: Shovel, Rope"
+        },
+        {
+          "kind": "go",
+          "text": "South of Northport, dig open the hole with your shovel and go down.",
+          "at": [
+            32512,
+            31622,
+            7
+          ],
+          "source": "Start at the cave a bit south of Northport. Use the shovel to open a hole (Mapper Coords 127.0, 123.136, 7) and get into it."
+        },
+        {
+          "kind": "note",
+          "text": "Needs placing: in the small forest inside the cave, a hole behind the trees has a switch: turn it right to open the way into the Maze of Lost Souls (if it's already right, turn it left and right again). Then on through the energy fields to the maze.",
+          "source": "In the red spot, behind the trees, there is a hole and inside that hole there is a switch that you must turn right to open the entrance to the MoLS. Note: If the switch is already turned right, then turn it left and right again."
+        },
+        {
+          "kind": "go",
+          "text": "Through the maze: past the griffin shield room, through the level 60 gate, north, and the right passage to the stairs up to Demona.",
+          "at": [
+            32500,
+            31677,
+            15
+          ],
+          "source": "In the first entrance room is the Griffin Shield Quest. Keep going to the end of the passage and through the Gate of Expertise for level 60. Go north and take the right passage all the way to the stairs. Right above here is Demona."
+        },
+        {
+          "kind": "go",
+          "text": "Go to the top of the room (warlocks, stone golems, elf arcanists) and down the stairs to the quest room (warlocks and dragons).",
+          "at": [
+            32480,
+            31651,
+            14
+          ],
+          "source": "In Demona are several Warlocks, a couple of Stone Golems and a few Elf Arcanists. Go to the top of the room. Down the stairs is the quest room with 4 Warlocks and 5 Dragons."
+        },
+        {
+          "kind": "rewards"
+        }
+      ]
+    }
+  ]
+}

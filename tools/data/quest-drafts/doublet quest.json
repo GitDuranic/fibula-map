@@ -1,0 +1,24 @@
+{
+  "quest": "Doublet Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Doublet_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go down the ladder in the stable north of Tom's shop.",
+          "at": [
+            32080,
+            32181,
+            7
+          ],
+          "source": "Go down the ladder on the stables north from Tom's shop (Mapper Coords 125.81, 125.183, 7)."
+        },
+        {
+          "kind": "rewards"
+        }
+      ]
+    }
+  ]
+}

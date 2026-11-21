@@ -1,0 +1,8 @@
+<!-- Doublet Quest | https://tibia.fandom.com/wiki/Doublet_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name= Doublet Quest}}
+[[Tom]] mentions an adventurer leaving a [[Doublet]] in his cellar before leaving for the [[mainland]].
+
+== Method ==
+* Go down the ladder on the stables north from [[Tom]]'s shop, {{Mapper Coords|125.81|125.183|7|4|text=here}}
+* Use the [[Loose Board]] straight left to the [[Sewer Grate]] to get a [[Doublet]].
+[[File:Doublet_Quest.png]]

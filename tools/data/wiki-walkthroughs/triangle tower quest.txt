@@ -1,0 +1,17 @@
+<!-- Triangle Tower Quest | https://tibia.fandom.com/wiki/Triangle_Tower_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Triangle Tower Quest}}
+== Method ==
+First, head to the [[Triangle Tower]], which is found {{Mapper Coords|127.49|125.119|7|3|text=here}}, and go up to the top. If the tower is closed you will have to go into the desert and pull the lever to open the wall, the lever is found {{Mapper Coords|127.62|125.122|7|3|text=here}}.<br>
+
+In the tower you will encounter several creatures, such as:
+* Basement: a single [[Bonelord]], there is also a teleporter which leads outside here.
+* Ground level: 4 [[Skeleton]]s.
+* Second floor: 4 [[Ghoul]]s.
+* Third floor: 3 [[Demon Skeleton]]s
+* Fourth floor: 2 [[Demon Skeleton]]s, 2 [[Ghoul]]s, and 2 [[Stalker]]s.
+* Final floor: a [[Monk (Creature)|Monk]], a [[Witch]] and a [[Dwarf Geomancer]].
+''Note that [[Demon Skeleton]]s cannot see [[Invisibility|Invisible foes]], using the [[Invisible|spell]] or a [[Stealth Ring]] may help.''
+
+After reaching the fourth floor and eventually killing everything there, open the box to get your reward. You can also kill the [[Monk (Creature)|Monk]] and the [[Witch]], which are easy to kill, grab the reward, and leave. The [[Dwarf Geomancer]] is hard to melee on a lower level/on lower skills.<br>
+
+You can then go back down to the bottom of the tower and out, if someone has closed the door on you, you will need to go into the basement and go through the teleporter.

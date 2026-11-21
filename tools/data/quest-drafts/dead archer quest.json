@@ -1,0 +1,59 @@
+{
+  "quest": "Dead Archer Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Dead_Archer_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel and a rope; an antidote for the poison fields.",
+          "source": "Required Equipment: Shovel, Rope. Recommended Antidote, Antidote Rune, or Destroy Field for Poison Fields."
+        },
+        {
+          "kind": "go",
+          "text": "Dig open the hole of the troll cave east of Thais and go down.",
+          "at": [
+            32493,
+            32259,
+            7
+          ],
+          "source": "Go the Thais troll cave east of town (Mapper Coords 126.235, 126.4, 7). You will need to use a shovel to open the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go east and down (trolls).",
+          "at": [
+            32484,
+            32265,
+            8
+          ],
+          "source": "After entering the cave, go east and go down a hole."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and down the hole.",
+          "at": [
+            32500,
+            32303,
+            8
+          ],
+          "source": "Follow this path east and go down into the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go south and down to the Dead Archer, through the poison fields on either side of the slime.",
+          "at": [
+            32504,
+            32307,
+            9
+          ],
+          "source": "Follow this path south to find the Dead Archer. On either side of the Slime spawn, you will have to pass through some Poison Fields."
+        },
+        {
+          "kind": "rewards"
+        }
+      ]
+    }
+  ]
+}

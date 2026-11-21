@@ -1,0 +1,6 @@
+<!-- Giant Smithhammer Quest | https://tibia.fandom.com/wiki/Giant_Smithhammer_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Giant Smithhammer Quest}}
+==Method==
+* Go to the [[Cyclops]]/[[Minotaur]] camp in the [[Plains of Havoc]], and be prepared to face many [[Cyclops|Cyclopes]] and various types of [[Minotaurs]].
+* Go down the stairs in the north structure ({{Mapper Coords|128.11|125.235|7|3|text=here}}). Once you go down these stairs, you will be faced with numerous (read: MANY) [[Cyclops|Cyclopes]], [[Minotaur]]s, [[Minotaur Guard]]s, [[Minotaur Mage]]s, and even some [[Orc]]s. Even a level 30 will lose more than half of his/her life immediately if going down without being invisible.
+* The quest box is located in the room directly to the south.

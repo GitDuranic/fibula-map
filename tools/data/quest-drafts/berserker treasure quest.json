@@ -1,0 +1,98 @@
+{
+  "quest": "Berserker Treasure Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Berserker_Treasure_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Required Equipment: Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go down the ramp into the cellar south-west of Edron castle.",
+          "at": [
+            33173,
+            31900,
+            7
+          ],
+          "source": "Go down into the Edron Orc Cave. The entrance is southwest of the castle (Mapper Coords 129.149, 124.156, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Pull the lever if the stones block the way into the orc cave.",
+          "at": [
+            33172,
+            31896,
+            8
+          ],
+          "source": "You can access this area through a drain in the basement of the Edron Flats. (On the 7.1 map the cellar has a lever and stones that close the way.)"
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave west and south and go down (orcs, orc spearmen, orc warriors, poison spiders).",
+          "at": [
+            33164,
+            31932,
+            8
+          ],
+          "source": "Once in the hole, you will meet only Poison Spiders, Orcs, Orc Spearmen and Orc Warriors. Follow the cave to the west and then south."
+        },
+        {
+          "kind": "go",
+          "text": "Go west and down again (orc warriors, orc spearmen, poison spiders).",
+          "at": [
+            33153,
+            31930,
+            9
+          ],
+          "source": "On this floor you will encounter Poison Spiders, Orcs, Orc Spearmen, Orc Warriors and probably one or two lured Orc Berserkers."
+        },
+        {
+          "kind": "go",
+          "text": "Go down again (orc warriors and an orc berserker).",
+          "at": [
+            33165,
+            31930,
+            10
+          ],
+          "source": "Once down this hole you will face Orc Berserkers, Poison Spiders and Orc Warriors."
+        },
+        {
+          "kind": "kill",
+          "text": "Go east to the end of the floor, past orc berserkers and an orc leader.",
+          "at": [
+            33196,
+            31924,
+            11
+          ],
+          "monster": "Orc Berserker",
+          "source": "Down the hole you will meet up to 6 Orc Berserkers. Slowly make your way to the eastern end of the floor, fighting off more Orc Berserkers and 1-4 Orc Leaders."
+        },
+        {
+          "kind": "reward",
+          "text": "The reward is in the box at the end of the floor.",
+          "at": [
+            33199,
+            31923,
+            11
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3026,
+              3
+            ],
+            [
+              3031,
+              175
+            ]
+          ],
+          "source": "The reward is in a box at the end of the floor, as shown on the map."
+        }
+      ]
+    }
+  ]
+}

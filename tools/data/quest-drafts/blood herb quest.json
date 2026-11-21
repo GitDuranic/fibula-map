@@ -1,0 +1,25 @@
+{
+  "quest": "Blood Herb Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Blood_Herb_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "kill",
+          "text": "Go to the small piece of land north-east of Wyda's house (witches on the hill to the east) and kill the giant spider.",
+          "at": [
+            32769,
+            31971,
+            7
+          ],
+          "monster": "Giant Spider",
+          "source": "Prepare yourself and go up to fight a single Giant Spider. Be careful because 2 Witches spawn on a hill to the east and can shoot you as you walk."
+        },
+        {
+          "kind": "rewards"
+        }
+      ]
+    }
+  ]
+}

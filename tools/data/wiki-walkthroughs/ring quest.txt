@@ -1,0 +1,18 @@
+<!-- Ring Quest | https://tibia.fandom.com/wiki/Ring_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler| name=Ring Quest}}
+
+==Required Equipment==
+*Rope
+*Stuff to kill [[Hero]]es and minor creatures
+*recommended [[GFB]]s or [[Thunderstorm]]s*
+
+==Method==
+* Go into the [[Edron]] [[Hero Cave]], {{Mapper Coords|129.140|123.150|7|3|text=here}}.
+* Follow the route bellow.
+<br>
+[[Image:Ring Quest.png]]
+
+* Use the chests to get your reward.
+* Follow the same way out.
+<br>
+'''Note:''' You probably need to use [[Great Fireball]]s or [[Thunderstorm]]s in image #6.

@@ -1,0 +1,18 @@
+<!-- Edron Goblin Quest | https://tibia.fandom.com/wiki/Edron_Goblin_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Edron Goblin Quest}}
+==Required Equipment==
+* [[Rope]]
+
+==Method==
+* From the [[Edron]] [[depot]], go down the drain in the south-west corner of the castle ({{Mapper Coords|129.141|124.84|7|3|text=here}}).
+* There is only one way to go, so follow the cave until you emerge in a grassy area ({{Mapper Coords|129.105|124.67|7|3|text=here}}).
+* Go south-west until you find the goblin hill ({{Mapper Coords|129.83|124.104|7|3|text=here}}). Go down the hole, and be prepared to face up to 10 [[Goblin]]s at once if no one has been down there for a while.
+
+* Follow this path to the north-west and go down the hole:
+[[Image:Edron Goblin Quest Map 01.jpg]]
+
+* Follow this path to the hole in the far north-east corner. Go down this hole, and watch out for more goblins and 2 [[wasp]]s:
+[[Image:Edron Goblin Quest Map 02.jpg]]
+
+* The reward is in two chests in the throne room to the north:
+[[Image:Edron Goblin Quest Map 03.jpg]]

@@ -1,0 +1,113 @@
+{
+  "quest": "Behemoth Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Behemoth_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring destroy field runes.",
+          "source": "Requirements: Destroy Field Runes (at least 1, more recommended)."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into Cyclopolis, north of Edron.",
+          "at": [
+            33250,
+            31697,
+            7
+          ],
+          "source": "Go north of Edron to Cyclopolis (Mapper Coords 129.226, 123.210, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the way 5 floors down (cyclopes, dwarf soldiers, fire elementals lower down) to the dragons' floor, and go down again.",
+          "at": [
+            33285,
+            31700,
+            12
+          ],
+          "source": "Follow the maps below to reach the 5th floor of Cyclopolis, with the Dragons. Go down again and you will see an impressive overview of the Behemoth floor."
+        },
+        {
+          "kind": "note",
+          "text": "Needs placing: open the way with the lever. Levitate down to the small platform north behind the stairs (2 cyclopes); if there are large rocks north of it, go back up, east and down, west and up, and up the south-eastern stairs. Kill the dragon lord, use a destroy field rune on the westernmost tile of the northern corridor and pull the lever to the right.",
+          "source": "Go north behind the stairs and find a spot to levitate down to a small platform with 2 Cyclopes. ... use a Destroy Field Rune on the tile furthest west of the northern corridor row. When the lever is to the right, backtrack to the rocks for the next step."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the stairs on the platform, kill the behemoths by the stairs, go north through the narrow passage and up the stairs, through the level 80 door.",
+          "at": [
+            33296,
+            31672,
+            15
+          ],
+          "source": "Go down the stairs on the platform and kill the Behemoths, Dwarf Soldiers and Cyclopes that spawn by the stairs. Go north through the narrow passage and up the stairs. Go through the level 80 Door of Expertise."
+        },
+        {
+          "kind": "kill",
+          "text": "Clear the last room: behemoths and dragons.",
+          "at": [
+            33296,
+            31662,
+            13
+          ],
+          "monster": "Behemoth",
+          "source": "In the final room there are 4 Behemoths, 2 Cyclops Smiths, and 2 Dragons."
+        },
+        {
+          "kind": "reward",
+          "text": "The rewards are in the chests at the north end of the room: the guardian halberd,",
+          "at": [
+            33295,
+            31658,
+            13
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3315,
+              1
+            ]
+          ],
+          "source": "When the room is clear you will find your rewards in the northern end of the room."
+        },
+        {
+          "kind": "reward",
+          "text": "the demon shield,",
+          "at": [
+            33297,
+            31658,
+            13
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3420,
+              1
+            ]
+          ],
+          "source": "When the room is clear you will find your rewards in the northern end of the room."
+        },
+        {
+          "kind": "reward",
+          "text": "and the golden armor.",
+          "at": [
+            33298,
+            31658,
+            13
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3360,
+              1
+            ]
+          ],
+          "source": "When the room is clear you will find your rewards in the northern end of the room."
+        }
+      ]
+    }
+  ]
+}

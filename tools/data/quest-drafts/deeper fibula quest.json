@@ -1,0 +1,162 @@
+{
+  "quest": "Deeper Fibula Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Deeper_Fibula_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring key 3940 (sold on Fibula) and destroy field runes.",
+          "source": "Required equipment: Key 3940, Key 3980, Destroy Field runes. If you are faced with a locked door, you need Key 3940 to open, it can be bought on the island."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the well in Fibula.",
+          "at": [
+            32172,
+            32439,
+            7
+          ],
+          "source": "Head to Fibula and enter the dungeon through the well."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path (door: key 3940) and go down.",
+          "at": [
+            32190,
+            32429,
+            8
+          ],
+          "source": "Follow the path shown on the map. If you are faced with a locked door, you need Key 3940 to open."
+        },
+        {
+          "kind": "go",
+          "text": "Go down again.",
+          "at": [
+            32210,
+            32437,
+            9
+          ],
+          "source": "Follow the path shown on the map."
+        },
+        {
+          "kind": "go",
+          "text": "Go east, through the level 50 gate and into the right teleporter (minotaur guards and archers).",
+          "at": [
+            32212,
+            32433,
+            10
+          ],
+          "source": "Upon coming down, head east and through a teleporter. You will now be facing two teleporters, go through the level 50 gate of expertise and the right one."
+        },
+        {
+          "kind": "get",
+          "text": "Go west through the fire and energy fields (minotaur mages) and use the hole: key 3980.",
+          "at": [
+            32219,
+            32401,
+            10
+          ],
+          "items": [
+            [
+              2972,
+              1
+            ]
+          ],
+          "source": "Continue west through fire, and energy fields to get Key 3980, be prepared to face 3 Minotaur Mages. Key 3980 is found by \"using\" on a hole to the west."
+        },
+        {
+          "kind": "note",
+          "text": "Go back and south past the minotaurs, open the door with key 3980 and go on through the minotaur room into the dragon cave (dragons and dragon lords).",
+          "source": "Go back and then south, kill some Minotaurs, unlock the door with you newly found key. Continue further and now prepare to face ~16 Dragons and 4 Dragon Lords."
+        },
+        {
+          "kind": "reward",
+          "text": "The tower shield is in the skeleton under the fire field in the north-west corner (destroy field rune).",
+          "at": [
+            32239,
+            32471,
+            10
+          ],
+          "object": 4285,
+          "items": [
+            [
+              3428,
+              1
+            ]
+          ],
+          "source": "Tower Shield is in the north-west corner of the cave, under a Fire Field, inside a skeleton."
+        },
+        {
+          "kind": "reward",
+          "text": "The warrior helmet is in the skeleton south of it, behind a rock.",
+          "at": [
+            32239,
+            32478,
+            10
+          ],
+          "object": 4285,
+          "items": [
+            [
+              3369,
+              1
+            ]
+          ],
+          "source": "Warrior Helmet is south of the Tower Shield, in a skeleton that is hidden behind a rock."
+        },
+        {
+          "kind": "reward",
+          "text": "The dwarven ring is in the skeleton north of the exit teleporter.",
+          "at": [
+            32233,
+            32491,
+            10
+          ],
+          "object": 4240,
+          "items": [
+            [
+              3097,
+              1
+            ]
+          ],
+          "source": "Dwarven Ring is north of the exit portal, inside a skeleton."
+        },
+        {
+          "kind": "reward",
+          "text": "The elven amulet is in the dragon corpse east of it.",
+          "at": [
+            32245,
+            32492,
+            10
+          ],
+          "object": 4025,
+          "items": [
+            [
+              3082,
+              1
+            ]
+          ],
+          "source": "Elven Amulet is directly east of the Dwarven Ring, in a fresh-looking dragon corpse."
+        },
+        {
+          "kind": "reward",
+          "text": "The knight axe is in the dead body south-east of it. The teleporter in the south-west takes you back to the dungeon entrance.",
+          "at": [
+            32256,
+            32500,
+            10
+          ],
+          "object": 4240,
+          "items": [
+            [
+              3318,
+              1
+            ]
+          ],
+          "source": "Knight Axe is south-east of the Elven Amulet, in a dead human body. The portal in the south-west part of the last room leads back to the dungeon entrance."
+        }
+      ]
+    }
+  ]
+}

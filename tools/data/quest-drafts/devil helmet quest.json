@@ -1,0 +1,156 @@
+{
+  "quest": "Devil Helmet Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Devil_Helmet_Quest/Spoiler",
+  "segments": [
+    {
+      "name": "Key 3610",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope, a destroy field rune and an antidote. You need at least 2 players.",
+          "source": "If you are getting the key you must have a Destroy Field rune. Rope. Recommended Antidote. You cannot complete this quest alone."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Ancient Temple north of Thais, two floors.",
+          "at": [
+            32356,
+            32170,
+            7
+          ],
+          "source": "Go to the Ancient Temple, north of Thais (Mapper Coords 126.100, 125.171, 7). Go down two levels."
+        },
+        {
+          "kind": "go",
+          "text": "Head as far north as you can and go down to the rotworms.",
+          "at": [
+            32354,
+            32138,
+            9
+          ],
+          "source": "Head as far north as you can go. Go down to the level with the Rotworms."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and south and go down the ladder.",
+          "at": [
+            32502,
+            32217,
+            11
+          ],
+          "source": "Follow this path to the east and south, and go down the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Through the poison fields (antidote or destroy field) and down another level.",
+          "at": [
+            32493,
+            32215,
+            12
+          ],
+          "source": "On this level, there will be a lot of Poison Fields. Go down another level."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and north (minotaurs) and go down the hole (cyclopes).",
+          "at": [
+            32577,
+            32179,
+            13
+          ],
+          "source": "Follow this path to the east and north. Be careful of Minotaurs. Go down the hole that is circled on the map. You will face a couple Cyclopes down this hole."
+        },
+        {
+          "kind": "get",
+          "text": "Go north and down to the minotaur room, south and up into the cyclops room. Pull the switch (it traps you in), kill the cyclopes, burn the fire away with the destroy field rune and use the hole: key 3610. The hole to the north takes you out.",
+          "at": [
+            32589,
+            32097,
+            14
+          ],
+          "items": [
+            [
+              2969,
+              1
+            ]
+          ],
+          "source": "Follow the passage until you find the switch. Once you flip the switch, kill the cyclops. Use a destroy field rune on the fire. Now use the hole and you will get silver Key 3610. To exit, go to the hole down the passage to the north."
+        }
+      ]
+    },
+    {
+      "name": "The helmet",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "One of you goes down Mintwallin's ladders, a bit west and up a hole, then south to the blocked passage and stands on the open square: that opens the grate for the others.",
+          "source": "At least one person must go this way. The selected person will go down the ladder, a bit west then up a hole. Go south to a blocked off passage. They must stand on the open square. This will open a grate for the others to go down."
+        },
+        {
+          "kind": "go",
+          "text": "The others go south past spiders and poison fields to the grate and go down it.",
+          "at": [
+            32482,
+            32170,
+            14
+          ],
+          "source": "The rest of the group should now follow the other passage south until they get to some spiders and poison fields. The grate should now be open. All go down it."
+        },
+        {
+          "kind": "go",
+          "text": "Go through the level 30 door and up the next hole. A dragon guards the last room; don't step in the holes (a giant spider below).",
+          "at": [
+            32469,
+            32169,
+            15
+          ],
+          "source": "Then go through the level 30+ requirement door, and up the next hole. Beware there is a dragon on this floor guarding the last room! The holes in the floor will lead to a Giant Spider."
+        },
+        {
+          "kind": "go",
+          "text": "Open the door with key 3610 and go down to the quest room: minotaur guards, archers and mages.",
+          "at": [
+            32466,
+            32153,
+            14
+          ],
+          "source": "Go to the door and use Key 3610. Take the last step and go down to face 3 minotaur guards, 2 archers and mages."
+        },
+        {
+          "kind": "reward",
+          "text": "The devil helmet is in this chest.",
+          "at": [
+            32465,
+            32148,
+            15
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3356,
+              1
+            ]
+          ],
+          "source": "Take the last step and go down."
+        },
+        {
+          "kind": "reward",
+          "text": "The halberd is in the other chest.",
+          "at": [
+            32466,
+            32148,
+            15
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3269,
+              1
+            ]
+          ],
+          "source": "Take the last step and go down."
+        }
+      ]
+    }
+  ]
+}

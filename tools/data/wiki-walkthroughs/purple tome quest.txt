@@ -1,0 +1,19 @@
+<!-- Purple Tome Quest | https://tibia.fandom.com/wiki/Purple_Tome_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Purple Tome Quest}}
+
+===Required Items===
+*[[Shovel]]
+*[[Rope]]
+<br>
+
+Follow the directions to go to Demona using the stardard [[Route: Demona|route]].
+
+When you are in Demona you will find several [[Warlock]]s and [[Elf Arcanist]]s, take the North-West Ladder of the Star Room, the one that is leading to the exit Teleport.
+
+Now Continue along the path and take the first way north until you reach this [https://tibia.fandom.com/wiki/Mapper?coords=126.165-123.107-15-4-1-1 point] (see image below).
+
+In this room, there are a lot of bookcases and this is the spawn point of one of the only two [[Infernalist]]s in Demona (the other one is upstairs). In those bookcases you will find the Maps and the [[Purple Tome|tome]].
+
+[[Image:PurpleTomeQuest.jpg]]
+
+For the fastest way out, go south again to the main path and continue west, then turn south. [https://tibia.fandom.com/wiki/Mapper?coords=126.144-123.169-15-4-1-1 Here] is a teleport that brings you to the surface in the middle of the [[Fields of Glory]].

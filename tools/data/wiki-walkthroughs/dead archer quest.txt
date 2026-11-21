@@ -1,0 +1,19 @@
+<!-- Dead Archer Quest | https://tibia.fandom.com/wiki/Dead_Archer_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Dead Archer Quest}}
+==Required Equipment==
+* [[Shovel]]
+* [[Rope]]
+* Recommended [[Antidote]], [[Antidote Rune]], or [[Destroy Field]] for [[Poison Field]]s, and if it's necessary some healing runes (Intense or Ultimate) for the [[Slime]]s.
+
+==Method==
+* Go the [[Thais]] troll cave east of town ({{Mapper Coords|126.235|126.4|7|3|text=here}}). You will need to use a shovel to open the hole.
+* After entering the cave, go east and go down a hole:
+[[Image:Dead Archer Quest Map 01.jpg]]
+
+* Follow this path east and go down into the hole. When down this hole, you will find [[Orc Warrior]]s, [[Orc]]s and possibly [[Luring|lured]] [[Scorpion]]s.
+[[Image:Dead Archer Quest Map 02.jpg]]
+
+* Follow this path south to find the Dead Archer. On either side of the [[Slime]] spawn, you will have to pass through some [[Poison Field]]s:
+[[Image:Dead Archer Quest Map 03.jpg]]
+
+* "Use" the body on the north end of this room to get your reward.

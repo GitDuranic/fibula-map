@@ -1,0 +1,37 @@
+<!-- Crusader Helmet Quest | https://tibia.fandom.com/wiki/Crusader_Helmet_Quest/Spoiler | fetched 2026-11-21 -->
+{{spoiler|name=Crusader Helmet Quest}}
+==Required Equipment==
+*[[Rope]]
+*Any [[melee]] [[weapon]] or a [[firebug]] to break the [[spider web]]s on the way.
+
+==Method==
+There are two routes to the Crusader Helmet, the original route is through the [[Dwarf Mines]], but since [[Updates/8.1]] it is also possible to go through [[Mount Sternum]] and its [[Mount Sternum/Undead Cave|Undead Cave]], which is faster.
+
+=== Mount Sternum Route ===
+*Starting from [[Thais]], head to [[Mount Sternum]] and go down {{Mapper Coords|126.194|125.70|7|2|text=here}}.
+*Walk north-west, you will face quite some [[Cyclops]]es and possibly some [[Cyclops Drone]]s. Go down {{Mapper Coords|126.162|125.41|8|4|text=here}}.
+*You are now in the [[Mount Sternum/Undead Cave]] and will face [[Skeleton]]s, walk a little bit north and go down a hole {{Mapper Coords|126.160|125.24|9|4|text=here}}.
+*You will meet [[Skeleton]]s and [[Ghoul]]s. Walk north-east and go down a hole {{Mapper Coords|126.171|124.245|10|4|text=here}}.
+*You have now entered the [[Dwarf Mines]], you will face 3 [[Dwarf Soldier]]s when going down and more [[Dwarf Soldier]]s and [[Dwarf Guard]]s when walking further. Walk north and north-east and go down a hole {{Mapper Coords|126.182|124.223|11|4|text=here}}.
+*Continue with the [[#Last_Part|last part]].
+
+=== Dwarf Mines Route ===
+*Head to [[Dwarf Mines|Pick 'N Shovel Mine]] west of [[Kazordoon]], located {{Mapper Coords|127.36|124.243|7|3|text=here}}.
+*Head east and down the hole.
+[[File:Crusader_Helmet_Quest_Map_01.gif]]
+*Immediately head down another hole and then head far to the west. 
+[[File:Crusader_Helmet_Quest_Map_02.gif]]
+*Head to the north and west and continue down another hole.
+[[File:Crusader_Helmet_Quest_Map_03.gif]]
+*Continue with the [[#Last_Part|last part]].
+
+=== Last Part ===
+Regardless if you took the ''Mount Sternum Route'' or the ''Dwarf Mines Route'', the last part is the same.
+
+*You will meet [[Dwarf Guard]]s. Head east continuing further down in the mine, {{Mapper Coords|126.213|124.228|12|4|text=here}}.
+[[File:Crusader_Helmet_Quest_Map_04.gif]]
+*There will be a lot of [[Dwarf Guard]]s. Go north and through the [[level]] 35 gate of expertise.
+[[File:Crusader_Helmet_Quest_Map_05.gif]]
+*Head down the hole {{Mapper Coords|126.221|124.199|13|4|text=here}} and prepare to face [[Giant Spider]]s (there are 4 in the entire place, but they come one by one, and you should only meet 3 on the way to where the crusader helmet is). There are some [[spider web]]s blocking the way. Use a [[melee]] [[weapon]] or a [[firebug]] to break it and pass through.
+*The reward (a [[Crusader Helmet]]) is located in a skeleton body at the far west end of the tunnel, {{Mapper Coords|126.170|124.196|14|4|text=here}}.
+[[File:Crusader_Helmet_Quest_Map_06.gif]]

@@ -1,0 +1,8 @@
+<!-- Silver Amulet Quest | https://tibia.fandom.com/wiki/Silver_Amulet_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Silver Amulet Quest}}
+
+==Required Equipment==
+* [[Shovel]]
+
+==Method==
+The amulet is hidden in a [[box]] in the {{Mapper Coords|126.251|126.14|9|4|text=southeast cellar}}. The entrance is {{Mapper Coords|126.247|126.11|7|2|text=here}}.

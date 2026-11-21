@@ -1,0 +1,22 @@
+<!-- Studded Legs Quest | https://tibia.fandom.com/wiki/Studded_Legs_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler | name=Studded Legs Quest}}
+==Required equipment==
+*[[Rope]]
+*Optional [[Small Health Potion]]s and [[Food]]
+
+== Method ==
+*Go to the [[Wasp]] tower in North-west [[Rookgaard]] ({{Mapper Coords|124.255|125.140|7|3|text=here}}).
+*Rope yourself up killing or simply ignoring the [[Wasp]]s you will face.
+*At the top simply "use" on the [[Honeyflower Patch]] to the right and you will get a [[Honey Flower]].
+*Head to [[Lee'Delle]]'s Shop ({{Mapper Coords|125.24|125.196|7|3|text=here}}), on '''premium account area''', and trade your [[Honey Flower]] for a pair of [[Studded Legs]].
+**'''Note:''' If you find more [[Honey Flower]]s you can trade those too, there is not a once only limit.
+
+== Transcripts ==
+{{Infobox Transcript|
+''Player'': '''hi'''<br />
+[[Lee'Delle]]: Nice to see you, ''Player''! Ask me for a {trade} if you like to see my exclusive offers.<br />
+''Player'': '''honey flower'''<br />
+Lee'Delle: Oh, thank you so much! Please take this piece of armor as reward.<br />
+''Player'': '''bye'''<br />
+Lee'Delle: Bye, bye, ''Player''.
+}}

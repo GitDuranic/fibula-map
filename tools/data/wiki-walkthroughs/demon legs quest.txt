@@ -1,0 +1,16 @@
+<!-- Demon Legs Quest | https://tibia.fandom.com/wiki/The_Demon_Oak_Quest | fetched 2026-11-21 -->
+{{Infobox Quest|List={{{1|}}}|GetValue={{{GetValue|}}}
+| premium        = yes
+| name           = The Demon Oak Quest
+| aka            = Demon Legs Quest
+| reward         = [[Herbicide]] achievement, ability to obtain the [[Demon Outfits]]' second addon and one out of four available items: [[Demon Legs]], [[Rainbow Shield]], [[Spellbook of Ancient Arcana]] or [[Thorn Spitter]]
+| location       = [[Plains of Havoc]]
+| lvl            = 120
+| lvlrec         = 130+
+| transcripts    = yes
+| log            = The Ultimate Challenges
+| dangers        = [[Banshee]]s, [[Betrayed Wraith]]s, [[Blightwalker]], [[Bonebeast]]s, [[Braindeath]]s, [[Dark Torturer]], [[Demon]], [[Giant Spider]]s, [[Grim Reaper]], [[Hand of Cursed Fate]], [[Lich]]es, [[Undead Dragon]] and [[Vampire]]s.
+| implemented    = 8.20
+| legend         = The [[Ruthless Seven]] have sent a powerful demonic being to the Plains Of Havoc. Do you have what it takes to stop it?
+| history        = Before the [[Updates/8.5|Summer Update 2009]], the method to start this quest was rather different, as it did not require a [[Holy Icon]] but rather stepping on specific tiles. This method was never completely understood (even though the quest was completed then), and then the quest was modified to the current state. There was also a short period after the quest was initially introduced during which access to the Demon Oak was apparently much easier (and not as rare) than it was intended, so a patch was released to supposedly fix this. 
+}}

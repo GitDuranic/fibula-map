@@ -1,0 +1,70 @@
+{
+  "quest": "Demona Ring Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Demona_Ring_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel and a rope (the way to Demona).",
+          "source": "Required Items: Shovel, Rope"
+        },
+        {
+          "kind": "go",
+          "text": "In Demona's main room, go down the north-easternmost stairs (an elf arcanist and warlocks).",
+          "at": [
+            32508,
+            31654,
+            14
+          ],
+          "source": "Follow the route to Demona and go up into the main (pentagrammatic) room. Make your way to the northeastern-most staircase while fending off an Elf Arcanist and some Warlocks and go down."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the long hallway to the big room (elf arcanists and warlocks) and go up the stairs.",
+          "at": [
+            32504,
+            31577,
+            15
+          ],
+          "source": "You will come to a long hallway you'll have to follow all the way until you get to a big room filled with Elf Arcanists and Warlocks. Go up either staircase in this room."
+        },
+        {
+          "kind": "reward",
+          "text": "The left chest in the south: the stealth ring.",
+          "at": [
+            32504,
+            31596,
+            14
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3049,
+              1
+            ]
+          ],
+          "source": "There are two chests in the south of this floor, with the left one containing a Stealth Ring and the right one an Energy Ring."
+        },
+        {
+          "kind": "reward",
+          "text": "The right chest: the energy ring.",
+          "at": [
+            32515,
+            31596,
+            14
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3051,
+              1
+            ]
+          ],
+          "source": "There are two chests in the south of this floor, with the left one containing a Stealth Ring and the right one an Energy Ring."
+        }
+      ]
+    }
+  ]
+}

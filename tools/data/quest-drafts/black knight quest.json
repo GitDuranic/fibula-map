@@ -1,0 +1,126 @@
+{
+  "quest": "Black Knight Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Black_Knight_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Requirements: Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Leave Venore by the north-west exit towards the Amazon camp, to the large ruined building in the swamp, and go down its stairs.",
+          "at": [
+            32826,
+            31957,
+            7
+          ],
+          "source": "Leave Venore from the north-west exit, traveling north-west toward the Amazon Camp. Stop when you find a large ruined building immersed in the swamp (Mapper Coords 128.59, 124.215, 7). Go down the stairs to the basement of this building."
+        },
+        {
+          "kind": "get",
+          "text": "If the door in the basement is locked: key 5010 is in this dead tree west of the building.",
+          "at": [
+            32800,
+            31959,
+            7
+          ],
+          "items": [
+            [
+              2969,
+              1
+            ]
+          ],
+          "source": "Key 5010, if door is locked; this key can be obtained in 2 dead trees west of the villa (Mapper Coords 128.45, 124.220, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Go to the south end of the basement, through the door (key 5010 if it's locked) and down the stairs.",
+          "at": [
+            32822,
+            31970,
+            8
+          ],
+          "source": "Go to the south end of the basement to find a door. If it is locked, open it with Key 5010. Go in and down the stairs inside."
+        },
+        {
+          "kind": "go",
+          "text": "Go down again.",
+          "at": [
+            32825,
+            31968,
+            9
+          ],
+          "source": "You may find one of the parchments on this floor. Go down again."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave (either way at the split) and drop down the hole at the end (skeletons).",
+          "at": [
+            32833,
+            31979,
+            10
+          ],
+          "source": "Follow the cave. When the cave splits in 2, pick either direction. Drop down the hole at the end of the cave."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave south and rope up at the end.",
+          "at": [
+            32843,
+            31986,
+            11
+          ],
+          "source": "Follow the cave south. Rope up at the end of the path."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave furthest south to the room with skeletons and drop down a hole.",
+          "at": [
+            32853,
+            31993,
+            10
+          ],
+          "source": "Follow the cave furthest south again to a room with a few Skeletons. Drop down either of the two holes in this room."
+        },
+        {
+          "kind": "go",
+          "text": "Go east to the wall, then north to the stairs and go down (beholders).",
+          "at": [
+            32875,
+            31977,
+            11
+          ],
+          "source": "There are 4 Bonelords on this floor. Go east until you hit a wall and then follow the cave north to find stairs. Go down the stairs."
+        },
+        {
+          "kind": "go",
+          "text": "Go north through the level 50 gate and through the big room (a skeleton and a beholder) to the teleporter in the north.",
+          "at": [
+            32874,
+            31942,
+            12
+          ],
+          "source": "To the north is a level 50 Gate of Expertise. Go through it and head north. There will be 1 Skeleton, 2 Bonelords and 1 Wyvern in this large room. Kill them and go through the teleporter to the north."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the Black Knight, the beholders and the scorpions in the round room.",
+          "at": [
+            32874,
+            31950,
+            11
+          ],
+          "monster": "Black Knight",
+          "source": "The teleporter brings you to a circular room with the Black Knight, 2 Bonelords, and a few Scorpions."
+        },
+        {
+          "kind": "rewards"
+        }
+      ]
+    }
+  ]
+}

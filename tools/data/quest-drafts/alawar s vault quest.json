@@ -1,0 +1,158 @@
+{
+  "quest": "Alawar's Vault Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Alawar's_Vault_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring 20 gold for the boat and a pick. Bring key 4502 too if you already have it, or you may be trapped.",
+          "source": "Equipment: Travel money (at least 20gp), Pick. The long path ... if you have already received it, you should bring it (or you may be trapped)."
+        },
+        {
+          "kind": "talk",
+          "text": "Take the boat north of Carlin to Folda.",
+          "npc": "Nielson",
+          "say": [
+            "hi",
+            "folda",
+            "yes"
+          ],
+          "source": "Go to Folda via the ferry north of Carlin (20gp)."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Folda caves.",
+          "at": [
+            31998,
+            31570,
+            7
+          ],
+          "source": "Enter Folda caves (Mapper Coords 124.255, 123.83, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Go south-west through the minotaurs and down.",
+          "at": [
+            32028,
+            31539,
+            8
+          ],
+          "source": "From the start of the cave, follow south-west until you come to a room with Minotaurs."
+        },
+        {
+          "kind": "get",
+          "text": "Take key 4503 from the chest in the western room.",
+          "at": [
+            32031,
+            31686,
+            8
+          ],
+          "items": [
+            [
+              2970,
+              1
+            ]
+          ],
+          "source": "To the west, get Key 4503 from a chest in the western room."
+        },
+        {
+          "kind": "go",
+          "text": "Open the door of the protected area with key 4503 and use your pick on the fire against the wall, between the stone piles. Go down the hole: you fall two floors and can only get out by finishing the quest.",
+          "at": [
+            32040,
+            31636,
+            8
+          ],
+          "source": "Backtrack and find the protected area. Enter with Key 4503 and follow to the fire fields. Use pick on the fire field against the wall, between stone piles. Go down the hole. Note: you cannot return here!"
+        },
+        {
+          "kind": "get",
+          "text": "Take key 4501 from the chest.",
+          "at": [
+            32172,
+            31602,
+            10
+          ],
+          "items": [
+            [
+              2970,
+              1
+            ]
+          ],
+          "source": "Follow the green line to get Key 4501, Key 4502 and then follow it to Alawar's Vault."
+        },
+        {
+          "kind": "get",
+          "text": "Take key 4502 from the chest (with a dark helmet and a blank rune).",
+          "at": [
+            32201,
+            31571,
+            10
+          ],
+          "items": [
+            [
+              2970,
+              1
+            ],
+            [
+              3147,
+              1
+            ],
+            [
+              3384,
+              1
+            ]
+          ],
+          "source": "Follow the green line to get Key 4501, Key 4502 and then follow it to Alawar's Vault."
+        },
+        {
+          "kind": "go",
+          "text": "Go up into Alawar's Vault (minotaurs and a minotaur mage).",
+          "at": [
+            32106,
+            31576,
+            10
+          ],
+          "source": "Enter the Magic Forcefield to enter Alawar's Vault. Beware Minotaurs and a Minotaur Mage."
+        },
+        {
+          "kind": "reward",
+          "text": "Open the chest by the teleporter: 3 white pearls.",
+          "at": [
+            32105,
+            31567,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3026,
+              3
+            ]
+          ],
+          "source": "Open the 2 chests by the teleporter to receive your reward."
+        },
+        {
+          "kind": "reward",
+          "text": "And the other chest: the broadsword. The teleporter takes you out to the top of the castle.",
+          "at": [
+            32109,
+            31567,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3301,
+              1
+            ]
+          ],
+          "source": "Open the 2 chests by the teleporter to receive your reward. Go back through the teleporter to appear on the top of the castle."
+        }
+      ]
+    }
+  ]
+}

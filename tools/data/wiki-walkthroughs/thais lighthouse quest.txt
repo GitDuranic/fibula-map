@@ -1,0 +1,6 @@
+<!-- Thais Lighthouse Quest | https://tibia.fandom.com/wiki/Thais_Lighthouse_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Thais Lighthouse Quest}}
+
+'''Note: you will need at least two players to complete this quest!'''
+
+Go to the {{Mapper Coords|125.226|126.21|7|3|text=lighthouse}} southwest of [[Thais]] and go down into the basement. You will enter a square room with a [[corpse]] in it. This body contains a [[Imprisoned Cyclops (Book)|book]] telling you about a secret dungeon. To access this dungeon, you'll have to find a [[lever]] under some [[crate]]s which will make a [[ladder]] leading down appear. Once down, you can go to the north, south and right. The north passage leads to a switchplate that will make [[stairs]] appear at the south end once someone stands on it. The other person must go down the stairs and turn a lever. Once turned, this lever will make the [[teleporter]] leading to the quest room appear in the right passage. There are only 2 [[Cyclops|Cyclopes]] in there, which can be either fought or ignored. The [[Chest (Quest)|chests]] containing the [[Dark Shield]] and [[Battle Hammer]] are at the north end of the room.

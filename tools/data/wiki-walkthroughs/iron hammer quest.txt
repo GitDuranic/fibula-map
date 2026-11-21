@@ -1,0 +1,11 @@
+<!-- Iron Hammer Quest | https://tibia.fandom.com/wiki/Iron_Hammer_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Iron Hammer Quest}}
+==Required Equipment==
+* [[Rope]]
+* [[Shovel]]
+
+==Method==
+* Find the loose stone pile west of [[Kazordoon]] ({{Mapper Coords|126.192|124.249|7|3|text=here}}). Use your shovel, and go down the hole. On the surface you will find [[Dwarf|Dwarves]], [[Dwarf Soldier]]s, [[Minotaur]]s, and [[Minotaur Archer]]s.
+
+* Once down the hole, you will encounter [[Minotaur]]s, and [[Minotaur Archer]]s. Follow the passage to the north-west until you find a room with beds in it. The quest box is located between a couple of beds:
+[[Image:Iron Hammer Quest Map.jpg]]

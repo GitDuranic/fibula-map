@@ -1,0 +1,14 @@
+<!-- Longsword Quest | https://tibia.fandom.com/wiki/Longsword_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Longsword Quest}}
+
+==Required Equipment==
+* [[Shovel]]
+* [[Rope]]
+
+==Method==
+* Go to the Troll cave east of the [[Dwarf Bridge]] ({{Mapper Coords|127.150|124.222|7|3|text=here}}). The cave entrance is hidden behind a tree.
+* Once in the cave, head to the south and look for stairs down. Be careful of the [[Slime]]s to the north of the cave entrance. They are down a drain, but could be roped up to the main level.
+[[Image:Longsword Quest Map 01.jpg]]
+* Once on the next level, head north. The [[Minotaur Archer]] and [[Minotaur Mage]] are in the room to the north, but they might be lured to a different location.
+[[Image:Longsword Quest Map 02.jpg]]
+*The quest boxes are on the north end of the large room.

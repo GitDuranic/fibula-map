@@ -1,0 +1,11 @@
+<!-- Demona Ring Quest | https://tibia.fandom.com/wiki/Demona_Ring_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Demona Ring Quest}}
+
+===Required Items===
+*[[Shovel]] or equivalent
+*[[Rope]] or equivalent
+
+===Method===
+Follow the [[Route: Demona|route to Demona]] and go up into the main (pentagrammatic) room. Make your way to the northeastern-most staircase while fending off an [[Elf Arcanist]] and some [[Warlock]]s and go down. You will come to a long hallway you'll have to follow all the way until you get to a big room filled with [[Elf Arcanist]]s and [[Warlock]]s. Go up either staircase in this room and you will encounter more [[Warlock]]s upstairs. There are two chests in the south of this floor, with the left one containing a [[Stealth Ring]] and the right one an [[Energy Ring]] (they are marked purple in the image below).
+
+[[File:Demona Ring Quest.png]]
