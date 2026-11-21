@@ -82,14 +82,19 @@
         },
         {
           "kind": "reward",
-          "text": "The silver rune emblem is in the box (5 monks on this floor).",
+          "text": "In the box: an ultimate healing rune with 3 charges (5 monks on this floor).",
           "at": [
             33136,
             31601,
             15
           ],
           "object": 2469,
-          "items": [],
+          "items": [
+            [
+              3160,
+              1
+            ]
+          ],
           "source": "The Silver Rune Emblem is in the box."
         }
       ]
