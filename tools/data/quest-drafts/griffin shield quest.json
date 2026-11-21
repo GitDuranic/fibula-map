@@ -1,0 +1,148 @@
+{
+  "quest": "Griffin Shield Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Griffin_Shield_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel and plenty of food: the way is long.",
+          "source": "Don't forget to have a shovel in your backpack and some food because the way to the quest and back is too long."
+        },
+        {
+          "kind": "go",
+          "text": "In the cave near Northport, dig the hole open with your shovel and go down (spiders).",
+          "at": [
+            32512,
+            31622,
+            7
+          ],
+          "source": "It begins in a cave near Northport (Mapper Coords 126.232, 123.122, 7). Use the shovel to open a hole (Mapper Coords 127.0, 123.136, 7) and get into it."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave to the next hole (rotworms, wolves).",
+          "at": [
+            32513,
+            31656,
+            8
+          ],
+          "source": "Follow the blue line until the next hole."
+        },
+        {
+          "kind": "go",
+          "text": "And down again (trolls, wolves).",
+          "at": [
+            32483,
+            31633,
+            9
+          ],
+          "source": "Keep following the blue line."
+        },
+        {
+          "kind": "go",
+          "text": "In the small forest in the cave, go down the hole behind the middle tree and turn the switch to the right (if it already is, left and right again), then climb back up.",
+          "at": [
+            32494,
+            31629,
+            10
+          ],
+          "source": "In the red spot, behind the middle tree, there is a hole and inside that hole there is a switch that you must turn right to open the entrance to the Maze of Lost Souls."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Maze of Lost Souls.",
+          "at": [
+            32503,
+            31669,
+            10
+          ],
+          "source": "Get out the hole and follow this way to get to the entrance of the Maze of Lost Souls."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the maze closely, many floors up and down (orcs, trolls, minotaurs, goblins, a beholder and more): off the way are dragons, dragon lords and giant spiders.",
+          "at": [
+            32521,
+            31726,
+            10
+          ],
+          "source": "Follow the next map step by step or you'll face Dragons, Dragon Lords and Giant Spiders. In this path you'll face all the creatures (Rats ~ Orc Leaders)."
+        },
+        {
+          "kind": "go",
+          "text": "Go down 5 floors to the last room.",
+          "at": [
+            32511,
+            31721,
+            14
+          ],
+          "source": "Ok, here you are in the final room."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the 2 dwarf guards, 2 minotaur guards, 2 stone golems and 3 elf arcanists.",
+          "at": [
+            32505,
+            31722,
+            15
+          ],
+          "monster": "Stone Golem",
+          "source": "There are 2 Dwarf Guards, 2 Minotaur Guards, 2 Stone Golems and 3 Elf Arcanists here."
+        },
+        {
+          "kind": "reward",
+          "text": "In the pile of bones: the griffin shield.",
+          "at": [
+            32500,
+            31721,
+            15
+          ],
+          "object": 4285,
+          "items": [
+            [
+              3433,
+              1
+            ]
+          ],
+          "source": "Take the reward that is inside two piles of bones and a dead body."
+        },
+        {
+          "kind": "reward",
+          "text": "In the other pile of bones: a dwarven axe.",
+          "at": [
+            32503,
+            31724,
+            15
+          ],
+          "object": 4285,
+          "items": [
+            [
+              3323,
+              1
+            ]
+          ],
+          "source": "Take the reward that is inside two piles of bones and a dead body."
+        },
+        {
+          "kind": "reward",
+          "text": "In the dead body: an obsidian lance.",
+          "at": [
+            32498,
+            31721,
+            15
+          ],
+          "object": 4240,
+          "items": [
+            [
+              3313,
+              1
+            ]
+          ],
+          "source": "Take the reward that is inside two piles of bones and a dead body."
+        }
+      ]
+    }
+  ]
+}

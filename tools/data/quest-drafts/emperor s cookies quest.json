@@ -1,0 +1,75 @@
+{
+  "quest": "Emperor's Cookies Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Emperor's_Cookies_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go up through Kazordoon to Emperor Kruzak's chambers.",
+          "at": [
+            32589,
+            31950,
+            4
+          ],
+          "source": "First you need to go to Emperor Kruzak's chambers in his private room, to the north."
+        },
+        {
+          "kind": "get",
+          "text": "At the end of the west secret passage: key 3800 in the chest. Don't take the hole down, go back to the emperor's room.",
+          "at": [
+            32605,
+            31908,
+            3
+          ],
+          "items": [
+            [
+              2970,
+              1
+            ]
+          ],
+          "source": "Get Key 3800 which can be found at the end of the west \"secret passage\" exit, in a Chest. Do not take the exit route down the hole, but go back to the king's room."
+        },
+        {
+          "kind": "reward",
+          "text": "Open the small room in the emperor's chamber with key 3800: 27 cookies and key 3801 in the chest.",
+          "at": [
+            32648,
+            31905,
+            3
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3598,
+              27
+            ],
+            [
+              2970,
+              1
+            ]
+          ],
+          "source": "Open the door of the small room in the emperor's chamber with the key. In the chest in the room you opened will be 7 and 20 Cookies and Key 3801."
+        },
+        {
+          "kind": "get",
+          "text": "Go back down to the barracks and open the door with key 3801: key 3802 is in the chest (it opens Dwacatra prison and the Mine Hub).",
+          "at": [
+            32599,
+            31923,
+            6
+          ],
+          "items": [
+            [
+              2970,
+              1
+            ]
+          ],
+          "source": "When at the barracks you can open the door with Key 3801, in the Chest will be the key, Key 3802, this key is needed to open Dwacatra Prison and a specific room in the Dwarf Mines."
+        }
+      ]
+    }
+  ]
+}

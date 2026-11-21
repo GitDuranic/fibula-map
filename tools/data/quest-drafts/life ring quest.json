@@ -1,0 +1,68 @@
+{
+  "quest": "Life Ring Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Life_Ring_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a pick and a rope.",
+          "source": "Required Equipment: Pick, Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Ancient Temple north of Thais, two floors.",
+          "at": [
+            32356,
+            32170,
+            7
+          ],
+          "source": "Go to the Ancient Temple, north of Thais (Mapper Coords 126.100, 125.171, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the way south and go down.",
+          "at": [
+            32371,
+            32242,
+            9
+          ],
+          "source": "Once down the steps, follow this path to the south and go down a level."
+        },
+        {
+          "kind": "go",
+          "text": "Go east past the orcs and over the drawbridge (if it's up, the lever is south of it through a narrow passage), then east and south past the beholders to the dead end at the water. Use your pick on the west wall and go down: 3 beholders below, so run to the box.",
+          "at": [
+            32436,
+            32238,
+            10
+          ],
+          "source": "Head East, through some Orcs. You will come to some water, and a drawbridge. If the bridge is down, go across it, otherwise flip the switch. Keep going east (through two Bonelords) and then south, through two more Bonelords, until you reach a dead-end against some water. The pick hole is hidden against the west wall."
+        },
+        {
+          "kind": "reward",
+          "text": "In the box in the north-east corner: a life ring and a dragon necklace.",
+          "at": [
+            32443,
+            32238,
+            11
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3052,
+              1
+            ],
+            [
+              3085,
+              1
+            ]
+          ],
+          "source": "The quest box is in the north-east corner of this room."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "quest": "Ghoul Room Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Ghoul_Room_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring destroy field runes or an antidote for the poison fields.",
+          "source": "Recommended Destroy Field or using Antidote for Poison Fields"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Ancient Temple north of Thais, two floors.",
+          "at": [
+            32356,
+            32170,
+            7
+          ],
+          "source": "Go to the Ancient Temple, north of Thais (Mapper Coords 126.100, 125.171, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Go north to the end of the big room and down two floors to the rotworms.",
+          "at": [
+            32354,
+            32138,
+            9
+          ],
+          "source": "Down 2 levels and head North - all the way to the northern end of the large room. Go down to the Rotworms."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the long way east, south and east and go down (rotworms, poison spiders, orcs and orc spearmen).",
+          "at": [
+            32502,
+            32217,
+            11
+          ],
+          "source": "Follow this path to the east, south, and east, and go down the ladder. Watch out for Orcs, Orc Spearmen, Orc Warriors."
+        },
+        {
+          "kind": "go",
+          "text": "Run through the poison fields (antidote or destroy field) and go down again.",
+          "at": [
+            32493,
+            32215,
+            12
+          ],
+          "source": "This room will be filled with Poison Fields. Once through the poison fields, go down the ladder."
+        },
+        {
+          "kind": "get",
+          "text": "Follow the tunnel east and north to the room with skeletons and rotworms: key 3600 is in the pile of bones in the south-east.",
+          "at": [
+            32509,
+            32181,
+            13
+          ],
+          "items": [
+            [
+              2969,
+              1
+            ]
+          ],
+          "source": "Follow a small tunnel to the east and then north. After you come to a room with Skeletons and Rotworms, \"Open\" a dead skeleton in the South-East of the room - you will get Key 3600."
+        },
+        {
+          "kind": "go",
+          "text": "Use the well in that room to go down.",
+          "at": [
+            32508,
+            32176,
+            13
+          ],
+          "source": "When you have the key, \"Use\" the well in that room to go down it."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the 3 ghouls and open the door with key 3600.",
+          "at": [
+            32504,
+            32176,
+            14
+          ],
+          "monster": "Ghoul",
+          "source": "Kill 3 Ghouls, unlock the door with Key 3600, get your reward."
+        },
+        {
+          "kind": "reward",
+          "text": "The chest with a club ring.",
+          "at": [
+            32500,
+            32174,
+            14
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3093,
+              1
+            ]
+          ],
+          "source": "Get your reward."
+        },
+        {
+          "kind": "reward",
+          "text": "And the chest with a garlic necklace.",
+          "at": [
+            32500,
+            32176,
+            14
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3083,
+              1
+            ]
+          ],
+          "source": "Get your reward."
+        }
+      ]
+    }
+  ]
+}

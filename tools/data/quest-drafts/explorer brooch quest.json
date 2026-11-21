@@ -1,0 +1,54 @@
+{
+  "quest": "Explorer Brooch Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Explorer_Brooch_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Required equipment: Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go to the Jolly Axeman tavern in Kazordoon and down one of the sewer grates in the north of the room.",
+          "at": [
+            32639,
+            31873,
+            9
+          ],
+          "source": "Go to The Jolly Axeman Tavern in Kazordoon. In upper side of room you will see 4 sewer gates. Go down."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the rat.",
+          "at": [
+            32636,
+            31874,
+            10
+          ],
+          "monster": "Rat",
+          "source": "Go down, kill rat and take Explorer Brooch from body."
+        },
+        {
+          "kind": "reward",
+          "text": "Take the explorer brooch from the body.",
+          "at": [
+            32636,
+            31873,
+            10
+          ],
+          "object": 4240,
+          "items": [
+            [
+              4871,
+              1
+            ]
+          ],
+          "source": "Kill rat and take Explorer Brooch from body."
+        }
+      ]
+    }
+  ]
+}

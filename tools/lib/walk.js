@@ -88,7 +88,15 @@ export function buildWalk({ tileAt, rules }) {
     else if (c === 'south') y--;
     else if (c === 'east') x--;
     else if (c === 'west') x++;
-    return tileAt(x, y, dz) ? [x, y, dz] : null;
+    if (!tileAt(x, y, dz)) return null;
+    // Landing on a wall (Carlin's crypt stairs at 32404,31790,7 land on a wall with a torch): the server puts you on
+    // a free tile next to it, so the first walkable neighbour, in the order up() tries them.
+    if (!speedAt(x, y, dz)) {
+      for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0], [-1, 1], [1, 1], [-1, -1], [1, -1]]) {
+        if (speedAt(x + dx, y + dy, dz)) return [x + dx, y + dy, dz];
+      }
+    }
+    return [x, y, dz];
   };
   // Going up by ladder or rope: one floor up, the tile south of it, else the first walkable neighbour
   // (north, east, west, west, south-west, south-east, north-west, north-east, as the server tries them).

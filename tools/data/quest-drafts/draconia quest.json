@@ -1,0 +1,164 @@
+{
+  "quest": "Draconia Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Draconia_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring key 3012 (Elathriel, the prison guard nearby, sells it for 5000 gold), a rope and destroy field runes. You need a second player for the floor switches. The pyramid's keys (3001 to 3007) are daily: if someone took them, you need them from someone else.",
+          "source": "Useful Items: Key 3012, Rope, Destroy Field runes. You cannot finish this quest alone. Most of the keys found in this quest are daily respawns."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Shadow Caves north-west of the Ab'Dendriel depot.",
+          "at": [
+            32687,
+            31650,
+            7
+          ],
+          "source": "Find the Shadow Caves (north-west the depot underground, Mapper Coords 127.143, 123.182, 8)."
+        },
+        {
+          "kind": "go",
+          "text": "Go down 2 more floors.",
+          "at": [
+            32654,
+            31674,
+            9
+          ],
+          "source": "Go down 2 more floors and follow the cave south and then east."
+        },
+        {
+          "kind": "go",
+          "text": "Go south and east to the Hellgate door, open it with key 3012 and enter the northern teleporter.",
+          "at": [
+            32675,
+            31646,
+            10
+          ],
+          "source": "You should find a (normally locked) door, the Hellgate entrance. Open the door with Key 3012 and go in. Enter the northern teleport to enter Hellgate."
+        },
+        {
+          "kind": "go",
+          "text": "Follow Hellgate a long way, many floors up and down (rotworms, ghouls, skeletons, slimes), until you climb up into the pyramid.",
+          "at": [
+            32817,
+            31573,
+            8
+          ],
+          "source": "Follow the images below to reach Draconia. You may encounter Skeletons, Spiders, Poison Spiders, Ghouls, Rotworms, Carrion Worms, Slimes, Bonelords, and Demon Skeletons."
+        },
+        {
+          "kind": "go",
+          "text": "Ground floor (skeletons, scorpions): key 3001 is in the skeleton corpses on the north-west side; key 3002 in the second coffin north of the red carpet behind the east door (walk the south row: two hidden holes); key 3003 behind the south-west door: pull the lever, then the lever behind the wall, and take the key where the rock was. Open the west door in the south-east corner with key 3003 and go up the stairs.",
+          "at": [
+            32799,
+            31583,
+            7
+          ],
+          "source": "Key 3001: north-west side, skeleton corpses. Key 3002: open the eastern door with key 3001, walk along the south row of the carpet, open the second coffin on the north side. Key 3003: open the door with key 3002 and pull the lever, pull another lever, pick up Key 3003. Use key 3003 on the western door in the south-east corner of the pyramid."
+        },
+        {
+          "kind": "go",
+          "text": "Second floor (skeletons, ghouls): key 3004 is under the energy field in the first row, third column (destroy field); open the south door with it, key 3005 lies by the statues; open the west door with key 3005, key 3006 is under the south-easternmost fire field. Open the last door with key 3006 and go up the ladder.",
+          "at": [
+            32812,
+            31589,
+            6
+          ],
+          "source": "Key 3004: energy fields, first row, third column. Key 3005: open the door south with key 3004, on the ground next to the statues. Key 3006: open the door with key 3005, south-easternmost tile. Enter the final locked door using key 3006. Go up the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Third floor (ghouls, demon skeletons): player 1 stands on the southern floor switch, player 2 on the switch in the south-west room; player 1 then goes west and north through the teleporter for key 3007 and back to the switch. Go up the stairs.",
+          "at": [
+            32797,
+            31583,
+            5
+          ],
+          "source": "Leave player 1 on the southern switch. Player 2 must now go west, enter the south-western room and step on the floor switch. Player 1 goes west and then north to enter the portal and take Key 3007."
+        },
+        {
+          "kind": "go",
+          "text": "Fourth floor (mummies, demon skeletons): open the door with key 3007 and go up the stairs.",
+          "at": [
+            32802,
+            31581,
+            4
+          ],
+          "source": "Follow the path to the locked door. Open the door with Key 3007. Continue through the door and go upstairs."
+        },
+        {
+          "kind": "go",
+          "text": "Fifth floor (mummies, slimes): straight through and up the stairs.",
+          "at": [
+            32807,
+            31584,
+            3
+          ],
+          "source": "Fifth floor has 8 mummies and 2 slimes. There are no puzzles here, simply go through to the next floor."
+        },
+        {
+          "kind": "reward",
+          "text": "Sixth floor (demon skeletons, mummies), behind the level 25 gate: the chest with a serpent sword and an ice rapier.",
+          "at": [
+            32803,
+            31582,
+            2
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3297,
+              1
+            ],
+            [
+              3284,
+              1
+            ]
+          ],
+          "source": "Open the chests behind the level 25 Gate of Expertise for your reward."
+        },
+        {
+          "kind": "reward",
+          "text": "And the chest with a stone skin amulet and an energy ring.",
+          "at": [
+            32804,
+            31582,
+            2
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3081,
+              1
+            ],
+            [
+              3051,
+              1
+            ]
+          ],
+          "source": "Open the chests behind the level 25 Gate of Expertise for your reward."
+        },
+        {
+          "kind": "get",
+          "text": "Key 3008 is in the western bookcase: with it, open the door upstairs, set the levers left-right-left-right and the teleporter takes you to Ab'Dendriel.",
+          "at": [
+            32800,
+            31582,
+            2
+          ],
+          "items": [
+            [
+              2969,
+              1
+            ]
+          ],
+          "source": "Open the western bookcase to get Key 3008. Open the door with Key 3008. Arrange the levers: left-right-left-right. Enter the portal to arrive at Ab'Dendriel."
+        }
+      ]
+    }
+  ]
+}

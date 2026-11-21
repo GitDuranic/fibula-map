@@ -1,0 +1,100 @@
+{
+  "quest": "Edron Goblin Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Edron_Goblin_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Required Equipment: Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go down the drain in the south-west corner of Edron castle.",
+          "at": [
+            33165,
+            31827,
+            7
+          ],
+          "source": "From the Edron depot, go down the drain in the south-west corner of the castle (Mapper Coords 129.141, 124.84, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "There is only one way: follow the cave (rats) down and up with your rope until you come out in a grassy area.",
+          "at": [
+            33128,
+            31810,
+            8
+          ],
+          "source": "There is only one way to go, so follow the cave until you emerge in a grassy area (Mapper Coords 129.105, 124.67, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Go south-west over the goblin hill and down the hole (up to 10 goblins).",
+          "at": [
+            33107,
+            31847,
+            7
+          ],
+          "source": "Go south-west until you find the goblin hill (Mapper Coords 129.83, 124.104, 7). Go down the hole, and be prepared to face up to 10 Goblins at once."
+        },
+        {
+          "kind": "go",
+          "text": "Go north-west and down the next hole (goblins).",
+          "at": [
+            33092,
+            31837,
+            8
+          ],
+          "source": "Follow this path to the north-west and go down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go to the hole in the far north-east corner and down (goblins).",
+          "at": [
+            33102,
+            31822,
+            9
+          ],
+          "source": "Follow this path to the hole in the far north-east corner. Go down this hole."
+        },
+        {
+          "kind": "reward",
+          "text": "In the throne room to the north (goblins, 2 wasps): the box with a silver amulet.",
+          "at": [
+            33095,
+            31800,
+            10
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3054,
+              1
+            ]
+          ],
+          "source": "The reward is in two chests in the throne room to the north. Watch out for more goblins and 2 wasps."
+        },
+        {
+          "kind": "reward",
+          "text": "And the box with a steel shield.",
+          "at": [
+            33095,
+            31801,
+            10
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3409,
+              1
+            ]
+          ],
+          "source": "The reward is in two chests in the throne room to the north."
+        }
+      ]
+    }
+  ]
+}

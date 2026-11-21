@@ -1,0 +1,55 @@
+{
+  "quest": "Giant Smithhammer Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Giant_Smithhammer_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go to the cyclops and minotaur camp in the Plains of Havoc and down the stairs in the north building.",
+          "at": [
+            32780,
+            32234,
+            7
+          ],
+          "source": "Go down the stairs in the north structure (Mapper Coords 128.11, 125.235, 7)."
+        },
+        {
+          "kind": "reward",
+          "text": "Go to the room straight south (lots of cyclopes and minotaurs, guards and mages): the giant smithhammer is in the chest.",
+          "at": [
+            32775,
+            32253,
+            8
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3208,
+              1
+            ]
+          ],
+          "source": "Once you go down these stairs, you will be faced with numerous Cyclopes, Minotaurs, Minotaur Guards, Minotaur Mages. The quest box is located in the room directly to the south."
+        },
+        {
+          "kind": "reward",
+          "text": "And a talon in the chest next to it.",
+          "at": [
+            32777,
+            32253,
+            8
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3034,
+              1
+            ]
+          ],
+          "source": "The quest box is located in the room directly to the south."
+        }
+      ]
+    }
+  ]
+}

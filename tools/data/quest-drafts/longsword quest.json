@@ -1,0 +1,96 @@
+{
+  "quest": "Longsword Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Longsword_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel and a rope.",
+          "source": "Required Equipment: Shovel, Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Dig open the troll cave behind the tree east of the dwarf bridge and go down (trolls; slimes down the drain to the north).",
+          "at": [
+            32663,
+            31962,
+            7
+          ],
+          "source": "Go to the Troll cave east of the Dwarf Bridge (Mapper Coords 127.150, 124.222, 7). The cave entrance is hidden behind a tree. Be careful of the Slimes to the north of the cave entrance."
+        },
+        {
+          "kind": "go",
+          "text": "Head south and go down the stairs (trolls).",
+          "at": [
+            32648,
+            32003,
+            8
+          ],
+          "source": "Once in the cave, head to the south and look for stairs down."
+        },
+        {
+          "kind": "reward",
+          "text": "Go north to the large room (trolls, a minotaur mage): the chest with a wooden doll, a wedding ring and a mirror.",
+          "at": [
+            32649,
+            31969,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              2989,
+              1
+            ],
+            [
+              3004,
+              1
+            ],
+            [
+              3463,
+              1
+            ]
+          ],
+          "source": "Once on the next level, head north. The quest boxes are on the north end of the large room."
+        },
+        {
+          "kind": "reward",
+          "text": "The chest with 9 blank runes.",
+          "at": [
+            32650,
+            31969,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3147,
+              9
+            ]
+          ],
+          "source": "The quest boxes are on the north end of the large room."
+        },
+        {
+          "kind": "reward",
+          "text": "The chest with the longsword.",
+          "at": [
+            32651,
+            31969,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3285,
+              1
+            ]
+          ],
+          "source": "The quest boxes are on the north end of the large room."
+        }
+      ]
+    }
+  ]
+}

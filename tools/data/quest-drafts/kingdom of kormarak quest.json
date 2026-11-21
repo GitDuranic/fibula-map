@@ -1,0 +1,116 @@
+{
+  "quest": "Kingdom of Kormarak Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Kingdom_of_Kormarak_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Daily: only one player per day gets the reward. Bring a rope and an antidote.",
+          "source": "This quest is a daily respawn. Recommended equipment: Rope."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Ancient Temple north of Thais, two floors.",
+          "at": [
+            32356,
+            32170,
+            7
+          ],
+          "source": "Go to the Ancient Temple, north of Thais (Mapper Coords 126.100, 125.171, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Go north to the end of the big room and down two floors to the rotworms.",
+          "at": [
+            32354,
+            32138,
+            9
+          ],
+          "source": "Down 2 levels and head North - all the way to the northern end of the large room. Go down to the Rotworms."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the long way east, south and east and go down (rotworms, poison spiders, orcs and orc spearmen).",
+          "at": [
+            32502,
+            32217,
+            11
+          ],
+          "source": "Follow this path to the east, south, and east, and go down the ladder. Watch out for Orcs, Orc Spearmen, Orc Warriors."
+        },
+        {
+          "kind": "go",
+          "text": "Run through the poison fields (antidote or destroy field) and go down again.",
+          "at": [
+            32493,
+            32215,
+            12
+          ],
+          "source": "This room will be filled with Poison Fields. Once through the poison fields, go down the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Go north past the minotaurs (the room with skeletons is the Ghoul Room Quest) to the sign \"Home of the dead Kingdom of Kormarak\" and up the stairs (ghouls).",
+          "at": [
+            32527,
+            32160,
+            13
+          ],
+          "source": "Down this ladder there are 3 Minotaurs and a few Poison Spiders. Go north following the line. Go up the stairs and you may have to kill three Ghouls."
+        },
+        {
+          "kind": "go",
+          "text": "Go through the magic forcefield.",
+          "at": [
+            32526,
+            32155,
+            12
+          ],
+          "source": "Go through the Magic Forcefield."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the 11 ghouls in the room (great fireballs) and the demon skeleton at the far end.",
+          "at": [
+            32550,
+            32205,
+            11
+          ],
+          "monster": "Ghoul",
+          "source": "Be prepared to face 11 Ghouls spread throughout the room and a Demon Skeleton that spawns at the far end of the room."
+        },
+        {
+          "kind": "reward",
+          "text": "In the dead human by the wooden coffin: a brass armor, a brass helmet, a hatchet and 13 throwing stars.",
+          "at": [
+            32553,
+            32200,
+            11
+          ],
+          "object": 4240,
+          "items": [
+            [
+              3359,
+              1
+            ],
+            [
+              3354,
+              1
+            ],
+            [
+              3276,
+              1
+            ],
+            [
+              3287,
+              13
+            ]
+          ],
+          "source": "Open the Dead Human near the Wooden Coffin to find a Brass Armor, a Brass Helmet, a Hatchet and 13 Throwing Stars."
+        }
+      ]
+    }
+  ]
+}

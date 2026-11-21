@@ -1,0 +1,121 @@
+{
+  "quest": "Elvenbane Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Elvenbane_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel, and destroy field runes or an antidote for the poison fields.",
+          "source": "Useful Items: Destroy Field Runes, Antidote Runes or Antidote Spell. (On the 7.1 map the hole needs a shovel.)"
+        },
+        {
+          "kind": "go",
+          "text": "From Ab'Dendriel's gate go south, west and north to Elvenbane castle and open the hole between the four stones with your shovel.",
+          "at": [
+            32579,
+            31679,
+            7
+          ],
+          "source": "Start off at the gate of Ab'Dendriel. Go south, west and north to Elvenbane Castle. Drop down the hole surrounded by four stones."
+        },
+        {
+          "kind": "go",
+          "text": "Run north and west through the basement (orc warriors and spearmen, minotaurs) and up into the castle.",
+          "at": [
+            32598,
+            31652,
+            8
+          ],
+          "source": "Run north and west to the opening. Here you may meet an Orc Berserker and a Minotaur Guard. Also a few Minotaurs and an Orc Spearman."
+        },
+        {
+          "kind": "go",
+          "text": "Run around (orcs, minotaurs, an orc berserker) and up into the middle tower.",
+          "at": [
+            32593,
+            31643,
+            7
+          ],
+          "source": "Run around and enter the middle tower."
+        },
+        {
+          "kind": "go",
+          "text": "Cross the poison fields (destroy field) and go up: a dragon is waiting.",
+          "at": [
+            32588,
+            31643,
+            6
+          ],
+          "source": "The first floor of the tower is entirely covered by poison fields. Prepare for the dragon upstairs."
+        },
+        {
+          "kind": "go",
+          "text": "Kill the dragon or run past it to the ladder.",
+          "at": [
+            32593,
+            31643,
+            5
+          ],
+          "source": "On this floor you will face a Dragon. Kill the dragon or run past it to the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Kill the orc shaman and the minotaur mage and go up again.",
+          "at": [
+            32588,
+            31643,
+            4
+          ],
+          "source": "On this floor there is an Orc Shaman and a Minotaur Mage. Kill them and continue climb the stairs."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the 2 demon skeletons and the elf arcanist.",
+          "at": [
+            32590,
+            31645,
+            3
+          ],
+          "monster": "Demon Skeleton",
+          "source": "There are also 2 Demon Skeletons and an Elf Arcanist. Kill them and open the quest chests/drawers."
+        },
+        {
+          "kind": "reward",
+          "text": "Open the chest: a morning star.",
+          "at": [
+            32590,
+            31647,
+            3
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3282,
+              1
+            ]
+          ],
+          "source": "The final floor contains 2 quest chests and 2 quest drawers."
+        },
+        {
+          "kind": "reward",
+          "text": "And the other chest: a dwarven shield.",
+          "at": [
+            32591,
+            31647,
+            3
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3425,
+              1
+            ]
+          ],
+          "source": "The final floor contains 2 quest chests and 2 quest drawers."
+        }
+      ]
+    }
+  ]
+}

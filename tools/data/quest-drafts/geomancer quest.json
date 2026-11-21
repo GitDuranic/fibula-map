@@ -1,0 +1,62 @@
+{
+  "quest": "Geomancer Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Geomancer_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope and a shovel.",
+          "source": "Required Equipment: Rope. (The Mount Sternum way is newer than 7.1: this draft goes through the Pick 'N Shovel mine, like the Crusader Helmet draft.)"
+        },
+        {
+          "kind": "go",
+          "text": "Dig the loose stone pile west of Kazordoon open with your shovel and go down.",
+          "at": [
+            32448,
+            31991,
+            7
+          ],
+          "source": "The wiki goes through Mount Sternum, which came later; on the 7.1 map the dwarf geomancers are deep in the mines below Kazordoon's west side."
+        },
+        {
+          "kind": "go",
+          "text": "Go east, up with your rope and down again into the mines (minotaurs, dwarves).",
+          "at": [
+            32497,
+            31980,
+            8
+          ],
+          "source": "Follow this path past the Graveyard of the Doomed to the west and north and go down a level."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the mines down, floor after floor, to the bottom (dwarf soldiers and guards).",
+          "at": [
+            32509,
+            31953,
+            13
+          ],
+          "source": "Head directly north west and go down the hole. Move north and take first west and go down the hole."
+        },
+        {
+          "kind": "kill",
+          "text": "Fight through the dwarf guards and soldiers to the geomancers (kill them first).",
+          "at": [
+            32500,
+            31985,
+            14
+          ],
+          "monster": "Dwarf Geomancer",
+          "source": "The quest box is on the east side of this room, behind a couple Dwarf Guards, and a Dwarf Geomancer."
+        },
+        {
+          "kind": "note",
+          "text": "Needs placing: the box with a dwarven ring, a small diamond and a small sapphire (east side of the geomancers' room on the wiki; not on the 7.1 map).",
+          "source": "The quest box is on the east side of this room."
+        }
+      ]
+    }
+  ]
+}

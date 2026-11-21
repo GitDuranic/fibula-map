@@ -1,0 +1,69 @@
+{
+  "quest": "Fanfare Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Fanfare_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Requirements: Key 3520, A Rope"
+        },
+        {
+          "kind": "get",
+          "text": "In the building north-west of the boat: key 3520 in the box (the crypt door may already be open).",
+          "at": [
+            32376,
+            31802,
+            7
+          ],
+          "items": [
+            [
+              2973,
+              1
+            ]
+          ],
+          "source": "Go inside the building just northwest of the boat, and get Key 3520 from the box. It may not be necessary to get the key."
+        },
+        {
+          "kind": "go",
+          "text": "Go into the Carlin cemetery east of town and down into the crypt at its south end.",
+          "at": [
+            32404,
+            31790,
+            7
+          ],
+          "source": "Enter the Carlin cemetery just east of town (Mapper Coords 126.151, 124.40, 7) and go down into the Crypt at the south end of the cemetary."
+        },
+        {
+          "kind": "go",
+          "text": "Open the door to the west (key 3520) and go down the hole.",
+          "at": [
+            32396,
+            31787,
+            8
+          ],
+          "source": "Open the door to the west and look for a hole. Go down the hole."
+        },
+        {
+          "kind": "reward",
+          "text": "Follow the cave north (trolls): the fanfare is in the chest.",
+          "at": [
+            32390,
+            31769,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              2955,
+              1
+            ]
+          ],
+          "source": "Follow this path. \"Use\" the chest to receive the Fanfare."
+        }
+      ]
+    }
+  ]
+}

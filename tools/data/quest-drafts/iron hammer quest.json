@@ -1,0 +1,63 @@
+{
+  "quest": "Iron Hammer Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Iron_Hammer_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope and a shovel.",
+          "source": "Required Equipment: Rope, Shovel"
+        },
+        {
+          "kind": "go",
+          "text": "Dig the loose stone pile west of Kazordoon open with your shovel and go down (minotaurs).",
+          "at": [
+            32448,
+            31991,
+            7
+          ],
+          "source": "Find the loose stone pile west of Kazordoon (Mapper Coords 126.192, 124.249, 7). Use your shovel, and go down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the stairs (minotaurs, minotaur archers).",
+          "at": [
+            32453,
+            31988,
+            8
+          ],
+          "source": "Once down the hole, you will encounter Minotaurs, and Minotaur Archers."
+        },
+        {
+          "kind": "go",
+          "text": "Go north-west and up with your rope.",
+          "at": [
+            32432,
+            31951,
+            9
+          ],
+          "source": "Follow the passage to the north-west."
+        },
+        {
+          "kind": "reward",
+          "text": "In the room with the beds: the box between the beds has the iron hammer.",
+          "at": [
+            32434,
+            31938,
+            8
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3310,
+              1
+            ]
+          ],
+          "source": "Follow the passage to the north-west until you find a room with beds in it. The quest box is located between a couple of beds."
+        }
+      ]
+    }
+  ]
+}

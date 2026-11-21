@@ -1,0 +1,28 @@
+{
+  "quest": "Iron Helmet Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Iron_Helmet_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "reward",
+          "text": "In the Plains of Havoc, just west of the cyclops, orc and minotaur camp: the dead body half hidden by a tree has an iron helmet (leather armors, letters and worn boots lie around it).",
+          "at": [
+            32787,
+            32232,
+            7
+          ],
+          "object": 4240,
+          "items": [
+            [
+              3353,
+              1
+            ]
+          ],
+          "source": "There is simply a dead body partially obscured by a tree in the Plains of Havoc, just west of the Cyclops / Orc / Minotaur camp (Mapper Coords 128.19, 125.232, 7)."
+        }
+      ]
+    }
+  ]
+}

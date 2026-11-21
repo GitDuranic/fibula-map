@@ -1,0 +1,43 @@
+{
+  "quest": "Heaven Blossom Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Heaven_Blossom_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Go to Shadowthorn, the elf town in the swamp south-east of Venore.",
+          "source": "First, you need to make your way to Shadowthorn in the swamps south-east of Venore."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the ladder closest to you (elves).",
+          "at": [
+            33075,
+            32166,
+            7
+          ],
+          "source": "You will encounter some Elves. Go down the ladder closest to you."
+        },
+        {
+          "kind": "reward",
+          "text": "In the barrel: a heaven blossom (elves here, maybe a lured elf overseer).",
+          "at": [
+            33067,
+            32181,
+            8
+          ],
+          "object": 2523,
+          "items": [
+            [
+              3657,
+              1
+            ]
+          ],
+          "source": "Make your way towards the star on the map. You will only encounter some Elves here. Open the Barrel to receive your reward, a Heaven Blossom."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "quest": "Dragon Tower Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Dragon_Tower_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Go to Shadowthorn, the elf town in the swamp south-east of Venore.",
+          "source": "First, you need to make your way to Shadowthorn in the swamps south-east of Venore."
+        },
+        {
+          "kind": "go",
+          "text": "Go east to the big tower and climb it (first floor: elf scouts and an elf).",
+          "at": [
+            33074,
+            32167,
+            7
+          ],
+          "source": "Head east to the large tower and start going up. First floor: 3 Elf Scouts and 1 Elf."
+        },
+        {
+          "kind": "go",
+          "text": "Up again (elf scouts, an elf arcanist).",
+          "at": [
+            33075,
+            32166,
+            6
+          ],
+          "source": "Second floor: 4 Elf Scouts and 2 Elf Arcanists."
+        },
+        {
+          "kind": "go",
+          "text": "Up again: the 2 dragons here can't reach you.",
+          "at": [
+            33076,
+            32166,
+            5
+          ],
+          "source": "Third floor: 2 Dragons (only accessible from above, they cannot reach you)."
+        },
+        {
+          "kind": "go",
+          "text": "Up again (elf scouts, elf arcanists).",
+          "at": [
+            33075,
+            32166,
+            4
+          ],
+          "source": "Fourth floor: 6 Elf Scouts and 3 Elf Arcanists."
+        },
+        {
+          "kind": "go",
+          "text": "Up to the top (elf scouts, elf arcanists).",
+          "at": [
+            33074,
+            32167,
+            3
+          ],
+          "source": "Fifth floor: 3 Elf Scouts and 2 Elf Arcanists."
+        },
+        {
+          "kind": "reward",
+          "text": "In the box: 30 burst arrows and 60 poison arrows.",
+          "at": [
+            33072,
+            32169,
+            2
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3449,
+              30
+            ],
+            [
+              3448,
+              60
+            ]
+          ],
+          "source": "The rewards will be in two boxes in the last floor."
+        },
+        {
+          "kind": "reward",
+          "text": "In the other box: a bow and 2 small sapphires.",
+          "at": [
+            33079,
+            32169,
+            2
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3350,
+              1
+            ],
+            [
+              3029,
+              2
+            ]
+          ],
+          "source": "The rewards will be in two boxes in the last floor."
+        }
+      ]
+    }
+  ]
+}

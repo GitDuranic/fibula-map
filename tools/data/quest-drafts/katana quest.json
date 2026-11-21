@@ -1,0 +1,107 @@
+{
+  "quest": "Katana Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Katana_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope, a shovel and health potions or fluids.",
+          "source": "Required Equipment: Rope, Shovel, Small Health Potions, 2 Antidote Potions."
+        },
+        {
+          "kind": "go",
+          "text": "Dig the middle grave north-east of the island open with your shovel and go down (spiders, a poison spider).",
+          "at": [
+            32151,
+            32150,
+            7
+          ],
+          "source": "Go to the graves to the north-east of the island (Mapper Coords 125.151, 125.151, 7), and open the middle down one with a Shovel."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the way west to the hole and jump in.",
+          "at": [
+            32146,
+            32158,
+            8
+          ],
+          "source": "Follow the path west to a hole and jump into it."
+        },
+        {
+          "kind": "get",
+          "text": "Go north past the rotworms: key 4603 is in the dead body.",
+          "at": [
+            32176,
+            32132,
+            9
+          ],
+          "items": [
+            [
+              2969,
+              1
+            ]
+          ],
+          "source": "To get Key 4603 face north. Key 4603 will be hidden in one of the dead bodies. When you find it, go back south."
+        },
+        {
+          "kind": "go",
+          "text": "Go back south and down the hole to the east (a skeleton).",
+          "at": [
+            32175,
+            32147,
+            9
+          ],
+          "source": "Go east from the poison fields, into a hole. Down the hole resides a single Skeleton."
+        },
+        {
+          "kind": "go",
+          "text": "Open the door with key 4603 and take the stairs down. Careful: skeletons and a rotworm may be in the room below (the lever behind the north white pillar opens its door).",
+          "at": [
+            32182,
+            32148,
+            10
+          ],
+          "source": "Open the door with Key 4603, and take the stairs down. If the door is unlocked there could be two skeletons and a rotworm in this room. There is a hidden lever behind the northern white pillar."
+        },
+        {
+          "kind": "reward",
+          "text": "In the fresh corpse: a viking helmet.",
+          "at": [
+            32175,
+            32145,
+            11
+          ],
+          "object": 4240,
+          "items": [
+            [
+              3367,
+              1
+            ]
+          ],
+          "source": "The treasure is hidden inside the fresh human corpses. Grab your Viking Helmet and Katana."
+        },
+        {
+          "kind": "reward",
+          "text": "In the other corpse: the katana. If someone closes the door, the teleporter takes you out.",
+          "at": [
+            32174,
+            32149,
+            11
+          ],
+          "object": 4240,
+          "items": [
+            [
+              3300,
+              1
+            ]
+          ],
+          "source": "If someone closes the door with the lever from the outside, go to the teleport for you to get out!"
+        }
+      ]
+    }
+  ]
+}
