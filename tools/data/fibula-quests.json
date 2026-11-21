@@ -1,11 +1,11 @@
 {
   "quests": [
     {"n":"Adorned UH Rune Quest","level":null,"area":"Edron","reward":"Silver Rune Emblem (UH)","mark":false,"checked":false,"spots":null},
-    {"n":"Alawar's Vault Quest","level":null,"area":"Folda","reward":"Keys, Broadsword, Dark Helmet, etc.","mark":true,"checked":false,"spots":null},
-    {"n":"Amber's Lost Notebook Quest","level":null,"area":"Rookgaard","reward":"Short Sword","mark":true,"checked":false,"spots":null},
-    {"n":"Barbarian Axe Quest","level":null,"area":"Edron","reward":"Barbarian Axe, Scimitar","mark":true,"checked":false,"spots":null},
-    {"n":"Battle Axe Quest","level":null,"area":"Thais","reward":"Battle Axe","mark":true,"checked":false,"spots":null},
-    {"n":"Bear Room Quest","level":null,"area":"Rookgaard","reward":"Chain Armor, Brass Helmet, 40 gp","mark":true,"checked":false,"spots":null},
+    {"n":"Alawar's Vault Quest","level":null,"area":"Folda","reward":"Keys, Broadsword, Dark Helmet, etc.","mark":true,"checked":true,"spots":null},
+    {"n":"Amber's Lost Notebook Quest","level":null,"area":"Rookgaard","reward":"Short Sword","mark":true,"checked":true,"spots":[{"p":[32173,32196,7],"id":2854,"items":[[3294,1]]}]},
+    {"n":"Barbarian Axe Quest","level":null,"area":"Edron","reward":"Barbarian Axe, Scimitar","mark":true,"checked":false,"spots":[{"p":[33185,31945,11],"id":0,"items":[[3317,1],[3307,1]]}]},
+    {"n":"Battle Axe Quest","level":null,"area":"Thais","reward":"Battle Axe","mark":true,"checked":false,"spots":[{"p":[32305,32254,9],"id":0,"items":[[3266,1]]}]},
+    {"n":"Bear Room Quest","level":null,"area":"Rookgaard","reward":"Chain Armor, Brass Helmet, 40 gp","mark":true,"checked":true,"spots":[{"p":[32147,32098,11],"id":2471,"items":[[3358,1],[3354,1],[3031,40]]}]},
     {"n":"Behemoth Quest","level":80,"area":"Edron","reward":"Demon Shield, Golden Armor, Guardian Halberd, Naginata","mark":false,"checked":false,"spots":null},
     {"n":"Berserker Treasure Quest","level":null,"area":"Edron","reward":"3 White Pearls and 175 gp","mark":true,"checked":false,"spots":null},
     {"n":"Black Knight Quest","level":50,"area":"Venore","reward":"Crown Armor, Crown Shield, Wedding Ring","mark":true,"checked":false,"spots":null},
@@ -45,7 +45,7 @@
     {"n":"Life Ring Quest","level":null,"area":"Thais","reward":"Life Ring, Dragon Necklace","mark":true,"checked":false,"spots":null},
     {"n":"Longsword Quest","level":null,"area":"Kazordoon","reward":"Longsword, Mirror, Blank Runes, etc.","mark":true,"checked":false,"spots":null},
     {"n":"Mad Mage Room Quest","level":40,"area":"Thais","reward":"Hat of the Mad, Stone Skin Amulet, Star Amulet","mark":true,"checked":false,"spots":null},
-    {"n":"Minotaur Hell Quest","level":null,"area":"Rookgaard","reward":"Carlin Sword, Fishing Rod","mark":true,"checked":false,"spots":null},
+    {"n":"Minotaur Hell Quest","level":null,"area":"Rookgaard","reward":"Carlin Sword, Fishing Rod","mark":true,"checked":false,"spots":[{"p":[32124,32064,12],"id":2473,"items":[[3283,1]]},{"p":[32127,32065,12],"id":2473,"items":[[3448,4],[3447,1]]},{"p":[32130,32066,12],"id":2473,"items":[[3483,1]]}]},
     {"n":"Mintwallin Cyclops Quest","level":null,"area":"Thais","reward":"Small Diamond, Health Fluids, Hatchet, Chain Set","mark":false,"checked":false,"spots":null},
     {"n":"Noble Armor Quest","level":35,"area":"Thais","reward":"Noble Armor and Crown Helmet","mark":true,"checked":false,"spots":null},
     {"n":"Orc Fortress Quest","level":40,"area":"Orc Fortress","reward":"Knight Armor, Knight Axe, Fire Sword","mark":true,"checked":false,"spots":null},
@@ -71,17 +71,18 @@
     {"n":"Studded Legs Quest","level":null,"area":"Rookgaard","reward":"Studded Legs","mark":false,"checked":false,"spots":null},
     {"n":"Studded Shield Quest","level":null,"area":"Rookgaard","reward":"Studded Shield","mark":true,"checked":false,"spots":null},
     {"n":"Thais Lighthouse Quest","level":null,"area":"Thais","reward":"Dark Shield and Battle Hammer","mark":true,"checked":false,"spots":null},
-    {"n":"The Desert Dungeon Quest","level":20,"area":"Jakundaf Desert","reward":"10k Quest Items (Ring of Healing, Ankh etc)","mark":true,"checked":false,"spots":null},
+    {"n":"The Desert Dungeon Quest","level":20,"area":"Jakundaf Desert","reward":"10k Quest Items (Ring of Healing, Ankh etc)","mark":true,"checked":false,"spots":[]},
     {"n":"The Outlaw Camp Quest","level":45,"area":"Outlaw Camp","reward":"Bright Sword, Red Gem","mark":true,"checked":false,"spots":null},
-    {"n":"The Paradox Tower Quest","level":30,"area":"Kazordoon","reward":"Red Spell Wand, Time Ring, Magician Hat, Violet Gem. Image showing how to get each reward.","mark":true,"checked":false,"spots":null},
+    {"n":"The Paradox Tower Quest","level":30,"area":"Kazordoon","reward":"Choice of two of these rewards:","mark":true,"checked":true,"spots":[{"p":[32481,31902,1],"id":0,"items":[[3036,1],[3210,1]]},{"p":[32480,31902,1],"id":0,"items":[[3036,1],[3048,1]]},{"p":[32479,31902,1],"id":0,"items":[[3075,1],[3036,1]]},{"p":[32478,31902,1],"id":0,"items":[[3048,1],[3075,1]]},{"p":[32477,31902,1],"id":0,"items":[[3048,1],[3210,1]]},{"p":[32476,31902,1],"id":0,"items":[[3210,1],[3075,1]]}]},
     {"n":"Throwing Star Quest","level":null,"area":"Thais","reward":"10 Throwing Stars","mark":false,"checked":false,"spots":null},
     {"n":"Time Ring Quest","level":null,"area":"Venore","reward":"Time Ring, Elven Amulet, Crystal Ball","mark":false,"checked":false,"spots":null},
     {"n":"Triangle Tower Quest","level":null,"area":"Thais","reward":"Garlic Necklace, Dwarven Ring, Sapphires","mark":false,"checked":false,"spots":null},
-    {"n":"Troll Cave Quest","level":null,"area":"Edron","reward":"Brass Legs, Garlic Necklace","mark":true,"checked":false,"spots":null},
+    {"n":"Troll Cave Quest","level":null,"area":"Edron","reward":"Brass Legs, Garlic Necklace","mark":true,"checked":true,"spots":[{"p":[33143,31719,10],"id":2469,"items":[[3083,1]]},{"p":[33143,31721,10],"id":2469,"items":[[3372,1]]}]},
     {"n":"Two Rubies Quest","level":null,"area":"Thais","reward":"Two Small Rubies","mark":true,"checked":false,"spots":null},
     {"n":"Vampire Shield Quest","level":70,"area":"Edron","reward":"Vampire Shield, Dragon Lance, Strange Symbol","mark":false,"checked":false,"spots":null},
     {"n":"Voodoo Doll Quest","level":null,"area":"Venore","reward":"Voodoo Doll (King), Magic Light Wand","mark":true,"checked":false,"spots":null},
     {"n":"Wedding Ring Quest","level":null,"area":"Edron","reward":"Wedding Ring, Dragon Necklace","mark":false,"checked":false,"spots":null},
-    {"n":"Naginata Thais Dragon Lair Quest","level":null,"area":"Thais","reward":"Naginata, 10 small rubies, Dragon Necklace","mark":false,"checked":false,"spots":null}
+    {"n":"Naginata Thais Dragon Lair Quest","level":null,"area":"Thais","reward":"Naginata, 10 small rubies, Dragon Necklace","mark":false,"checked":false,"spots":null},
+    {"n":"Present Quest","level":null,"area":"","reward":"","mark":false,"checked":false,"spots":[{"p":[32149,32105,11],"id":2472,"items":[[2905,1],[2881,1],[2882,1],[3374,1]]}]}
   ]
 }
