@@ -1715,13 +1715,22 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       // A click: open the NPC there, else the monster, else the locked door, else go to the floor a hole, stairs or
       // ladder leads to, else close.
       // A guide step marker (13d-2) is on top of everything: it opens the guide's quest.
+      // A hole, stairs or ladder: go to the floor it leads to; a forcefield: to where it leads (Back returns).
+      const takeLink = (l) => {
+        setHoverLink(null);
+        if (worldRef.current.isTeleport(l)) jump({ x: l[3], y: l[4], z: l[5] }, { zoom: view.current.zoom });
+        else setFloor(l[5]);
+      };
       const st = stepAtPoint(toCanvas(e));
       if (st) {
         const q = stepMarks.current.quest;
         if (selectedQuest.current?.quest !== q) selectQuest({ quest: q });
         // A Talk step's marker sits on its NPC: open the conversation too (13f-0b).
         const sn = st.step.kind === 'talk' && st.step.npc && worldRef.current.npcs?.find((x) => x.n.toLowerCase() === st.step.npc.toLowerCase());
-        if (sn) { selectNpc(sn); openTalk(sn); }
+        if (sn) { selectNpc(sn); openTalk(sn); return; }
+        // A step on a hole or stairs (13j drafts put "go down" steps there): the click takes it too (user 2026-11-21).
+        const sl = floorChangeAtPoint(toCanvas(e));
+        if (sl) takeLink(sl);
         return;
       }
       const p = toCanvas(e), n = npcAtPoint(p), sm = !n && searchedAtPoint(p);
@@ -1735,12 +1744,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         selectMonster({ kind: sm.kind, group: sm.group });
       }
       else if (m) selectMonster({ kind: m.kind, group: m.group });
-      else if (l && worldRef.current.isTeleport(l)) {
-        // A forcefield: go to where it leads (Back returns), at the same zoom.
-        setHoverLink(null);
-        jump({ x: l[3], y: l[4], z: l[5] }, { zoom: view.current.zoom });
-      }
-      else if (l) { setHoverLink(null); setFloor(l[5]); }
+      else if (l) takeLink(l);
       else { selectNpc(null); selectMonster(null); selectDoor(dr || null); }
       return;
     }
