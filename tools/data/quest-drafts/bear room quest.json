@@ -3,7 +3,7 @@
   "wiki": "https://tibia.fandom.com/wiki/Bear_Room_Quest/Spoiler",
   "segments": [
     {
-      "name": "Down to the minotaurs",
+      "name": null,
       "steps": [
         {
           "kind": "note",
@@ -49,12 +49,7 @@
             10
           ],
           "source": "Go down again. There are 2-4 Orcs here. It's fairly easy to out run them."
-        }
-      ]
-    },
-    {
-      "name": "The bear room",
-      "steps": [
+        },
         {
           "kind": "note",
           "text": "No key 4601? Use a pick on the mud south of the small table (32148, 32109) and take the key from the chest downstairs. That room isn't on the 7.1 map: check in the game.",

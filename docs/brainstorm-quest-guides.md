@@ -181,6 +181,7 @@ Each slice adds something you can use on its own (user: small slices of function
   - The Reward step is where you really get the reward: Amber gives the short sword after the conversation, so Amber's draft drops the old dock-chest Reward step (`dropOldRewards`) and has: Get the notebook (book 2821) from the dock box, Talk to Amber, Reward short sword at Amber.
   - Monsters only from the 7.1 spawn file, never from the wiki (it listed troll champions, 8.10). `tools/quest-route.js` now prints the monsters spawning along the route per floor; a Kill step's monster must spawn within 12 tiles of it.
   - A long one-way tunnel is one step, but its text says what's in it ("3 floors down, then use your rope 4 times").
+  - **Parts (segments) only for separate errands (user, 2026-11-21):** most travel stays in one part; a short quest is one part. A new part only when an item has to be fetched or a person spoken to somewhere else, especially when those can be done in another order (a key from a chest on the other side of the map: its own part; a key in a chest near the door: same part). **Database step 12** (`0012_map_quest_wiki_drafts_test_3.sql`) makes Troll Cave and Bear Room one part each.
   - Redrafting: the checker now replaces a quest's earlier drafts, unless anything in the quest was made, changed or ticked in the app (source null, updated_by set, or checked): then it's skipped. **Database step 11** (`0011_map_quest_wiki_drafts_test_2.sql`) redrafts the 3 test quests.
 
 ### 13k. Undo from the history
