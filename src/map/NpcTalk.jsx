@@ -13,7 +13,7 @@ const below = (e, q) => (e.r || '').toLowerCase().includes(q) || (e.x || []).som
 // ... or anywhere in it, its words included?
 // The server's quest values ("quest 212 is 0", "quest 212 becomes 1": your progress, stored on the character) mean
 // nothing to players (user 2026-11-21): shown only to editors (raw). Returns the list without them, or null if empty.
-const QUEST_VALUE = /^quest d+/;
+const QUEST_VALUE = /^quest \d+\b/;
 export const forPlayers = (list, raw) => { if (!list?.length) return null; const out = raw ? list : list.filter((t) => !QUEST_VALUE.test(t)); return out.length ? out : null; };
 
 export const has = (e, q) => (e.k || []).some((w) => sayText(w).includes(q)) || below(e, q);
