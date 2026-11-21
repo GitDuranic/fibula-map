@@ -38,7 +38,9 @@ export function walkRules({ dataDir, itemInfo, dat }) {
     else if (/(^| )well$/.test(itemInfo.server.get(sid)?.name || '')) use = 'well';
     const door = doors.has(sid);
     // items.otb flag 1 = blocks movement ("block solid"). Doors count as open (user: ignore doors).
-    const block = !!(flags & 1) && !door;
+    // Wheat is cut with a scythe, so it doesn't block either (user 2026-11-22, Dragon Corpse Quest).
+    const cut = (itemInfo.server.get(sid)?.name || '') === 'wheat';
+    const block = !!(flags & 1) && !door && !cut;
     // For climbing (tools/lib/climb.js): items.otb flag 1<<3 = has height (parcels, boxes, ...), 1<<6 = moveable.
     const height = !!(flags & 8), moveable = !!(flags & 64);
     if (block || door || change || use || height || t.flags.GROUND !== undefined) rules.set(cid, { block, moveable, height, door, change, use, ground: t.flags.GROUND });

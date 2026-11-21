@@ -8,9 +8,8 @@
 -- Earlier drafts of these quests are replaced; a quest with anything made, changed or ticked in the app is skipped.
 --
 -- 125 steps for 19 quests (0 need placing):
---   Draconia Quest: 1 part, 13 steps + 0 Reward steps
---   Dragon Corpse Quest: 1 part, 5 steps + 0 Reward steps
---       can't walk 32170,32214,9 -> 32178,32223,9 (In the dead dragon: a bag with a copper shield and a legion helmet. Run back over the fire straight away.): No route found: these two places are not connected.
+--   Draconia Quest: 1 part, 13 steps + 0 Reward steps (HAS HAND WORK: the SQL skips it)
+--   Dragon Corpse Quest: 1 part, 5 steps + 0 Reward steps (HAS HAND WORK: the SQL skips it)
 --   Dragon Tower Quest: 1 part, 8 steps + 0 Reward steps
 --   Heaven Blossom Quest: 1 part, 3 steps + 0 Reward steps
 --   Edron Goblin Quest: 1 part, 8 steps + 0 Reward steps
