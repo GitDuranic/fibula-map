@@ -64,7 +64,9 @@ export function buildWalk({ tileAt, rules }) {
         const r = rules.get(id);
         if (!r) continue;
         if (r.ground !== undefined && !ground) ground = r.ground || 100;
-        if (r.block) blocked = true;
+        // Something you can move out of the way doesn't block (a barrel in the corridor to Deeper Fibula's key:
+        // you push or throw it aside).
+        if (r.block && !r.moveable) blocked = true;
       }
       speed = ground && !blocked ? ground : 0;
     }

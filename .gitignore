@@ -1,6 +1,5 @@
 node_modules/
 dist/
 .env*.local
-public/map-data/
-public/map-data.building/
-public/map-data.old/
+# Converted map data (public/map-data, plus its .building/.old swap folders and other versions like map-data-72)
+public/map-data*/

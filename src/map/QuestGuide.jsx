@@ -215,7 +215,9 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
 // total, all (every leg found), show() } for the walk to each step of the current segment (show: fit the view to it).
 // onRouteTo(label, pos): the step you're on as the Route panel's To (only when you ask; the guide's route is separate).
 // onTalk(npc): open that NPC's conversation (going to it), from a Talk step's icon or name (13f-0b).
-export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onRouteTo, onTalk }) {
+// seg: the segment the map shows (its route and markers; null when this guide isn't on the map); onSeg(segment id):
+// a click on a step's icon, title or text shows its segment on the map (user 2026-11-22).
+export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onRouteTo, onTalk, seg, onSeg }) {
   const [open, setOpen] = useState({}); // segment id -> shown (default: all of them, user 2026-11-21)
   const [drag, setDrag] = useState(null); // the step being dragged (id)
   const [renaming, setRenaming] = useState(null); // { id, name }
@@ -247,7 +249,8 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
     const id = i <= 0 ? null : i >= steps.length ? 'done' : steps[i].id;
     setAt(id);
   };
-  const curSeg = steps[Math.min(cur, steps.length - 1)]?.segment_id;
+  const curSeg = seg ?? steps[Math.min(cur, steps.length - 1)]?.segment_id;
+  const pick = (t, c, pos) => () => { onSeg?.(t.segment_id); if (c?.npc && onTalk) onTalk(c.npc); else if (pos) onGo(pos); };
   const isOpen = (s) => open[s.id] ?? true;
   const checked = steps.filter((t) => t.checked).length;
   const tryEd = async (fn) => { setErr(null); try { await fn(); } catch (e) { setErr(e.message || String(e)); } };
@@ -315,21 +318,21 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                   <div className="tm-step-row">
                     <input type="checkbox" checked={done} onChange={(e) => go(e.target.checked ? i + 1 : i)} title={done ? 'Not done yet' : 'Done: on to the next step'} />
                     <button
-                      type="button" className="tm-slot tm-step-icon" onClick={() => (c.npc && onTalk ? onTalk(c.npc) : pos && onGo(pos))}
+                      type="button" className="tm-slot tm-step-icon" onClick={pick(t, c, pos)}
                       title={c.npc ? `Talk to ${c.npc.n}: open the conversation` : pos ? `Go to ${pos.join(', ')}` : KINDS[t.kind]}
                     >{c.icon}</button>
                     <div className="tm-step-body">
                       <div className="tm-step-head">
                         <span className="tm-step-num">{i + 1}.</span>
                         <button
-                          type="button" className="tm-step-title" onClick={() => (c.npc && onTalk ? onTalk(c.npc) : pos && onGo(pos))}
+                          type="button" className="tm-step-title" onClick={pick(t, c, pos)}
                           title={c.npc ? `Talk to ${c.npc.n}: open the conversation` : pos ? `Go to ${pos.join(', ')}` : t.source ? `From: ${t.source}` : undefined}
                         >{c.title}</button>
                         {!t.checked && <span className="tm-step-unchecked" title="Not checked yet: may be wrong">•</span>}
                         {ed && editStep !== t.id && <button type="button" className="tm-link" onClick={() => setEditStep(t.id)} title="Change this step">edit</button>}
                       </div>
                       {c.text && (
-                        <div className={`tm-step-text${long && !more[t.id] ? ' tm-step-clamp' : ''}`} onClick={() => pos && onGo(pos)}>{c.text}</div>
+                        <div className={`tm-step-text${long && !more[t.id] ? ' tm-step-clamp' : ''}`} onClick={pick(t, null, pos)}>{c.text}</div>
                       )}
                       {long && <button type="button" className="tm-link tm-step-more" onClick={() => setMore({ ...more, [t.id]: !more[t.id] })}>{more[t.id] ? 'less' : 'more'}</button>}
                       {t.kind === 'talk' && t.dialog?.length > 0 && (

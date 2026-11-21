@@ -592,12 +592,21 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const questNpcs = useRef(new Set()); // the NPCs in the guide's Talk steps (lower case): a click opens the conversation
   const stepMarks = useRef(null); // { quest, marks: [{ step, n, pos, state: 'cur' | 'done' | 'todo' }] }
   const markAt = markQ ? atOf(markQ.db.id) : null;
+  // The segment on the map: the one you're on, unless you clicked a step of another one (user 2026-11-22: only
+  // ticking every step before it showed a later part's route). Ticking a step goes back to the one you're on.
+  const [viewSeg, setViewSeg] = useState(null); // { q: quest db id, seg }
+  const markSeg = (() => {
+    const steps = markGuide?.steps;
+    if (!markQ || !steps?.length) return null;
+    if (viewSeg?.q === markQ.db.id && steps.some((t) => t.segment_id === viewSeg.seg)) return viewSeg.seg;
+    return steps[Math.min(qg.currentIndex(markGuide, markAt), steps.length - 1)].segment_id;
+  })();
   useEffect(() => {
     const world = worldRef.current;
     stepMarks.current = null;
     if (markQ && markGuide?.steps.length && world) {
       const steps = markGuide.steps, cur = qg.currentIndex(markGuide, markAt);
-      const seg = steps[Math.min(cur, steps.length - 1)].segment_id;
+      const seg = markSeg;
       const marks = [];
       steps.forEach((t, i) => {
         const pos = t.segment_id === seg && qg.stepPos(world, t);
@@ -607,7 +616,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     }
     questNpcs.current = new Set((markQ && markGuide?.steps || []).filter((t) => t.kind === 'talk' && t.npc).map((t) => t.npc.toLowerCase()));
     redraw();
-  }, [markQ, markGuide, markAt]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [markQ, markGuide, markAt, markSeg]); // eslint-disable-line react-hooks/exhaustive-deps
   const [locNote, setLocNote] = useState(null); // a failed save, shown under the search
   // Named locations (the user's own, dev only): add or remove a name on a square through the dev server, then search
   // them right away.
@@ -1478,7 +1487,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const world = worldRef.current;
     if (!ready || !markQ || !markGuide?.steps.length || !world) return null;
     const steps = markGuide.steps, cur = qg.currentIndex(markGuide, markAt);
-    const seg = steps[Math.min(cur, steps.length - 1)].segment_id;
+    const seg = markSeg;
     const legs = [];
     // The segment starts where the one before it ended (user 2026-11-21: its first step had no way to it).
     const first = steps.findIndex((t) => t.segment_id === seg);
@@ -1500,7 +1509,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       prev = pos; prevStep = t;
     });
     return { quest: markQ, legs };
-  }, [ready, markQ, markGuide, markAt]);
+  }, [ready, markQ, markGuide, markAt, markSeg]);
   // The legs found (fastest only), by where they go and what the router was told (as the panel searches again).
   // Asked one at a time, and only while the Route panel isn't searching: a leg's search in the shared worker would
   // stop the panel's cheapest search.
@@ -1924,7 +1933,10 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
               guide={dbCfg && questSel.quest.db ? {
                 guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
                 ed: guideEd, editStep, setEditStep, onGo: (p) => jump({ x: p[0], y: p[1], z: p[2] }),
-                at: atOf(questSel.quest.db.id), setAt: (id) => setAt(questSel.quest.db.id, id),
+                at: atOf(questSel.quest.db.id), setAt: (id) => { setViewSeg(null); setAt(questSel.quest.db.id, id); },
+                // The segment on the map (only for the guide on the map), and a click on a step shows its segment.
+                seg: markQ?.db.id === questSel.quest.db.id ? markSeg : null,
+                onSeg: (seg) => setViewSeg({ q: questSel.quest.db.id, seg }),
                 legs: legInfo?.quest.db.id === questSel.quest.db.id ? legInfo : null,
                 // "Route here": the Route panel's To becomes the step (your own From stays), only when asked (13e).
                 onRouteTo: (label, pos) => updateRoute({ to: { label: label.slice(0, 60), pos } }),
