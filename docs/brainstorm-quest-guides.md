@@ -118,6 +118,7 @@ Each slice adds something you can use on its own (user: small slices of function
   - In the guide: "Route: 4 min 10 s · Show route" under the checked count (" + …" while legs are still being searched), and each step's time on its row (orange "no route" with the reason in its tooltip). Clicking a time fits the view to that leg.
   - **Why no route showed (user, 2026-11-20):** the Paradox Tower steps were added while looking at floor 1, and the right-click menu took the floor you look at, so they were saved in the air on floor 1, 6 tiles off the ground you clicked; the router couldn't start there. Fixed: the right-click menu and the position readout now take the tile you see (from the view's floor down to 7, the highest one with something on that spot). The 7 saved steps need moving (one-off SQL).
 
+- **"I'm on this quest" flies to the reward (user, 2026-11-21):** clicking it moves the view straight to the end of the quest: its last Reward step, else its last step with a spot (once the guide is loaded). The route through the current part is drawn as before; turning the quest off doesn't move the view.
 ### 13f. Quest dialogs
 - In a talk step, build the dialog by clicking through the NPC's keywords from 13a, in a wider pop-out window.
 - The guide's dialog window: full conversation or only your lines; copy buttons; copied lines change colour (click again to undo).

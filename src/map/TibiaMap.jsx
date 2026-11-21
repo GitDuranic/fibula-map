@@ -1448,6 +1448,24 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   }, [oracleLevel, climb, doorsKey, updateRoute]);
   const clearRoute = () => { routeSeq.current++; router.current?.cancel(); routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
 
+  // "I'm on this quest" (user 2026-11-21): the view goes straight to the end of the quest, its (last) Reward step,
+  // else its last step with a spot, once the guide is loaded; the route through the current part is drawn as always.
+  const flyToReward = useRef(null); // the quest's name, until it's flown to
+  const followQuest = (name) => { setOnQuest(name); flyToReward.current = name; };
+  useEffect(() => {
+    const name = flyToReward.current, world = worldRef.current;
+    if (!name || !world) return;
+    const q = world.quests?.find((x) => x.n === name && x.db);
+    if (!q) { flyToReward.current = null; return; }
+    const g = guides[q.db.id];
+    if (!g) { loadGuide(q); return; }
+    if (!g.guide && !g.error) return; // still loading
+    flyToReward.current = null;
+    const spots = (g.guide?.steps || []).map((t) => [t, qg.stepPos(world, t)]).filter(([, p]) => p);
+    const end = [...spots].reverse().find(([t]) => t.kind === 'reward') || spots[spots.length - 1];
+    if (end) jump({ x: end[1][0], y: end[1][1], z: end[1][2] });
+  }, [onQuest, guides]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ---------- the quest route (13e) ----------
   // The legs of the guide on the map (markQ, as its markers): step to step through its current segment, steps
   // without a spot skipped. [{ step, n (its number, from 1), from, to: [x, y, z], state: 'done' | 'cur' | 'todo' }]
@@ -1864,7 +1882,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           )}
           {questSel && world && (
             <QuestWindow
-              world={world} chest={questSel} onQuest={onQuest} setOn={setOnQuest}
+              world={world} chest={questSel} onQuest={onQuest} setOn={followQuest}
               onSave={login.editor ? saveDbQuest : null}
               guide={dbCfg && questSel.quest.db ? {
                 guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
