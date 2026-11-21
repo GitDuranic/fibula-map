@@ -1,0 +1,25 @@
+{
+  "quest": "Troll Cave Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Troll_Cave_Quest/Spoiler",
+  "segments": [
+    {
+      "name": "To the troll cave",
+      "steps": [
+        { "kind": "note", "text": "Bring a rope.", "source": "Required Equipment: Rope" },
+        { "kind": "go", "text": "From the Edron depot, go down the drain in the south-west corner of the castle.", "at": [33165, 31827, 7], "source": "From the Edron depot, go down the drain in the south-west corner of the castle (Mapper Coords 129.141, 124.84, 7)." },
+        { "kind": "go", "text": "Follow the cave down and up until you come out in a grassy area.", "at": [33129, 31811, 7], "source": "There is only one way to go, so follow this cave down and up until you emerge in a grassy area (Mapper Coords 129.105, 124.67, 7)." },
+        { "kind": "go", "text": "Go down the hole of the troll cave to the north-west.", "at": [33117, 31775, 7], "source": "Go to the Troll Cave to the north-west (Mapper Coords 129.93, 124.32, 7), and go down the hole." }
+      ]
+    },
+    {
+      "name": "Down the troll cave",
+      "steps": [
+        { "kind": "note", "text": "Up to 20 troll champions if no one has been down for a while. Low levels: go in slowly, there's a narrow passage where only one can attack you.", "source": "Be prepared to face up to 20 Troll Champions if no one has been down there for a while. For low level players it's advised to move in slowly, there's a small passage where only one of the Troll Champions can attack you." },
+        { "kind": "go", "text": "Follow the path north and east, and go down the hole.", "at": [33119, 31740, 8], "source": "Follow this path to the north and east, and go down the hole." },
+        { "kind": "go", "text": "Follow the path to the room in the north and go down the hole.", "at": [33128, 31729, 9], "source": "Follow this path to the room to the north and go down the hole." },
+        { "kind": "note", "text": "Trolls, bears, troll champions and a frost troll down here.", "source": "Here you will face a number of Trolls, Bears, Troll Champions, and a Frost Troll." },
+        { "kind": "rewards" }
+      ]
+    }
+  ]
+}

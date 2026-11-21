@@ -1,0 +1,23 @@
+<!-- Amber's Lost Notebook Quest | https://tibia.fandom.com/wiki/Short_Sword_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Short Sword Quest}}
+=== Method ===
+* Head to the dock east of [[Rookgaard]] town ({{Mapper Coords|125.172|125.197|7|3|text=here}}). Be careful of [[Bug]]s, [[Spider]]s, and especially [[Poison Spider]]s near the dock.
+* "Use" the chest on the dock to receive a black book.
+* Take the book back to the [[Rookgaard Academy]], and talk to [[Amber]] ({{Mapper Coords|125.103|125.183|8|3|text=here}}) in the Resting Room under the Academy. 
+* Tell her you found her notebook, and she will trade you for a [[Short Sword]]. The book is only the book you get in the chest not one she gives you.
+* Say: {{KW|Hi, Book, Yes}}.
+
+'''NOTE''': If you find black books that other people have thrown on the ground, you can trade them to [[Amber]] for more [[Short Sword]]s. This is especially handy because [[Obi]] gives you some [[gp|extra cash]] for it.
+
+== Transcripts ==
+=== [[Amber]] ===
+{{Infobox Transcript|
+''Player'': '''hi'''<br />
+Amber: Oh hello, nice to see you ''Player''. Are you here to hear some stories of my '''adventures''' or do you need '''help'''?<br />
+''Player'': '''book'''<br />
+Amber: Do you bring me my notebook?<br />
+''Player'': '''yes'''<br />
+Amber: Excellent. Here, take this short sword as a reward.<br />
+''Player'': '''bye'''<br />
+Amber: See you later, ''Player''.
+}}

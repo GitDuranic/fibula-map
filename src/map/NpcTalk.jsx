@@ -5,7 +5,9 @@
 // Entries: see tools/lib/talk.js.
 import React, { useEffect, useState } from 'react';
 
-export const sayText = (words) => words.map((w) => (w === '#' ? '<number>' : w)).join(' ');
+import { sayText } from './engine/dialog.js';
+
+export { sayText };
 
 // Does the text appear below an entry's own words (in its reply, what happens, or anything said after it)?
 const below = (e, q) => (e.r || '').toLowerCase().includes(q) || (e.x || []).some((x) => x.includes(q))

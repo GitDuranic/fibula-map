@@ -430,11 +430,13 @@ export function routerMain() {
       if (type === 'cancel') { self.postMessage({ id, cancelled: true }); return; }
       if (!W) throw new Error('Walk data not loaded');
       // A spot you can't stand on (a depot locker, an NPC behind its counter, a wall): the nearest walkable tile
-      // on the same floor, within 3 tiles.
+      // on the same floor, within 3 tiles. Not a hole, stairs or forcefield either (13j: quest steps sit on holes):
+      // you can't end up standing there, so the route goes to the tile next to it.
       const snap = ([x, y, z]) => {
         for (let r = 0; r <= 3; r++) {
           for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-            if (Math.max(Math.abs(dx), Math.abs(dy)) === r && speedAt(x + dx, y + dy, z)) return [x + dx, y + dy, z];
+            const t = tileIndex(x + dx, y + dy, z);
+            if (Math.max(Math.abs(dx), Math.abs(dy)) === r && speedAt(x + dx, y + dy, z) && !(W.flags[t] & 1)) return [x + dx, y + dy, z];
           }
         }
         return null;

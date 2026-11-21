@@ -1,0 +1,20 @@
+<!-- Troll Cave Quest | https://tibia.fandom.com/wiki/Troll_Cave_Quest/Spoiler | fetched 2026-11-21 -->
+{{Spoiler|name=Troll Cave Quest}}
+==Required Equipment==
+* [[Rope]]
+
+==Method==
+* From the [[Edron]] [[depot]], go down the drain in the south-west corner of the castle ({{Mapper Coords|129.141|124.84|7|3|text=here}}).
+* There is only one way to go, so follow this cave down and up until you emerge in a grassy area ({{Mapper Coords|129.105|124.67|7|3|text=here}}).
+* Go to the Troll Cave to the north-west ({{Mapper Coords|129.93|124.32|7|3|text=here}}), and go down the hole. Be prepared to face up to 20 [[Troll Champion]]s if no one has been down there for a while. For low level players it's advised to move in slowly, there's a small passage where only one of the [[Troll Champion]]s can attack you.
+
+* Follow this path to the north and east, and go down the hole:
+[[Image:Troll Cave Quest Map 01.jpg]]
+
+* Follow this path to the room to the north and go down the hole:
+[[Image:Troll Cave Quest Map 02.jpg]]
+
+* Here you will face a number of [[Troll]]s, [[Bear]]s, [[Troll Champion]]s, and a [[Frost Troll]]:
+[[Image:Troll Cave Quest Map 03.jpg]]
+
+* The reward is in two boxes on the east side of the room.

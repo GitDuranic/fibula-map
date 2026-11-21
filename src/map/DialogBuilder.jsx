@@ -7,16 +7,6 @@
 // alt (13g, "if it goes wrong"): what else can happen at that point: the same words with other conditions
 // { cond, reply, fx }, or the NPC's answer to anything else you say there { other: true, reply, fx }.
 
-// The other outcomes when you say words w at a point of the conversation (entries: that level), chosen: the entry
-// the dialog follows.
-function altsFor(entries, chosen, w) {
-  const said = sayText(w);
-  return entries
-    .filter((o) => o !== chosen && (o.k ? o.k.some((ow) => sayText(ow) === said) : !o.s))
-    .map((o) => ({ ...(o.k ? {} : { other: true }), ...(o.c?.length ? { cond: o.c } : {}), ...(o.r ? { reply: o.r } : {}), ...(o.x?.length ? { fx: o.x } : {}) }))
-    .filter((a) => a.reply || a.fx);
-}
-
 // The muted "if it goes wrong" lines under a dialog line (13g).
 // raw: an editor (quest values shown); players get "another point of the quest" for an alt that only depends on them.
 export function Alts({ alts, npcName, raw }) {
@@ -35,6 +25,7 @@ export function Alts({ alts, npcName, raw }) {
 }
 import React, { useEffect, useState } from 'react';
 import { sayText, has, forPlayers } from './NpcTalk.jsx';
+import { dialogLine } from './engine/dialog.js';
 
 // npc: the NPC ({ n, t }); lines: the dialog so far; onDone(lines): keep these (the step form saves them);
 // onClose(): leave without keeping.
@@ -56,9 +47,7 @@ export default function DialogBuilder({ world, npc, lines: start, onDone, onClos
   const query = q.trim().toLowerCase();
   const shown = here.filter((e) => e.k && (!query || has(e, query))); // "anything else" lines can't be said
   const add = (e, j) => {
-    const cond = [...(e.c || []), ...(e.kc?.[j] || [])];
-    const alts = altsFor(here, e, e.k[j]);
-    setLines([...lines, { say: sayText(e.k[j]), ...(e.r ? { reply: e.r } : {}), ...(e.x?.length ? { fx: e.x } : {}), ...(cond.length ? { cond } : {}), ...(alts.length ? { alts } : {}) }]);
+    setLines([...lines, dialogLine(here, e, j)]);
     setLevel(e.n?.length ? e.n : null);
     setQ('');
   };
