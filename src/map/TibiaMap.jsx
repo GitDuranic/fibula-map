@@ -1482,13 +1482,22 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const legs = [];
     // The segment starts where the one before it ended (user 2026-11-21: its first step had no way to it).
     const first = steps.findIndex((t) => t.segment_id === seg);
-    let prev = null;
-    for (let i = first - 1; i >= 0 && !prev; i--) prev = qg.stepPos(world, steps[i]) || null;
+    let prev = null, prevStep = null;
+    for (let i = first - 1; i >= 0 && !prev; i--) { prev = qg.stepPos(world, steps[i]) || null; prevStep = steps[i]; }
+    // After a Go step on another floor than the next spot where the map has no floor change (a hole you make with a
+    // pick), the leg starts where you land: the same square on the floors below/above, the first one with a route
+    // (user 2026-11-21, Alawar's Vault: from 32040,31636,8 you fall to floor 10).
+    const startsFrom = (p, t, to) => {
+      if (t?.kind !== 'go' || p[2] === to[2] || world.floorChangeAt(p[0], p[1], p[2])) return [p];
+      const out = [p], d = Math.sign(to[2] - p[2]);
+      for (let z = p[2] + d; z !== to[2] + d; z += d) out.push([p[0], p[1], z]);
+      return out;
+    };
     steps.forEach((t, i) => {
       const pos = t.segment_id === seg && qg.stepPos(world, t);
       if (!pos) return;
-      if (prev) legs.push({ step: t, n: i + 1, from: prev, to: pos, state: i === cur ? 'cur' : i < cur ? 'done' : 'todo' });
-      prev = pos;
+      if (prev) legs.push({ step: t, n: i + 1, from: prev, starts: startsFrom(prev, prevStep, pos), to: pos, state: i === cur ? 'cur' : i < cur ? 'done' : 'todo' });
+      prev = pos; prevStep = t;
     });
     return { quest: markQ, legs };
   }, [ready, markQ, markGuide, markAt]);
@@ -1506,7 +1515,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const key = legKey(l), c = charRef.current;
     legBusy.current = true;
     router.current ||= createRouter(dataUrl);
-    router.current.route(l.from, l.to, speedOf(c), Number(c.level) || 1, doorsRef.current, climbOf(c)).then((res) => {
+    const tryFrom = ([from, ...more]) => router.current.route(from, l.to, speedOf(c), Number(c.level) || 1, doorsRef.current, climbOf(c))
+      .then((res) => (res.routes || !more.length ? res : tryFrom(more)));
+    tryFrom(l.starts).then((res) => {
       legBusy.current = false;
       setLegRes((all) => ({ ...all, [key]: res.routes ? { path: res.routes[0].path } : { error: res.error || 'No route found.', locked: res.locked } }));
     });

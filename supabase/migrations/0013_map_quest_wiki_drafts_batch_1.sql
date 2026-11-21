@@ -8,13 +8,11 @@
 -- Earlier drafts of these quests are replaced; a quest with anything made, changed or ticked in the app is skipped.
 --
 -- 141 steps for 19 quests (0 need placing):
---   Adorned UH Rune Quest: 1 part, 9 steps + 0 Reward steps
---   Alawar's Vault Quest: 1 part, 11 steps + 0 Reward steps
---       can't walk 32040,31636,8 -> 32172,31602,10 (Take key 4501 from the chest.): No route found: these two places are not connected.
+--   Adorned UH Rune Quest: 1 part, 9 steps + 0 Reward steps (HAS HAND WORK: the SQL skips it)
+--   Alawar's Vault Quest: 1 part, 11 steps + 0 Reward steps (HAS HAND WORK: the SQL skips it)
 --   Barbarian Axe Quest: 1 part, 7 steps + 1 Reward step
 --       can't walk 33173,31900,7 -> 33172,31896,8 (Pull the lever if the stones block the way into the orc cave.): No route found: these two places are not connected.
 --   Battle Axe Quest: 1 part, 3 steps + 1 Reward step
---       can't walk 32302,32257,8 -> 32305,32254,9 (reward): No route found: these two places are not connected.
 --   Behemoth Quest: 1 part, 9 steps + 0 Reward steps
 --       can't walk 33285,31700,12 -> 33296,31672,15 (Go down the stairs on the platform, kill the behemoths by the stairs, go north through the narrow passage and up the stairs, through the level 80 door.): No route found: these two places are not connected.
 --   Berserker Treasure Quest: 1 part, 8 steps + 0 Reward steps
@@ -52,7 +50,7 @@ begin
   insert into public.map_quest_steps (quest_id, segment_id, sort, kind, text, x, y, z, npc, monster, items, object, dialog, checked, source) values (1, seg, 60, 'go', 'Kill the 3 dragons and go down the hole.', 33150, 31595, 11, null, null, '[]'::jsonb, null, '[]'::jsonb, false, 'Kill the 3 Dragons and 2 Dragon Hatchlings and enter that hole. (No dragon hatchlings in 7.1.)');
   insert into public.map_quest_steps (quest_id, segment_id, sort, kind, text, x, y, z, npc, monster, items, object, dialog, checked, source) values (1, seg, 70, 'go', 'Go down the stairs (a hero and monks).', 33144, 31589, 12, null, null, '[]'::jsonb, null, '[]'::jsonb, false, 'Now you have to kill one Hero and two Monks. Go with that way and again, go downstairs.');
   insert into public.map_quest_steps (quest_id, segment_id, sort, kind, text, x, y, z, npc, monster, items, object, dialog, checked, source) values (1, seg, 80, 'go', 'Go down 2 floors to the last floor (priestesses, hunters and stalkers, then monks).', 33137, 31599, 13, null, null, '[]'::jsonb, null, '[]'::jsonb, false, 'Now you have to kill some Hunters, Demon Skeletons and Prietesses. Go downstairs. This is the last floor, it containts 5 Monks.');
-  insert into public.map_quest_steps (quest_id, segment_id, sort, kind, text, x, y, z, npc, monster, items, object, dialog, checked, source) values (1, seg, 90, 'reward', 'The silver rune emblem is in the box (5 monks on this floor).', 33136, 31601, 15, null, null, '[]'::jsonb, 2469, '[]'::jsonb, false, 'The Silver Rune Emblem is in the box.');
+  insert into public.map_quest_steps (quest_id, segment_id, sort, kind, text, x, y, z, npc, monster, items, object, dialog, checked, source) values (1, seg, 90, 'reward', 'In the box: an ultimate healing rune with 3 charges (5 monks on this floor).', 33136, 31601, 15, null, null, '[[3160,1]]'::jsonb, 2469, '[]'::jsonb, false, 'The Silver Rune Emblem is in the box.');
   update public.map_quest_steps st set segment_id = seg, sort = 90 + r.n * 10 from (select id, row_number() over (order by sort, id) n from public.map_quest_steps where quest_id = 1 and source = 'old quest spot') r where st.id = r.id;
   select coalesce(max(sort), 90) into sort_now from public.map_quest_steps where segment_id = seg;
   delete from public.map_quest_segments s where s.quest_id = 1 and not (s.id = any(new_segs))

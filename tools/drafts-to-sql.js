@@ -117,15 +117,20 @@ for (const file of files) {
   if (!segs.some((s) => s.steps.some((t) => t.rewards))) segs[segs.length - 1].steps.push({ rewards: true });
 
   // Reachability: walk the steps in order (Reward steps from the database included).
-  let prev = null;
+  // After a Go step on another floor than the next spot with no floor change on the map (a pick hole), the leg
+  // starts on the same square on the floors below/above, the first with a route (as the app does).
+  let prev = null, prevKind = null;
   for (const t of segs.flatMap((s) => s.steps.flatMap((x) => (x.rewards ? rewards.map((r) => ({ at: [r.x, r.y, r.z], kind: 'reward' })) : [x])))) {
     const at = t.at || (t.kind === 'talk' ? npcs.find((n) => n.n === t.npc)?.p : null);
     if (!at) continue;
     if (prev) {
-      const res = await router.route(prev, at);
+      const starts = [prev];
+      if (prevKind === 'go' && prev[2] !== at[2] && !linkTiles.has(prev.join(','))) for (let z = prev[2] + Math.sign(at[2] - prev[2]); z !== at[2] + Math.sign(at[2] - prev[2]); z += Math.sign(at[2] - prev[2])) starts.push([prev[0], prev[1], z]);
+      let res;
+      for (const from of starts) if (!(res = await router.route(from, at)).error) break;
       if (res.error) notes.push(`can't walk ${prev} -> ${at} (${t.text || t.kind}): ${res.error}`);
     }
-    prev = at;
+    prev = at; prevKind = t.kind;
   }
 
   const n = segs.reduce((a, s) => a + s.steps.filter((t) => !t.rewards).length, 0);
