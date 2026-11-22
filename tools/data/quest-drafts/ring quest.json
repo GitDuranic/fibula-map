@@ -1,0 +1,91 @@
+{
+  "quest": "Ring Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Ring_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope, and great fireball or thunderstorm runes for the crowded floor.",
+          "source": "Required Equipment: Rope, Stuff to kill Heroes and minor creatures, recommended GFBs or Thunderstorms"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Edron Hero Cave.",
+          "at": [
+            33164,
+            31636,
+            7
+          ],
+          "source": "Go into the Edron Hero Cave, here (Mapper Coords 129.140, 123.150, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave down five floors: wild warriors, demon skeletons, a beholder, monks, then dragons and a hero.",
+          "at": [
+            33144,
+            31589,
+            12
+          ],
+          "source": "Follow the route bellow."
+        },
+        {
+          "kind": "go",
+          "text": "This floor is crowded (wild warriors, stalkers, hunters, priestesses, demon skeletons): clear it with great fireballs or thunderstorms, then go down in the south.",
+          "at": [
+            33131,
+            31626,
+            13
+          ],
+          "source": "Note: You probably need to use Great Fireballs or Thunderstorms in image #6."
+        },
+        {
+          "kind": "go",
+          "text": "Past the monks and down to the bedroom (priestesses and a hero).",
+          "at": [
+            33135,
+            31628,
+            14
+          ],
+          "source": "Follow the route bellow."
+        },
+        {
+          "kind": "reward",
+          "text": "The time ring is in the drawers on the west.",
+          "at": [
+            33130,
+            31624,
+            15
+          ],
+          "object": 2433,
+          "items": [
+            [
+              3053,
+              1
+            ]
+          ],
+          "source": "Use the chests to get your reward."
+        },
+        {
+          "kind": "reward",
+          "text": "The sword ring is in the drawers on the east.",
+          "at": [
+            33135,
+            31624,
+            15
+          ],
+          "object": 2433,
+          "items": [
+            [
+              3091,
+              1
+            ]
+          ],
+          "source": "Use the chests to get your reward."
+        }
+      ]
+    }
+  ]
+}

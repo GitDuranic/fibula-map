@@ -1,0 +1,54 @@
+{
+  "quest": "Silver Amulet Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Silver_Amulet_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel.",
+          "source": "Required Equipment: Shovel"
+        },
+        {
+          "kind": "go",
+          "text": "Dig open the hole with your shovel and go down.",
+          "at": [
+            32503,
+            32266,
+            7
+          ],
+          "source": "The entrance is here (Mapper Coords 126.247, 126.11, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Go south-east and down to the cellar (trolls on the way).",
+          "at": [
+            32508,
+            32273,
+            8
+          ],
+          "source": "The amulet is hidden in a box in the southeast cellar."
+        },
+        {
+          "kind": "reward",
+          "text": "The silver amulet is in the box among the crates (the box isn't on the 7.1 map; this is the wiki's spot).",
+          "at": [
+            32507,
+            32270,
+            9
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3054,
+              1
+            ]
+          ],
+          "source": "The amulet is hidden in a box in the southeast cellar (Mapper Coords 126.251, 126.14, 9)."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "quest": "Power Bolts Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Power_Bolts_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        { "kind": "note", "text": "Bring a shovel and a rope.", "source": "Required Equipment: Shovel, Rope" },
+        { "kind": "go", "text": "Just south of the Plains of Havoc temple, dig the hole open with your shovel and go down.", "at": [32815, 32280, 7], "source": "Go into the hole just south of the Plains of Havoc Temple (Mapper Coords 128.47, 126.24, 7)." },
+        { "kind": "kill", "text": "Kill the giant spider.", "monster": "Giant Spider", "at": [32817, 32283, 8], "source": "Kill the Giant Spider and look around." },
+        { "kind": "reward", "text": "The northern body: a bag with 5 power bolts and 12 burst arrows.", "at": [32816, 32279, 8], "object": 4240, "items": [[3450, 5], [3449, 12]], "source": "The northern body contains a Brown Bag with in it 5 Power Bolts and 12 Burst Arrows." },
+        { "kind": "reward", "text": "The pile of bones: a two handed sword.", "at": [32817, 32283, 8], "object": 4285, "items": [[3265, 1]], "source": "The pile of bones contains the Two Handed Sword." },
+        { "kind": "reward", "text": "The body below the teleporter: The Dreammaster book.", "at": [32814, 32281, 8], "object": 4240, "items": [[2821, 1]], "source": "The body directly below the teleporter contains the The Dreammaster Book." }
+      ]
+    }
+  ]
+}

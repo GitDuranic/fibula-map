@@ -1,0 +1,121 @@
+{
+  "quest": "Minotaur Hell Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Minotaur_Hell_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "go",
+          "text": "From the level 2 bridge, head north into the main Rookgaard cave and go down.",
+          "at": [
+            32094,
+            32137,
+            7
+          ],
+          "source": "From the level 2 bridge, head north to the main Rookgaard cave (Mapper Coords 125.95, 125.138, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave east (a rat, trolls) to the ladder going down.",
+          "at": [
+            32126,
+            32124,
+            8
+          ],
+          "source": "On the -1 floor, expect to find a rat, a few trolls and maybe some spiders. Follow through the cave to the east until you reach a ladder going down."
+        },
+        {
+          "kind": "go",
+          "text": "Head north (an orc), north-east at the first crossing and north-west at the second, to the next ladder down.",
+          "at": [
+            32114,
+            32092,
+            9
+          ],
+          "source": "On the second underground floor (-2) you may find one or two orcs. Head north, follow the first cross-section north-east, and second north-west until you reach another ladder."
+        },
+        {
+          "kind": "go",
+          "text": "The wolf maze: follow the path north through the wolves and an orc to the next ladder down.",
+          "at": [
+            32123,
+            32050,
+            10
+          ],
+          "source": "Descend to the third underground floor and you will be in the Wolf maze. Follow the path north through the masses of wolves and orcs to yet another ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Minotaur Hell: minotaurs, orcs and wolves. Clear the floor and go down the stairs to the minotaurs in the quest room.",
+          "at": [
+            32134,
+            32065,
+            11
+          ],
+          "source": "When going down the ladder, there will be about 2 minotaurs, 8 orcs and some wolves. Once the floor is cleared you can go down the staircase to the final room."
+        },
+        {
+          "kind": "reward",
+          "text": "The three quest boxes are west of the stairs on the south wall: the carlin sword,",
+          "at": [
+            32124,
+            32064,
+            12
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3283,
+              1
+            ]
+          ],
+          "source": "Once the room has been cleared, the three quest boxes are just to the west of the stairs, on the south walls of the cave."
+        },
+        {
+          "kind": "reward",
+          "text": "a bag with 10 arrows and 4 poison arrows,",
+          "at": [
+            32127,
+            32065,
+            12
+          ],
+          "object": 2473,
+          "items": [
+            [
+              2853,
+              1
+            ],
+            [
+              3447,
+              10
+            ],
+            [
+              3448,
+              4
+            ]
+          ],
+          "source": "The bag contains 10 Arrows and 4 Poison Arrows."
+        },
+        {
+          "kind": "reward",
+          "text": "and the fishing rod.",
+          "at": [
+            32130,
+            32066,
+            12
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3483,
+              1
+            ]
+          ],
+          "source": "The quest room and its rewards."
+        }
+      ]
+    }
+  ]
+}

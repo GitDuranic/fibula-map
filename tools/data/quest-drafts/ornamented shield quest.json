@@ -1,0 +1,67 @@
+{
+  "quest": "Ornamented Shield Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Ornamented_Shield_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope, a shovel, a pick and destroy field runes. You need a partner for the chest.",
+          "source": "Required Equipment: Rope, Shovel, Pick, at least one Destroy Field Rune. You will now need someone to help you, a partner."
+        },
+        {
+          "kind": "go",
+          "text": "In the Plains of Havoc, use your shovel on the hidden hole and go down.",
+          "at": [32775, 32268, 7],
+          "source": "Go into the Plains of Havoc and head down a hidden hole (Mapper Coords 128.7, 126.11, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Fight the dragon and go down the ramp.",
+          "at": [32771, 32269, 8],
+          "source": "On the 1st level down, you will fight a single Dragon. Proceed down the ramp."
+        },
+        {
+          "kind": "go",
+          "text": "Two dragons (block one in the narrow passage) and down the ramp again.",
+          "at": [32781, 32268, 9],
+          "source": "On the 2nd level down, 2 Dragons are present, but it is possible to fight them one at a time if you block one into the narrow passageway. Go down the ramp again."
+        },
+        {
+          "kind": "kill",
+          "text": "Go south through the corridor into the treasure room: dragons and 2 dragon lords. Lure them into the corridor one at a time.",
+          "at": [32777, 32283, 10],
+          "monster": "Dragon Lord",
+          "source": "The 3rd level down has a corridor heading south, followed by an open room with many treasures, as well as 2 Dragon Lords and several Dragons. Kill them with caution, using the corridor to lure them one at a time."
+        },
+        {
+          "kind": "note",
+          "text": "Use your pick on the spot marked X on the wiki map and go down: a fire devil and fire fields. Use a destroy field rune on the fire field with a body under it: Krendorak's corpse, with a bag holding the ornamented shield, a spike sword, a dragon necklace, a might ring, a crystal key and his journal. The room below isn't on the 7.1 map. Rope back up to the treasure room.",
+          "source": "Use a pick on the X marked on the map. Down the hole there is a Fire Devil and a number of Fire Fields. Pass them and use a Destroy Field Rune on the Fire Field with a body sticking out underneath of it. In the body you will find a Brown Bag containing the Ornamented Shield along with some other items. Rope yourself back up the hole to the main room."
+        },
+        {
+          "kind": "go",
+          "text": "Your partner stands here, south-west of the fire field in the north-west corner: the stalagmites in the south-west corner disappear while they stay.",
+          "at": [32770, 32282, 10],
+          "source": "To remove these stalagmites, have your partner stand on the spot directly southwest of the fire field in the northwest corner of the room."
+        },
+        {
+          "kind": "go",
+          "text": "Walk past where the stalagmites were.",
+          "at": [32771, 32297, 10],
+          "source": "You will see Stalagmites in the southwest corner blocking the way to a rope hole. Once the stalagmites have been removed, you can walk behind them."
+        },
+        {
+          "kind": "reward",
+          "text": "The chest behind the stalagmites: a time ring, a lyre, a spellbook, a garlic necklace and 5 platinum coins in a bag (the chest isn't on the 7.1 map; this is its 7.6 spot).",
+          "at": [32769, 32302, 10],
+          "object": 2472,
+          "items": [[3053, 1], [2949, 1], [3059, 1], [3083, 1], [3035, 5]],
+          "source": "Open the Chest (Quest), which contains a Red Bag with a Time Ring and some other items."
+        }
+      ]
+    }
+  ]
+}

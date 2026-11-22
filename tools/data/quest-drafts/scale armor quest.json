@@ -1,0 +1,54 @@
+{
+  "quest": "Scale Armor Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Scale_Armor_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel and a rope; an antidote helps against the scorpion.",
+          "source": "Required Equipment: Shovel, Rope, Recommended Antidote, Antidote Rune or Silver Amulet for facing Scorpion"
+        },
+        {
+          "kind": "go",
+          "text": "Dig open the hole west of the Ancient Temple entrance with your shovel and go down.",
+          "at": [
+            32335,
+            32174,
+            7
+          ],
+          "source": "Enter the cave that is directly west of the Ancient Temple entrance (Mapper Coords 126.81, 125.172, 7). You will need to use a Shovel to open the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Go north and east (trolls, rats) to the room with the well and use its lower-right corner to go down: a scorpion below.",
+          "at": [
+            32354,
+            32131,
+            8
+          ],
+          "source": "Follow this path to the north and east until you find the room with a well in it. \"Use\" the lower-right corner of the well to go down into it. Be prepared to face one or more Scorpions."
+        },
+        {
+          "kind": "reward",
+          "text": "The scale armor is in the chest.",
+          "at": [
+            32357,
+            32130,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3377,
+              1
+            ]
+          ],
+          "source": "Open the chests to receive the Scale Armor"
+        }
+      ]
+    }
+  ]
+}

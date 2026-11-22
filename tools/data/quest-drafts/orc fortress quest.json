@@ -1,0 +1,94 @@
+{
+  "quest": "Orc Fortress Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Orc_Fortress_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go to the Orc Fortress and down the hole (orc spearmen, shamans and berserkers).",
+          "at": [
+            32889,
+            31770,
+            7
+          ],
+          "source": "Head to the Orc Fortress and enter the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Head east (orc warriors, berserkers, leaders, shamans and a warlord) and go down the stairs.",
+          "at": [
+            32957,
+            31767,
+            8
+          ],
+          "source": "Head east and be prepared to face all kinds of Orcs."
+        },
+        {
+          "kind": "kill",
+          "text": "Orc leaders, shamans, berserkers and a dragon wait down there. Then head east and north through the level 40 gate into the room with orc leaders, berserkers and slimes. Don't say hi to The Orc King here: he summons orcs.",
+          "at": [
+            32982,
+            31735,
+            9
+          ],
+          "monster": "Orc Leader",
+          "source": "Down the stairs you will face several Orc Leaders, Orc Warlords, a Dragon and probably some Orc Shamans. When they are dead, head east and north through the level 40 gate of expertise. In this room you will find several Orc Berserkers, Orc Warlords, Slimes, Orc Leaders and Orc Riders. Do not say 'hi' to The Orc King."
+        },
+        {
+          "kind": "reward",
+          "text": "The quest chests are at the north end of the room: the knight axe,",
+          "at": [
+            32980,
+            31727,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3318,
+              1
+            ]
+          ],
+          "source": "The quest boxes are located in the north end of this room."
+        },
+        {
+          "kind": "reward",
+          "text": "the knight armor,",
+          "at": [
+            32981,
+            31727,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3370,
+              1
+            ]
+          ],
+          "source": "The quest boxes are located in the north end of this room."
+        },
+        {
+          "kind": "reward",
+          "text": "and the fire sword.",
+          "at": [
+            32985,
+            31727,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3280,
+              1
+            ]
+          ],
+          "source": "The quest boxes are located in the north end of this room."
+        }
+      ]
+    }
+  ]
+}

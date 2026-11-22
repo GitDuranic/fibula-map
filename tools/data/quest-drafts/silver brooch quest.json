@@ -1,0 +1,82 @@
+{
+  "quest": "Silver Brooch Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Silver_Brooch_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a pick and a rope; an antidote helps against the poison spiders.",
+          "source": "Required Equipment: Shovel, Rope, Machete (depending upon route), Pick, Recommended Antidote or Antidote Rune for fighting poisonous creatures"
+        },
+        {
+          "kind": "go",
+          "text": "Come from the west (Dwarf Bridge) to the cave entrance in the Green Claw Swamp and fall down the partially hidden pitfall (not on the 7.1 map).",
+          "at": [
+            32700,
+            31992,
+            7
+          ],
+          "source": "Make your way to the cave entrance in Green Claw Swamp (Mapper Coords 127.188, 124.248, 7). The quickest way is to come from the west (by the Dwarf Bridge). You'll need to fall down a partially hidden pitfall."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave east (rotworms, a beholder) and go down the hole.",
+          "at": [
+            32734,
+            31982,
+            8
+          ],
+          "source": "Once in the cave, follow this route to the east. You will face Poison Spiders, Rotworms and sometimes lured Bonelord. Go down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Take the short passage south and go down the hole.",
+          "at": [
+            32736,
+            31993,
+            9
+          ],
+          "source": "Take this short passage to the south (there are no monsters here), and go down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and south, kill the 3 beholders in the larger room, then use your pick here and go down: up to 5 mummies in the small room below.",
+          "at": [
+            32775,
+            32010,
+            10
+          ],
+          "source": "Follow this path to the east and south. There will be 3 Bonelords in the larger room. Once you have killed the Bonelords, use your pick in the circled area on the map. When you go down into the pick hole, you will be faced with up to 5 Mummies in a very small room."
+        },
+        {
+          "kind": "reward",
+          "text": "Use the coffin on the north end: the silver brooch, 3 small diamonds and 2 small rubies.",
+          "at": [
+            32777,
+            32008,
+            11
+          ],
+          "object": 2476,
+          "items": [
+            [
+              3017,
+              1
+            ],
+            [
+              3028,
+              3
+            ],
+            [
+              3030,
+              2
+            ]
+          ],
+          "source": "Kill the mummies and \"Use\" a coffin on the north end of this room to get your reward."
+        }
+      ]
+    }
+  ]
+}

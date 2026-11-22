@@ -1,0 +1,55 @@
+{
+  "quest": "Poison Daggers Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Poison_Daggers_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope and a shovel.",
+          "source": "Required Equipment: Shovel, Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go down the ramp into the cellar south-west of Edron castle.",
+          "at": [33173, 31900, 7],
+          "source": "Go down into the Edron Orc Cave. The entrance is southwest of the castle (Mapper Coords 129.149, 124.156, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Pull the lever if the stones block the way into the orc cave.",
+          "at": [33172, 31896, 8],
+          "source": "You can access this area via a drain in the basement of the Edron Flats. (On the 7.1 map the cellar has a lever and stones that close the way.)"
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave west and south and go down (orcs, orc spearmen, orc warriors, poison spiders).",
+          "at": [33164, 31932, 8],
+          "source": "Once in the hole, you will meet only Orcs, Poison Spiders, Orc Spearmen and Orc Warriors. Follow the cave to the west and then south. There are a couple of side rooms, but basically there is only one way to go."
+        },
+        {
+          "kind": "go",
+          "text": "Go west, take the passage north and drop down the hole in the first room on the east.",
+          "at": [33172, 31919, 9],
+          "source": "On the next level, go west and take the passage north. Go into the first room on the east. Drop down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Orc shamans right at the bottom (energy doesn't hurt them). Go north over the tiled floor (orc shamans, an orc berserker) and drop down the hole at its northern end.",
+          "at": [33171, 31884, 10],
+          "source": "As soon as you go down this hole, you will be surrounded by Orc Shamans. On this level, go north, meeting more shamans and one or two Orc Berserkers. You will walk over a tile-floor area. At the northern end of the floor, drop down another hole."
+        },
+        {
+          "kind": "reward",
+          "text": "Go west to the box (orc shamans, orc leaders, poison spiders): 2 poison daggers and 30 poison arrows in a backpack (the box isn't on the 7.1 map; this is its 7.6 spot).",
+          "at": [33155, 31880, 11],
+          "object": 2473,
+          "items": [[3299, 2], [3448, 30]],
+          "source": "On this floor you will meet Orc Shamans, Orc Berserkers, Orc Leaders and a lot of Poison Spiders, in the chest you can find a backpack with 2 Poison Daggers and 30 Poison Arrows."
+        }
+      ]
+    }
+  ]
+}

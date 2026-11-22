@@ -1,0 +1,44 @@
+{
+  "quest": "Orc Shaman Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Orc_Shaman_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope and a shovel.",
+          "source": "Required Equipment: Rope, Shovel"
+        },
+        {
+          "kind": "go",
+          "text": "Go east from Venore's south gate through the swamp to the small cave. Use your shovel to open the hole and go down.",
+          "at": [33055, 32029, 7],
+          "source": "Make your way through the swamp to a small cave (Mapper Coords 129.31, 125.30, 7). You will need to go east from Venore's south gate. Use your Shovel to open a hole, and go down into it."
+        },
+        {
+          "kind": "go",
+          "text": "Head east and go down (orcs, orc spearmen, snakes).",
+          "at": [33075, 32015, 8],
+          "source": "Once in the cave, head directly east and go down a level."
+        },
+        {
+          "kind": "kill",
+          "text": "Snakes, orcs, orc spearmen and one orc shaman on this level.",
+          "at": [33084, 32026, 9],
+          "monster": "Orc Shaman",
+          "source": "On this level you will find a large number of Snakes, Orcs, Orc Spearmen, and one Orc Shaman."
+        },
+        {
+          "kind": "reward",
+          "text": "The box in the south-east corner of the room: a magic light wand, an axe ring and a blank rune (the box isn't on the 7.1 map; this is its 7.6 spot).",
+          "at": [33089, 32030, 9],
+          "object": 2469,
+          "items": [[3046, 1], [3092, 1], [3147, 1]],
+          "source": "The quest box is in the south-east corner of the room."
+        }
+      ]
+    }
+  ]
+}

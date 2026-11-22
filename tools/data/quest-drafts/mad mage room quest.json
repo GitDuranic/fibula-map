@@ -1,0 +1,244 @@
+{
+  "quest": "Mad Mage Room Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Mad_Mage_Room_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": "Key 3666 from A Prisoner",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope, a shovel and 7 red apples.",
+          "source": "Required Equipment: Rope, Shovel, Key 3620, 7 Red Apples (for Key 3666)."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Ancient Temple north of Thais, two floors.",
+          "at": [
+            32356,
+            32170,
+            7
+          ],
+          "source": "Go to the Ancient Temple, north of Thais (Mapper Coords 126.100, 125.171, 7). Go down two levels."
+        },
+        {
+          "kind": "go",
+          "text": "Head as far north as you can and go down two floors to the rotworms.",
+          "at": [
+            32354,
+            32138,
+            9
+          ],
+          "source": "Head as far north as you can go. Go down to the level with the Rotworms."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and south and go down the ladder (rotworms, poison spiders, orcs and orc spearmen).",
+          "at": [
+            32502,
+            32217,
+            11
+          ],
+          "source": "Follow this path to the east and south, and go down the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Through the poison fields (antidote or destroy field) and down another level.",
+          "at": [
+            32493,
+            32215,
+            12
+          ],
+          "source": "On this level, there will be a lot of Poison Fields. You can either run through them and then use Antidote, or you can use Destroy Field to clear a path. Go down another level."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and north (poison spiders, minotaurs) and go down the hole (cyclopes).",
+          "at": [
+            32577,
+            32179,
+            13
+          ],
+          "source": "Follow this path to the east and north. Be careful of Minotaurs. Go down the hole that is circled on the map. You will face a couple Cyclopes down this hole."
+        },
+        {
+          "kind": "go",
+          "text": "Head south down the leftmost passage and go up the hole to a small room, and up again.",
+          "at": [
+            32552,
+            32154,
+            14
+          ],
+          "source": "Head south down the left most passage. Go up the hole to a small room and up again to another room."
+        },
+        {
+          "kind": "go",
+          "text": "Go to the end of this passage and down the hole to a small room, and down again.",
+          "at": [
+            32550,
+            32186,
+            12
+          ],
+          "source": "Here go to the end of this passage and down the hole to a small room and down again."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into Mintwallin.",
+          "at": [
+            32484,
+            32101,
+            14
+          ],
+          "source": "The first thing you need to do is go to the Prison in Mintwallin and talk to A Prisoner."
+        },
+        {
+          "kind": "get",
+          "text": "Key 3620 is in the drawers of the barracks south of Markwin (minotaurs, minotaur guards, archers and mages).",
+          "at": [
+            32411,
+            32155,
+            15
+          ],
+          "items": [
+            [
+              2969,
+              1
+            ]
+          ],
+          "source": "To get the key to his room, you need to go to the barracks, south of Markwin."
+        },
+        {
+          "kind": "go",
+          "text": "Go up to the prison.",
+          "at": [
+            32394,
+            32115,
+            15
+          ],
+          "source": "Go to the Prison in Mintwallin and talk to A Prisoner."
+        },
+        {
+          "kind": "key",
+          "at": [
+            32393,
+            32136,
+            14
+          ],
+          "text": "Open the prison door with key 3620; talk to A Prisoner through the bars.",
+          "source": "To get the key to his room, you need to go to the barracks, south of Markwin."
+        },
+        {
+          "kind": "talk",
+          "npc": "A Prisoner",
+          "say": [
+            "hi",
+            "riddle",
+            "pd-d-ks-p-pd",
+            "yes",
+            "yes",
+            "yes",
+            "yes"
+          ],
+          "text": "He takes the 7 apples and gives you key 3666.",
+          "source": "Ask him for the riddle. The correct answer is \"PD-D-KS-P-PD\". You receive silver Key 3666 after giving the apples."
+        }
+      ]
+    },
+    {
+      "name": "The mad mage room",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Leave Mintwallin the way you came in.",
+          "at": [
+            32484,
+            32101,
+            15
+          ],
+          "source": "This is the path to the Mad Mage room from the surface. You will walk past this room on your way to Mintwallin."
+        },
+        {
+          "kind": "go",
+          "text": "Head south, west, north, then right towards the level door and go down the stairs: a dragon, a giant spider, a beholder, demon skeletons, a ghoul, a scorpion and a skeleton.",
+          "at": [
+            32557,
+            32177,
+            14
+          ],
+          "source": "Head south then west then north then take a right heading towards the level door. Head down the stairs BUT BEWARE!!!! There is at least one dragon, one giant spider, one Bonelord, 3 demon skeletons, one ghoul, one scorpion, and one skeleton."
+        },
+        {
+          "kind": "key",
+          "at": [
+            32578,
+            32197,
+            15
+          ],
+          "text": "Clear the room, head south-east and open the door with key 3666.",
+          "source": "After clearing this room head to the southeast and through the locked door, using a key taken from A Prisoner."
+        },
+        {
+          "kind": "go",
+          "text": "Go up the ladder and face the demon skeletons.",
+          "at": [
+            32576,
+            32198,
+            15
+          ],
+          "source": "Once you are through the door, go up the ladder and face 3 Demon Skeletons."
+        },
+        {
+          "kind": "reward",
+          "text": "The rewards are in this room: the stone skin amulet,",
+          "at": [
+            32573,
+            32200,
+            14
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3081,
+              1
+            ]
+          ],
+          "source": "The rewards are in chests in this room."
+        },
+        {
+          "kind": "reward",
+          "text": "the hat of the mad,",
+          "at": [
+            32574,
+            32200,
+            14
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3210,
+              1
+            ]
+          ],
+          "source": "The rewards are in chests in this room."
+        },
+        {
+          "kind": "reward",
+          "text": "and the star amulet.",
+          "at": [
+            32577,
+            32200,
+            14
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3014,
+              1
+            ]
+          ],
+          "source": "The rewards are in chests in this room."
+        }
+      ]
+    }
+  ]
+}

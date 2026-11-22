@@ -1,0 +1,22 @@
+{
+  "quest": "Present Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Present_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": "The present",
+      "steps": [
+        { "kind": "go", "text": "Go down the stairs in the abandoned building north of Rookgaard.", "at": [32094, 32137, 7], "source": "Near Bear Room Quest room you can see a chest (near a switch)" },
+        { "kind": "go", "text": "Go east and down (trolls), down again (an orc), and down again (orcs).", "at": [32126, 32118, 10], "source": "Near Bear Room Quest room you can see a chest (near a switch)" },
+        { "kind": "get", "text": "Next to the switch south of the bear room (orcs and a minotaur around): the chest has a backpack with the present. Keep the present.", "at": [32149, 32105, 11], "items": [[2854, 1], [2856, 1]], "source": "Near Bear Room Quest room you can see a chest (near a switch) that contains a backpack with a Present and some other stuff. Take it. You can keep the backpack and you need to keep the Present for later." }
+      ]
+    },
+    {
+      "name": "Seymour",
+      "steps": [
+        { "kind": "talk", "text": "Give the present to Seymour in the Academy.", "npc": "Seymour", "say": ["hi", "box", "yes"], "source": "Now go to Seymour (Mapper Coords 125.102, 125.196, 7) and say box." },
+        { "kind": "reward", "text": "Seymour gives you a legion helmet.", "at": [32103, 32195, 7], "object": 3374, "items": [[3374, 1]], "source": "He will trade the Present for a Legion Helmet." }
+      ]
+    }
+  ]
+}

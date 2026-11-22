@@ -1,0 +1,15 @@
+{
+  "quest": "Rapier Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Rapier_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        { "kind": "go", "text": "Go down the sewer grate north of the Rookgaard temple.", "at": [32097, 32205, 7], "source": "Go into the Rookgaard sewer (Mapper Coords 125.94, 125.204, 7)." },
+        { "kind": "go", "text": "Make your way west past the rats and go down the ladder.", "at": [32086, 32197, 8], "source": "After entering, make your way west, and go down a Ladder, you will encounter a few rats on your way" },
+        { "kind": "reward", "text": "Run past the rats to the box in the north-east of the room: the rapier.", "at": [32099, 32198, 9], "object": 2473, "items": [[3272, 1]], "source": "Once you go down, you will encounter 3-7 rats, which you can kill or simply run past through. The quest-box is in the north-east part of the room, use it to obtain a Rapier." }
+      ]
+    }
+  ]
+}

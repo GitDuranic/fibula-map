@@ -1,0 +1,80 @@
+{
+  "quest": "Panpipe Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Panpipe_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope and a shovel.",
+          "source": "Required Equipment: Rope, Elvenhair Rope or Magic Rope spell; Shovel or Light Shovel"
+        },
+        {
+          "kind": "get",
+          "text": "Use the hollow stone close to the Desert Dungeon entrance: key 4055.",
+          "at": [32652, 32107, 7],
+          "items": [[2969, 1]],
+          "source": "To get the key, \"use\" the hollow stone (Mapper Coords 127.140, 125.108, 7). It's very close to the entrance to the dungeon."
+        },
+        {
+          "kind": "go",
+          "text": "Go back to the Desert Dungeon entrance, use your shovel and go inside.",
+          "at": [32649, 32093, 7],
+          "source": "Go back to the Desert Dungeon entrance, use your shovel, and go inside."
+        },
+        {
+          "kind": "go",
+          "text": "Go down 4 more floors to the bottom (spiders).",
+          "at": [32643, 32093, 11],
+          "source": "Take a Ladder down 5 times, to the bottom, you will face Spiders."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the way west and south and go up the ladder.",
+          "at": [32644, 32121, 12],
+          "source": "Follow this path around to the west and south, possible meeting one Bonelord, and go up a level."
+        },
+        {
+          "kind": "go",
+          "text": "Go north-west past the Desert Dungeon Library (spiders) and rope up the hole.",
+          "at": [32616, 32095, 11],
+          "source": "Next, follow this path north-west (meeting a few Spiders again) past the Desert Dungeon Library, and rope up the hole."
+        },
+        {
+          "kind": "go",
+          "text": "Rope up another level.",
+          "at": [32615, 32095, 10],
+          "source": "Rope up another level."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the way south and go up one more level.",
+          "at": [32624, 32112, 9],
+          "source": "On this level, follow this path south, and go up one more level."
+        },
+        {
+          "kind": "key",
+          "at": [32643, 32128, 8],
+          "source": "Finally, follow this path to the south-east to the locked door."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the fire devil.",
+          "at": [32644, 32130, 8],
+          "monster": "Fire Devil",
+          "source": "Follow this path to the south-east to the locked door, one Fire Devil, and the quest box."
+        },
+        {
+          "kind": "reward",
+          "text": "The quest box: a power ring, panpipes and 2 small amethysts in a bag (the box isn't on the 7.1 map; this is its 7.6 spot).",
+          "at": [32644, 32131, 8],
+          "object": 2472,
+          "items": [[3050, 1], [2953, 1], [3033, 2]],
+          "source": "The quest box containing a Bag with 1 Power Ring, Panpipes and 2 Small Amethysts."
+        }
+      ]
+    }
+  ]
+}

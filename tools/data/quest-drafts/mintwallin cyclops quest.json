@@ -1,0 +1,115 @@
+{
+  "quest": "Mintwallin Cyclops Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Mintwallin_Cyclops_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope, and an antidote or destroy field runes for the poison fields.",
+          "source": "Rope. Recommended Antidote, Antidote Rune, or Destroy Field for Poison Fields."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Ancient Temple north of Thais, two floors.",
+          "at": [
+            32356,
+            32170,
+            7
+          ],
+          "source": "Go to the Ancient Temple, north of Thais (Mapper Coords 126.100, 125.171, 7). Go down two levels."
+        },
+        {
+          "kind": "go",
+          "text": "Head as far north as you can and go down two floors to the rotworms.",
+          "at": [
+            32354,
+            32138,
+            9
+          ],
+          "source": "Head as far north as you can go. Go down to the level with the Rotworms."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and south and go down the ladder (rotworms, poison spiders, orcs and orc spearmen).",
+          "at": [
+            32502,
+            32217,
+            11
+          ],
+          "source": "Follow this path to the east and south, and go down the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Through the poison fields (antidote or destroy field) and down another level.",
+          "at": [
+            32493,
+            32215,
+            12
+          ],
+          "source": "On this level, there will be a lot of Poison Fields. You can either run through them and then use Antidote, or you can use Destroy Field to clear a path. Go down another level."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and north (poison spiders, minotaurs) and go down the hole (cyclopes).",
+          "at": [
+            32577,
+            32179,
+            13
+          ],
+          "source": "Follow this path to the east and north. Be careful of Minotaurs. Go down the hole that is circled on the map. You will face a couple Cyclopes down this hole."
+        },
+        {
+          "kind": "go",
+          "text": "Follow this path all the way north and go down.",
+          "at": [
+            32573,
+            32067,
+            14
+          ],
+          "source": "Follow this path all of the way north, and go down a level."
+        },
+        {
+          "kind": "go",
+          "text": "Minotaurs, a minotaur archer and a minotaur guard. Work your way south through the room and use your rope here to go up.",
+          "at": [
+            32587,
+            32089,
+            15
+          ],
+          "source": "This room contains a large number of Minotaurs, Minotaur Archers, a Minotaur Mage and a Minotaur Guard. Work your way to the south of this room and go up a level."
+        },
+        {
+          "kind": "kill",
+          "text": "Follow the passage to the switch. Pulling it moves the wall and traps you with the cyclopes: kill them.",
+          "at": [
+            32602,
+            32104,
+            14
+          ],
+          "monster": "Cyclops",
+          "source": "Follow the passage until you find the switch. Be careful, when you flip the switch, the wall will be moved, and you will be essentially trapped with the Cyclopes."
+        },
+        {
+          "kind": "reward",
+          "text": "The small diamond is in this chest.",
+          "at": [
+            32590,
+            32097,
+            14
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3028,
+              1
+            ]
+          ],
+          "source": "Once you flip the switch, you can get the reward."
+        }
+      ]
+    }
+  ]
+}

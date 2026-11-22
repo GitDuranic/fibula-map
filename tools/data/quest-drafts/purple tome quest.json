@@ -1,0 +1,19 @@
+{
+  "quest": "Purple Tome Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Purple_Tome_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        { "kind": "note", "text": "Bring a shovel and a rope.", "source": "Required Items: Shovel, Rope" },
+        { "kind": "go", "text": "South of Northport, dig open the hole with your shovel and go down: the start of the route to Demona.", "at": [32512, 31622, 7], "source": "Follow the directions to go to Demona using the stardard route." },
+        { "kind": "go", "text": "Follow the route to Demona through the Maze of Lost Souls and go up the stairs into Demona.", "at": [32500, 31677, 15], "source": "Follow the directions to go to Demona using the stardard route." },
+        { "kind": "go", "text": "Past the warlocks and elf arcanists, take the north-west stairs of the star room (the way to the exit teleport).", "at": [32451, 31654, 14], "source": "When you are in Demona you will find several Warlocks and Elf Arcanists, take the North-West Ladder of the Star Room, the one that is leading to the exit Teleport." },
+        { "kind": "reward", "text": "Follow the path and take the first way north to the room full of bookcases: the purple tome is in the bookcase on the west wall.", "at": [32421, 31594, 15], "object": 2438, "items": [[2848, 1]], "source": "Now Continue along the path and take the first way north until you reach this point. In this room, there are a lot of bookcases. In those bookcases you will find the Maps and the tome." },
+        { "kind": "reward", "text": "A map in a bookcase on the north wall.", "at": [32423, 31591, 15], "object": 2435, "items": [[2822, 1]], "source": "In those bookcases you will find the Maps and the tome." },
+        { "kind": "reward", "text": "Another map further east on the north wall.", "at": [32428, 31591, 15], "object": 2435, "items": [[2823, 1]], "source": "In those bookcases you will find the Maps and the tome." }
+      ]
+    }
+  ]
+}

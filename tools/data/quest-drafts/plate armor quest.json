@@ -1,0 +1,51 @@
+{
+  "quest": "Plate Armor Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Plate_Armor_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring travel money: 60 gold for each try.",
+          "source": "Travel money (variable amount)"
+        },
+        {
+          "kind": "talk",
+          "npc": "Captain Fearless",
+          "say": ["hi", "darashia", "yes", "yes"],
+          "text": "Ask Captain Fearless in Venore for a passage to Darashia. One time in ten the ghostship takes you; otherwise try again.",
+          "source": "Go to Venore boat, and travel Venore→Darashia until you are hijacked by the Ghostship."
+        },
+        {
+          "kind": "go",
+          "text": "Go down and fight your way across the gangplank to the southern boat (ghosts).",
+          "at": [33317, 32171, 6],
+          "source": "Go down and fight your way across the gangplank to the southern boat."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the western ladder: you land on a fire field.",
+          "at": [33319, 32181, 7],
+          "source": "Go down to 2 vampires, 1 demon skeleton and a ghost. Warning: when you go down you will land on a fire field."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the ghoul and the ghost.",
+          "at": [33322, 32181, 8],
+          "monster": "Ghoul",
+          "source": "Go down to 2 vampires, 1 demon skeleton and a ghost. Kill them."
+        },
+        {
+          "kind": "reward",
+          "text": "Use the coffin on the east: a plate armor.",
+          "at": [33327, 32180, 8],
+          "object": 2474,
+          "items": [[3357, 1]],
+          "source": "Kill them and use the coffin on the east to receive your reward."
+        }
+      ]
+    }
+  ]
+}

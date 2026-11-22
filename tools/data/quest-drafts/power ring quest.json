@@ -1,0 +1,19 @@
+{
+  "quest": "Power Ring Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Power_Ring_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        { "kind": "note", "text": "Bring a rope.", "source": "Required Equipment: Rope" },
+        { "kind": "go", "text": "On Femor Hills, follow the south side of the river into the mountain (north of the magic carpet) and rope up.", "at": [32576, 31797, 7], "source": "On Femor Hills, follow along the South side of the river that flows into the mountain (just north of the Magic Carpet), and rope up one level." },
+        { "kind": "go", "text": "Head east into the mountain (goblins) and go down to the north.", "at": [32593, 31782, 6], "source": "Head East into the mountain, and go down the ladder to the north." },
+        { "kind": "go", "text": "Follow the path north-east and go down the hole (a rotworm, goblins).", "at": [32608, 31778, 7], "source": "Follow the path to the north-east, and go down the hole. There may be a rotworm here, so be prepared." },
+        { "kind": "go", "text": "Goblins and four wolves attack at once, fire fields all over: go south-west and drop down one more level.", "at": [32602, 31782, 8], "source": "Here you will find up to 11 Goblins and four Wolves (which will attack you the moment you enter the room), and there will be Fire Fields scattered throughout the room. Go to the south-west and drop down one more level." },
+        { "kind": "reward", "text": "Up to 11 goblins attack. At the north end next to the beer casks, the left box: the power ring.", "at": [32599, 31776, 9], "object": 2472, "items": [[3050, 1]], "source": "Here will be up to 11 Goblins (again, they will all attack you the moment you enter the room). The Quest boxes are on the north end of this room, next to the Beer Casks." },
+        { "kind": "reward", "text": "The right box: a bronze amulet.", "at": [32601, 31776, 9], "object": 2472, "items": [[3056, 1]], "source": "The Quest boxes are on the north end of this room, next to the Beer Casks." }
+      ]
+    }
+  ]
+}

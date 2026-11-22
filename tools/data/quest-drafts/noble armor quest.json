@@ -1,0 +1,128 @@
+{
+  "quest": "Noble Armor Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Noble_Armor_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope and 1000 gold for Skjaar.",
+          "source": "Rope. 1,000 gp to buy Key 3142 from Skjaar."
+        },
+        {
+          "kind": "go",
+          "text": "Go into Mount Sternum and down the stairs (cyclopes).",
+          "at": [
+            32482,
+            32056,
+            7
+          ],
+          "source": "Enter through the west entrance of Mount Sternum, head downstairs. Be prepared to face some Cyclopes on the first floor."
+        },
+        {
+          "kind": "go",
+          "text": "Head west and go down to the skeletons and ghouls.",
+          "at": [
+            32473,
+            32042,
+            8
+          ],
+          "source": "Start by heading west. On floor -2 you will face some Skeletons and a few Ghouls."
+        },
+        {
+          "kind": "go",
+          "text": "Up the ladder in the south, down again, up the next ladder and down here.",
+          "at": [
+            32460,
+            32062,
+            8
+          ],
+          "source": "You start at the stars and go up/down at the arrow markings."
+        },
+        {
+          "kind": "go",
+          "text": "Use your rope here to go up to Skjaar.",
+          "at": [
+            32453,
+            32039,
+            9
+          ],
+          "source": "You will need to find Skjaar below Mt Sternum."
+        },
+        {
+          "kind": "talk",
+          "npc": "Skjaar",
+          "say": [
+            "hi",
+            "key",
+            "yes",
+            "yes",
+            "redips",
+            "7",
+            "black",
+            "yes"
+          ],
+          "text": "He takes 1000 gold and gives you key 3142 if you answer right.",
+          "source": "You will need to pay him 1,000 gp and take his quiz. The answers to his questions are \"redips\", \"7\", and \"black\" respectively."
+        },
+        {
+          "kind": "key",
+          "at": [
+            32450,
+            32044,
+            8
+          ],
+          "text": "Open the crypt with key 3142.",
+          "source": "After passing the quiz, go through the Level 35 Gate of Expertise and then use Key 3142 to enter the crypt."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the 4 ghouls.",
+          "at": [
+            32452,
+            32046,
+            8
+          ],
+          "monster": "Ghoul",
+          "source": "Kill the 4 Ghouls and open the southern chests to get the loot."
+        },
+        {
+          "kind": "reward",
+          "text": "The noble armor is in the southern chests,",
+          "at": [
+            32451,
+            32048,
+            8
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3380,
+              1
+            ]
+          ],
+          "source": "Kill the 4 Ghouls and open the southern chests to get the loot."
+        },
+        {
+          "kind": "reward",
+          "text": "and the crown helmet.",
+          "at": [
+            32455,
+            32048,
+            8
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3385,
+              1
+            ]
+          ],
+          "source": "Kill the 4 Ghouls and open the southern chests to get the loot."
+        }
+      ]
+    }
+  ]
+}
