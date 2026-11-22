@@ -468,6 +468,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   fixesRef.current = tileFixes;
   // What the router is told about doors: the unlocked ones and the editors' passable tiles.
   const routeDoors = () => ({ ...doorsRef.current, free: [...fixesRef.current] });
+  // ... and for a quest leg: also the doors its Key steps unlocked so far (13l).
+  const legDoors = (l) => { const d = routeDoors(); return { ...d, open: [...d.open, ...l.open] }; };
   // The route: { open, from, to: { label, pos: [x,y,z] }, result: { routes: [{ name, path, steps, gold }] } | { error },
   // pick: which of the routes is shown (fastest / cheapest), busy }.
   const [route, setRoute] = useState({ open: false, from: null, to: null, result: null, pick: 0, busy: false });
@@ -1542,10 +1544,15 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       for (let z = p[2] + d; z !== to[2] + d; z += d) out.push([p[0], p[1], z]);
       return out;
     };
+    // Key steps (13l): from the step on (also from earlier parts), the door it unlocks is open for this quest's
+    // legs; the leg to the step ends on the door square. The map's doors keep their keys.
+    const open = [];
     steps.forEach((t, i) => {
+      const kd = qg.keyDoor(world, t);
+      if (kd && !open.includes(qg.doorUnit(kd))) open.push(qg.doorUnit(kd));
       const pos = t.segment_id === seg && qg.stepPos(world, t);
       if (!pos) return;
-      if (prev) legs.push({ step: t, n: i + 1, from: prev, starts: startsFrom(prev, prevStep, pos), to: pos, state: i === cur ? 'cur' : i < cur ? 'done' : 'todo' });
+      if (prev) legs.push({ step: t, n: i + 1, from: prev, starts: startsFrom(prev, prevStep, pos), to: pos, open: [...open], state: i === cur ? 'cur' : i < cur ? 'done' : 'todo' });
       prev = pos; prevStep = t;
     });
     return { quest: markQ, legs };
@@ -1554,7 +1561,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   // Asked one at a time, and only while the Route panel isn't searching: a leg's search in the shared worker would
   // stop the panel's cheapest search.
   const legBase = `${oracleLevel}:${climb}:${doorsKey}`;
-  const legKey = (l) => `${l.from}>${l.to}|${legBase}`;
+  const legKey = (l) => `${l.from}>${l.to}|${l.open.join(';')}|${legBase}`;
   const [legRes, setLegRes] = useState({}); // legKey -> { path } | { error, locked }
   const legBusy = useRef(false);
   useEffect(() => {
@@ -1564,7 +1571,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const key = legKey(l), c = charRef.current;
     legBusy.current = true;
     router.current ||= createRouter(dataUrl);
-    const tryFrom = ([from, ...more]) => router.current.route(from, l.to, speedOf(c), Number(c.level) || 1, routeDoors(), climbOf(c))
+    const tryFrom = ([from, ...more]) => router.current.route(from, l.to, speedOf(c), Number(c.level) || 1, legDoors(l), climbOf(c))
       .then((res) => (res.routes || !more.length ? res : tryFrom(more)));
     tryFrom(l.starts).then((res) => {
       legBusy.current = false;
@@ -2027,6 +2034,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
                 ...(devTools && world?.customEditable ? [['Add location here', () => { setLocName(''); setMenu({ ...menu, adding: true }); }, true]] : []),
                 ...(guideEd && !guide.guide.missing ? [[`Add step here (${guide.quest.n.replace(/ Quest$/, '')})`, () => addGuideStep({ kind: 'go', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] })]] : []),
                 // A Reward step (database step 6): the chest's spot; the object is the item on that tile when there is one.
+                // A Key step (13l, database step 16) on a locked door: "Use key N on the door"; the quest route goes through it from then on.
+                ...(guideEd && !guide.guide.missing && world?.allDoorAt?.has(menu.tile.join(',')) ? [['Add key step here', () => addGuideStep({ kind: 'key', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] })]] : []),
                 ...(guideEd && !guide.guide.missing ? [['Add reward step here', () => addGuideStep({ kind: 'reward', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2], object: topItemAt(menu.tile) })]] : []),
                 ...(guideEd && editStep ? [['Move step here', () => moveEditStep(menu.tile)]] : []),
                 ...(devTools && world?.customEditable ? world.customAt(...menu.tile).map((n) => [`Remove '${n}'`, () => saveLocation({ remove: { n, p: menu.tile } })]) : []),

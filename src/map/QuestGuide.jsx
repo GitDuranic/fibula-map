@@ -7,7 +7,7 @@ import { ItemIcon } from './NpcWindow.jsx';
 import { MonsterIcon } from './MonsterWindow.jsx';
 import DialogBuilder, { DialogView } from './DialogBuilder.jsx';
 import { ItemPicker } from './QuestWindow.jsx';
-import { KINDS, CHEST_ICON, stepPos, stepTitle, currentIndex, bringList } from './engine/questguide.js';
+import { KINDS, CHEST_ICON, KEY_ICON, keyDoor, stepPos, stepTitle, currentIndex, bringList } from './engine/questguide.js';
 import { fmtTime } from './RoutePanel.jsx';
 
 // An NPC's outfit, fitted into a 32x32 slot like an item icon (13f-0b).
@@ -51,6 +51,8 @@ function stepCard(world, t) {
       title: stepTitle(world, { ...t, text: '' }), text: t.text, items: t.items.length > 1 ? t.items : null,
     };
   }
+  // Key (13l): the door's key as the icon, "Use key N on the door" as the title.
+  if (t.kind === 'key') return { icon: <ItemIcon world={world} id={keyDoor(world, t)?.keyId || KEY_ICON} count={1} />, title: stepTitle(world, { ...t, text: '' }), text: t.text };
   // Reward (user 2026-11-20): the chest (its object) as the icon, its items as icons, a gold card.
   if (t.kind === 'reward') return { icon: <ItemIcon world={world} id={t.object || CHEST_ICON} count={1} />, title: 'Reward', text: t.text, items: t.items.length ? t.items : null };
   return { icon: <ItemIcon world={world} id={t.kind === 'go' ? MAP_ICON : SCROLL_ICON} count={1} />, title: stepTitle(world, t), text: null };

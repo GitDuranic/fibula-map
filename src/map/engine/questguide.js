@@ -5,7 +5,17 @@
 // step:  { id, segment_id, sort, kind, text, x, y, z, npc, monster, items: [[id, count]], any_group, checked, source }
 import { dbClient } from './questauth.js';
 
-export const KINDS = { talk: 'Talk', go: 'Go', get: 'Get', kill: 'Kill', reward: 'Reward', note: 'Note' };
+export const KINDS = { talk: 'Talk', go: 'Go', get: 'Get', kill: 'Kill', key: 'Key', reward: 'Reward', note: 'Note' };
+// The key icon for a door whose key isn't known (as the bring list).
+export const KEY_ICON = 2970;
+
+// A Key step's door (13l, database step 16): the locked door on its spot, also one editors marked "Not locked".
+// The door keeps its key on the map; only the quest's route counts it open from this step on.
+export function keyDoor(world, step) {
+  return step.kind === 'key' && step.x != null ? world.allDoorAt?.get(`${step.x},${step.y},${step.z}`) || null : null;
+}
+// What unlocking works on (as the map's doorUnit): a key opens every door with its number, else the door itself.
+export const doorUnit = (d) => (d.key ? `k${d.key}` : `p${d.p.join(',')}`);
 // A Reward step's object on the map when it has none of its own (database step 6: map_quest_steps.object).
 export const CHEST_ICON = 2472;
 const GAP = 10; // sort numbers leave gaps
@@ -47,6 +57,7 @@ export function stepTitle(world, step) {
     case 'kill': return step.monster ? `Kill ${step.monster}` : 'Kill';
     case 'get': return step.items.length ? `Get ${step.items.map(([id, n]) => `${n > 1 ? `${n} ` : ''}${world.itemName(id)}`).join(', ')}` : 'Get';
     case 'go': return 'Go here';
+    case 'key': { const d = keyDoor(world, step); return d?.key ? `Use key ${d.key} on the door` : d ? 'Use the key on the door (number not known)' : 'Use a key on a door'; }
     case 'reward': return 'Reward';
     default: return 'Note';
   }
@@ -55,7 +66,7 @@ export function stepTitle(world, step) {
 // ---------- the editors' changes (each one throws on failure; reload the guide afterwards) ----------
 async function run(q) {
   const { data, error } = await q;
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(/map_quest_steps_kind_check/.test(error.message) ? 'Run database step 16 (0016_map_quest_key_steps.sql) first for Key steps.' : error.message);
   return data;
 }
 
@@ -151,6 +162,8 @@ export function bringList(world, guide, segId, paths = [], showHidden = false) {
   const got = new Set(), taken = new Map(), checked = new Map();
   for (const t of seg.steps) {
     if (t.kind === 'get' || t.kind === 'reward') for (const [id] of t.items || []) got.add(id);
+    const kd = keyDoor(world, t); // a Key step's key (the same entry as a locked door on the route)
+    if (kd) put(kd.key ? `k${kd.key}` : `d${kd.p.join(',')}`, { id: kd.keyId || KEY_ICON, count: 1, label: kd.key ? `key ${kd.key}` : 'key (number not known)', why: 'a door to unlock' });
     if (t.kind !== 'talk') continue;
     for (const l of t.dialog || []) {
       for (const fx of l.fx || []) {

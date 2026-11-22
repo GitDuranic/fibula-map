@@ -208,6 +208,12 @@ Each slice adds something you can use on its own (user: small slices of function
 - See a quest's earlier versions and put one back.
 - **Useful because:** a bad edit can be undone without SQL.
 
+### 13l. Key steps (asked for 2026-11-22, built)
+- **User:** a step "use key ... on the door", so the door keeps its key information and icon on the map, but the quest's route goes from the door square on to the next step without the door having to be marked "Not locked" (slice 14a is for doors that really have no lock).
+- **Step kind "Key"** (database step 16, `0016_map_quest_key_steps.sql`: 'key' allowed in the kind check; no new column). Editors right-click a locked door: "Add key step here". The key comes from the map's door data: the card shows the key's icon and "Use key 3301 on the door", or "the key on the door (number not known)"; the editor's text goes below, as on Talk cards.
+- **The route:** from the Key step on (also from earlier parts of the quest), its door counts as open for that quest's legs only; the leg to the step ends on the door square. Before the step the door stays locked (user agreed 2026-11-22: the guide follows the order you play it). A key opens every door with its number, as unlocking on the map does. The Route panel, the map's doors and "Open all locked doors" are left alone.
+- **Bring list:** a Key step adds its key ("a door to unlock"), the same entry as a locked door on the route, so it isn't listed twice.
+
 ### Later (designed for, not planned yet)
 - Players choose the order of "any order" groups.
 - Ryndean's 7.2 NPC scripts swapped in, as soon as they arrive (ask him now). The converter already takes a data folder, so this is a rerun plus checking dialogs.
