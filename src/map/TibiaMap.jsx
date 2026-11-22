@@ -11,6 +11,7 @@ import QuestList from './QuestList.jsx';
 import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter, routeTime } from './engine/router.js';
+import { fetchTileFixes, setTilePassable } from './engine/tilefixes.js';
 import { drawText, textWidth } from './engine/text.js';
 import { questDbConfig, questOn, setQuestOn } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest } from './engine/questauth.js';
@@ -461,6 +462,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   });
   const doorsRef = useRef(doors);
   doorsRef.current = doors;
+  // Tiles editors marked passable in the database (14a, a Set of 'x,y,z' for this map): locked doors there aren't.
+  const [tileFixes, setTileFixesState] = useState(() => new Set());
+  const fixesRef = useRef(tileFixes);
+  fixesRef.current = tileFixes;
+  // What the router is told about doors: the unlocked ones and the editors' passable tiles.
+  const routeDoors = () => ({ ...doorsRef.current, free: [...fixesRef.current] });
   // The route: { open, from, to: { label, pos: [x,y,z] }, result: { routes: [{ name, path, steps, gold }] } | { error },
   // pick: which of the routes is shown (fastest / cheapest), busy }.
   const [route, setRoute] = useState({ open: false, from: null, to: null, result: null, pick: 0, busy: false });
@@ -629,6 +636,28 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       if (query) setResults(worldRef.current.search(query));
       setLocNote(null);
     } catch (e) { setLocNote(`Could not save the location: ${e.message || e}`); }
+  };
+  // The editors' passable tiles (14a) for this map: the World hides those locked doors, routes go through them.
+  const applyFixes = (free) => {
+    const world = worldRef.current;
+    if (!world) return;
+    world.setTileFixes(free);
+    fixesRef.current = free;
+    setTileFixesState(free);
+    if (selectedDoor.current && free.has(selectedDoor.current.p.join(','))) { selectedDoor.current = null; setDoor(null); }
+    world.doorsChanged();
+    redraw();
+  };
+  // An editor marks a tile passable (on) or takes the mark away; the map changes once the database has it.
+  const markPassable = async (tile, on) => {
+    const world = worldRef.current;
+    try {
+      await setTilePassable(dbCfg, world.mapName, tile, on);
+      const free = new Set(fixesRef.current), k = tile.join(',');
+      if (on) free.add(k); else free.delete(k);
+      applyFixes(free);
+      setLocNote(null);
+    } catch (e) { setLocNote(`Could not save the tile fix: ${e.message || e}`); }
   };
   const flight = useRef(null); // a fly-to in progress: { fx, fy, tx, ty, t0, dur }
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
@@ -1214,6 +1243,17 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       world.isDoorOpen = (d) => doorOpen(doorsRef.current, d);
       setReady(true);
       viewChanged();
+      // The editors' tile fixes for this map (14a); none without the database or before database step 15.
+      if (dbCfg) {
+        fetchTileFixes(dbCfg, world.mapName).then((free) => {
+          if (worldRef.current !== world) return;
+          world.setTileFixes(free);
+          fixesRef.current = free;
+          setTileFixesState(free);
+          world.doorsChanged();
+          redraw();
+        }, () => {});
+      }
     }, (e) => { if (worldRef.current === world) setError(e.message); });
     return () => { worldRef.current = null; cancelAnimationFrame(frame.current); frame.current = 0; };
   }, [dataUrl, dbCfg, redraw, viewChanged]);
@@ -1416,7 +1456,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         r.busy = true; r.result = null;
         router.current ||= createRouter(dataUrl);
         const speed = speedOf(charRef.current); // the time shown is worked out again when the settings change
-        const args = [r.from.pos, r.to.pos, speed, Number(charRef.current.level) || 1, doorsRef.current, climbOf(charRef.current)];
+        const args = [r.from.pos, r.to.pos, speed, Number(charRef.current.level) || 1, routeDoors(), climbOf(charRef.current)];
         r.cheapBusy = false;
         // The fastest route first, shown as soon as it's found; then, when it costs gold, the cheapest is searched
         // and added when it's cheaper. A newer request stops that search in the worker.
@@ -1456,7 +1496,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const routeRef = useRef(route);
   routeRef.current = route;
   // ... and when doors are unlocked or locked.
-  const doorsKey = `${doors.all}:${doors.open.join(';')}`;
+  const doorsKey = `${doors.all}:${doors.open.join(';')}:${[...tileFixes].join(';')}`;
   useEffect(() => {
     if (routeRef.current.from && routeRef.current.to) updateRoute({}, true);
   }, [oracleLevel, climb, doorsKey, updateRoute]);
@@ -1524,7 +1564,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const key = legKey(l), c = charRef.current;
     legBusy.current = true;
     router.current ||= createRouter(dataUrl);
-    const tryFrom = ([from, ...more]) => router.current.route(from, l.to, speedOf(c), Number(c.level) || 1, doorsRef.current, climbOf(c))
+    const tryFrom = ([from, ...more]) => router.current.route(from, l.to, speedOf(c), Number(c.level) || 1, routeDoors(), climbOf(c))
       .then((res) => (res.routes || !more.length ? res : tryFrom(more)));
     tryFrom(l.starts).then((res) => {
       legBusy.current = false;
@@ -1978,6 +2018,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
                 ['Route from here', () => updateRoute({ from: { label: menu.tile.join(', '), pos: menu.tile } })],
                 ['Route to here', () => updateRoute({ to: { label: menu.tile.join(', '), pos: menu.tile } })],
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
+                // Editors (14a): a locked door on the map that just opens is marked "Not locked" for everyone.
+                ...(login.editor && dbCfg && world?.allDoorAt?.has(menu.tile.join(','))
+                  ? (tileFixes.has(menu.tile.join(','))
+                    ? [['Locked again', () => markPassable(menu.tile, false)]]
+                    : [['Not locked', () => markPassable(menu.tile, true)]])
+                  : []),
                 ...(devTools && world?.customEditable ? [['Add location here', () => { setLocName(''); setMenu({ ...menu, adding: true }); }, true]] : []),
                 ...(guideEd && !guide.guide.missing ? [[`Add step here (${guide.quest.n.replace(/ Quest$/, '')})`, () => addGuideStep({ kind: 'go', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] })]] : []),
                 // A Reward step (database step 6): the chest's spot; the object is the item on that tile when there is one.

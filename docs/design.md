@@ -153,6 +153,7 @@ Agree each slice before building it, then build one at a time.
 12. **Quest list and editor** (asked for 2026-11-15, built): the user's Project Fibula quest list, checked one by one on the map, with spots and rewards edited there.
 11. **Climbing and dropping** (asked for 2026-11-15, built): routes can go a floor up or down with exani hur up/down or 3 parcels, as an option per character.
 13. **Quest guides** (brainstormed 2026-11-19, for the 7.2 release): quests with segments and steps in Supabase, a route through the current segment, NPC dialogs from the scripts with copy buttons, a bring list, editing on the map for the user and Ryndean only. Replaces slices 10 and 12 except locked doors and keys. Plan and slices 13a–13k: `docs/brainstorm-quest-guides.md`.
+14. **Tile fixes by editors** (asked for 2026-11-22: 32625,31917,3 on the 7.1 map is a locked door without a key, but it just opens): editors right-click a tile and make it passable. 14a: a locked door becomes "Not locked". 14b: any blocked tile (wall, object) becomes walkable.
 
 Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (the loot seller was 5).
 
@@ -403,6 +404,13 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
   - Clicking it opens a quest window: name, version, what's in this chest (items open their item window), and the quest's whole reward as the wiki gives it.
 
 ## Decisions made while building
+
+### Slice 14a: editors mark locked doors "Not locked" (built 2026-11-22)
+- **Choices (user, 2026-11-22):** the marks live in **Supabase** (works on Ryndean's site, everyone's routes use them), they cover **any tile** (14a doors, 14b blocked tiles) and they are **per map version** (this door is already a normal door on the 7.2 map).
+- **Table `map_tile_fixes`** (database step 15, `supabase/migrations/0015_map_tile_fixes.sql`): `map`, `x`, `y`, `z`, `kind` ('passable'), who and when. Everyone reads it, only the editors (`map_is_editor()`) add and remove marks. One mark per tile per map.
+- **Which map:** the converter writes the map file's name into `map.json` (`"map": "Tibia71"`, `"map72"`); data without it counts as `Tibia71` (the default map). A newer file with the same name keeps its marks.
+- **Right-click menu (editors only):** "Not locked" on a locked door, "Locked again" on a door that was marked. The door then has no key icon and no door window, and is drawn as the map has it (a closed door you just open); routes go through it. Marks are read once when the map loads, and change straight away for the editor who sets them.
+- The router gets the marked tiles with each request (`doors.free`), so nothing has to be converted again.
 
 ### Slice 13b: quest list from the database (built 2026-11-19)
 - Quests live in Supabase (`map_quests` + `map_quest_history`, `supabase/migrations/0001_map_quests.sql`); the Quests button is for everyone now, with search and "I'm on this quest". Ryndean must pass `supabaseUrl` / `supabaseKey` to `<TibiaMap>` (same values as the planner). Details: `docs/brainstorm-quest-guides.md`, 13b.
@@ -886,4 +894,4 @@ Things to do on Ryndean's site and in Supabase before the map (with the quest gu
 - [ ] **Supabase redirect URL for the map's page:** Authentication → URL Configuration → Redirect URLs: add the map's page on Ryndean's site (e.g. `https://www.ryndean.info/<map page>/**`). Without it the editors' Discord login lands on the Site URL, which is the house planner (found 2026-11-20 with localhost).
 - [ ] Ryndean passes `supabaseUrl` / `supabaseKey` to `<TibiaMap>` (same values as the planner) (13b).
 - [ ] Ryndean has `@supabase/supabase-js` in his package.json (already there for the planner) (13c).
-- [ ] Database steps run in Supabase: step 1 (`0001_map_quests.sql`, done 2026-11-19), step 2 (`0002_map_quest_editors.sql`, with both editors' Discord IDs filled in, done 2026-11-20), step 3 (`0003_map_quest_steps.sql`).
+- [ ] Database steps run in Supabase: step 1 (`0001_map_quests.sql`, done 2026-11-19), step 2 (`0002_map_quest_editors.sql`, with both editors' Discord IDs filled in, done 2026-11-20), step 3 (`0003_map_quest_steps.sql`), step 15 (`0015_map_tile_fixes.sql`, editors' tile fixes, 14a).

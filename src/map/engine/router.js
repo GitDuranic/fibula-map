@@ -445,9 +445,9 @@ export function routerMain() {
       if (!a) { self.postMessage({ id, error: 'The start is not near a tile you can walk on.' }); return; }
       if (!b) { self.postMessage({ id, error: 'The destination is not near a tile you can walk on.' }); return; }
       const t0 = performance.now();
-      const open = new Set(doors.open);
+      const open = new Set(doors.open), free = new Set(doors.free || []); // free: tiles editors marked passable (14a)
       const unit = ([num, x, y, z]) => (num ? `k${num}` : `p${x},${y},${z}`);
-      const locked = (t) => { const d = !doors.all && W.lockedAt.get(t); return !!d && !open.has(unit(d)); };
+      const locked = (t) => { const d = !doors.all && W.lockedAt.get(t); return !!d && !open.has(unit(d)) && !free.has(`${d[1]},${d[2]},${d[3]}`); };
       if (type === 'cheapest') {
         // Least gold, then fastest. Asked after the fastest route is shown; lets other messages in now and then.
         const cheap = await route(a, b, speed, level, climb, true, locked, () => current !== mine);
@@ -497,7 +497,7 @@ export function createRouter(base) {
   const ready = ask({ type: 'load', base: absBase });
   return {
     // The fastest route. from, to: [x, y, z]; speed: the character's speed (client value); level: for the Oracle.
-    // doors: { all, open: [unit] } (see the map's doorUnit). climb: CLIMB_SPELL | CLIMB_PARCELS, what the character can climb with.
+    // doors: { all, open: [unit], free: ['x,y,z'] } (see the map's doorUnit; free: tiles editors marked passable, 14a). climb: CLIMB_SPELL | CLIMB_PARCELS, what the character can climb with.
     // Resolves to { routes: [{ name: 'Fastest', path, steps, gold }], cheaper } or { error }, also with
     // locked: [{ key, p }] when locked doors are in the way. cheaper: ask cheapest() for a route with less gold.
     route: async (from, to, speed, level, doors, climb = 0) => { await ready; return ask({ type: 'route', from, to, speed, level, doors, climb }); },

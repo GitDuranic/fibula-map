@@ -31,7 +31,8 @@
 //   sprites-N.png         sprite atlases (64x64 cells of 32px)
 //   gui.png, stone.png    client interface graphics from Tibia.pic (skin + tileable stone texture)
 //   font-outlined.png, fonts.json   the client's outlined font (creature names) and its glyph widths
-//   map.json              bounds, chunk size, which chunks exist per floor
+//   map.json              the map file's name (editors' tile fixes are kept per map, 14a), bounds, chunk size,
+//                         which chunks exist per floor
 //   chunks/<z>/<cx>_<cy>.json   one 32x32 tile chunk, tiles in row order: 0 (none), an item, or [item, item, ...]
 //                         item = client id, or [client id, count] for stack counts / fluid types
 //   overview/<set>/<level>/<bx>_<by>.webp  the map drawn with sprites for far zoom: level = px per tile (8, 4, 2, 1),
@@ -733,7 +734,7 @@ for (const [set, floorsList, z] of sets) {
 }
 log(`Overview images: ${(overviewBytes / 1e6).toFixed(1)} MB`);
 
-fs.writeFileSync(path.join(OUT, 'map.json'), JSON.stringify({ chunk: CHUNK, bounds, chunks: chunkIndex, overview: { px: OV_PX, levels: OV_LEVELS, sets: overviewIndex }, minimap: { size: MINI, floors: miniIndex } }));
+fs.writeFileSync(path.join(OUT, 'map.json'), JSON.stringify({ map: path.basename(MAP, path.extname(MAP)), chunk: CHUNK, bounds, chunks: chunkIndex, overview: { px: OV_PX, levels: OV_LEVELS, sets: overviewIndex }, minimap: { size: MINI, floors: miniIndex } }));
 // Swap the new data in: old folder aside, new one in place, then remove the old one.
 const OLD = `${FINAL_OUT}.old`;
 fs.rmSync(OLD, { recursive: true, force: true });

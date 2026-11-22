@@ -90,9 +90,13 @@ export class World {
     // Locked doors: { p [x,y,z], id (door), open (the open door), key (number, 0 = unknown), keyId (key item) }.
     // Older data without doors.json: no locked doors.
     const doors = await loadJson(`${this.base}/doors.json`).catch(() => []);
-    this.doors = doors.map(([x, y, z, id, open, key, keyId]) => ({ p: [x, y, z], id, open, key, keyId }));
-    this.doorAt = new Map(this.doors.map((d) => [d.p.join(','), d]));
+    // allDoors: every one the converter found; doors / doorAt: without the ones editors marked "Not locked" (14a).
+    this.allDoors = doors.map(([x, y, z, id, open, key, keyId]) => ({ p: [x, y, z], id, open, key, keyId }));
+    this.allDoorAt = new Map(this.allDoors.map((d) => [d.p.join(','), d]));
+    this.setTileFixes(new Set());
     this.isDoorOpen = () => false; // set by the map (unlocked doors, or all opened)
+    // The map file's name (editors' tile fixes are kept per map, 14a); data from before it was written is the 7.1 map.
+    this.mapName = map.map || 'Tibia71';
     await this.loadMonsters();
     await this.loadQuests();
     this.buildSearch();
@@ -348,6 +352,13 @@ export class World {
       this.icons.set(id, c);
     }
     return c;
+  }
+
+  // The tiles editors marked passable (14a, a Set of 'x,y,z'): locked doors there count as normal doors.
+  setTileFixes(free) {
+    this.tileFixes = free;
+    this.doors = this.allDoors.filter((d) => !free.has(d.p.join(',')));
+    this.doorAt = new Map(this.doors.map((d) => [d.p.join(','), d]));
   }
 
   // Doors were unlocked or locked: the chunk pictures are drawn again (rare, so all of them).
