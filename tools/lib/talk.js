@@ -122,6 +122,10 @@ function parseRight(tokens) {
   return { vars, acts, reply, topic };
 }
 
+// How many questions in a row a conversation is followed (a topic is never repeated on one path, so no loops).
+// Was 6; the Riddler's test (Paradox Tower) asks 12 questions in a row (user 2026-11-22: add Paradox Tower).
+const MAX_TOPICS = 16;
+
 // ---------- plain words ----------
 export function makeTalk({ itemName, townName }) {
   const n = (v) => (typeof v === 'number' ? v : null);
@@ -265,7 +269,7 @@ export function makeTalk({ itemName, townName }) {
         if (r.reply) e.r = fill(r.reply, ctx);
         const x = r.acts.map((t) => effect(t, ctx)).filter(Boolean);
         if (x.length) e.x = x;
-        if (r.topic != null && !path.includes(r.topic) && path.length < 6) {
+        if (r.topic != null && !path.includes(r.topic) && path.length < MAX_TOPICS) {
           const next = entries(live.filter((f) => f.when === r.topic && !f.special), ctx, [...path, r.topic]);
           if (next.length) e.n = next;
         }

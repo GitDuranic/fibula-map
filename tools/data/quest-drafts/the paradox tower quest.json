@@ -1,0 +1,381 @@
+{
+  "quest": "The Paradox Tower Quest",
+  "wiki": "https://tibia.fandom.com/wiki/The_Paradox_Tower_Quest/Spoiler",
+  "replaceSteps": [
+    16,
+    17,
+    18
+  ],
+  "segments": [
+    {
+      "name": "The feared Hugo",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope, a shovel, a machete, exani hur (or parcels), 8 skulls, the fruit (melon, banana, cherry, apple, grapes, coconut) and a white and a black knight. Talk to the four NPCs in this order.",
+          "source": "Required Equipment: Rope, Shovel, Machete, Levitate spell or Parcels, 8 Skulls, Key 3620, Key 3899. Required items only for the first visitor of the tower that day: Melon, Banana, Cherry, Apple, Grapes, and Coconut; 1 White Knight Token and 1 Black Knight Token."
+        },
+        {
+          "kind": "talk",
+          "npc": "Oldrak",
+          "say": [
+            "hi",
+            "hugo",
+            "myth"
+          ],
+          "source": "Find Oldrak (in Plains of Havoc temple) and talk with him. Say \"hi\", \"hugo\", \"myth\", \"yenny the gentle\"."
+        },
+        {
+          "kind": "talk",
+          "npc": "Zoltan",
+          "say": [
+            "hi",
+            "yenny gentle",
+            "crunor caress"
+          ],
+          "source": "Go to Zoltan (in Noodles Academy of Modern Magic in Edron) and talk with him. Say \"hi\", \"yenny the gentle\", \"crunor's caress\"."
+        },
+        {
+          "kind": "talk",
+          "npc": "Padreia",
+          "say": [
+            "hi",
+            "crunor caress",
+            "footnote"
+          ],
+          "source": "Go to Padreia (Druid Guild in Carlin) and talk to her. Say \"hi\", \"crunor's caress\", \"footnote\"."
+        },
+        {
+          "kind": "talk",
+          "npc": "Lubo",
+          "say": [
+            "hi",
+            "crunor cottage",
+            "flower guy",
+            "accident",
+            "stable"
+          ],
+          "source": "Go to Lubo (North of Thais, South of Mount Sternum) and talk to him. Say \"hi\", \"crunor's cottage\", \"flower guys\", \"accident\", \"stable\". Now you know about the creation of the Demonbunny."
+        }
+      ]
+    },
+    {
+      "name": "First visit to the Riddler",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Dig here with your shovel and go down into the minotaur cave.",
+          "at": [
+            32489,
+            31965,
+            7
+          ],
+          "source": "Use your Shovel (or equivalent) to enter the cave, then travel as far north as possible and rope yourself up."
+        },
+        {
+          "kind": "go",
+          "text": "Go as far north as you can, under the tower, and rope up here.",
+          "at": [
+            32466,
+            31874,
+            8
+          ],
+          "source": "Travel as far north as possible and rope yourself up. You will emerge north of the Paradox Tower. There are only Minotaurs and Minotaur Archers in the cave."
+        },
+        {
+          "kind": "get",
+          "text": "Take key 3899 from the dead tree. It's trapped: you can lose up to 200 hp and poison fields may block the way out.",
+          "at": [
+            32497,
+            31887,
+            7
+          ],
+          "items": [
+            [
+              2970,
+              1
+            ]
+          ],
+          "source": "Key 3899 is north of the Paradox Tower in a Dead Tree. The tree is booby trapped so you might lose up to 200 hp and Poison Fields may block your path to leave the tree."
+        },
+        {
+          "kind": "go",
+          "text": "South of the Kazordoon entrance: exani hur up (or parcels) 4 times up the mountain, then use your rope twice.",
+          "at": [
+            32571,
+            31976,
+            7
+          ],
+          "source": "To reach the Paradox Tower, go south of the entrance to Kazordoon and use the Levitate spell or parcels to climb up the \"stairs\" on the mountain."
+        },
+        {
+          "kind": "go",
+          "text": "Put a skull on each of the 4 sacrificial stones and step on the switch in the middle: you're teleported to the tower. (The strange carvings at the tower send you back here.)",
+          "at": [
+            32566,
+            31957,
+            1
+          ],
+          "source": "When you come across 4 Sacrificial Stones, place one skull on each stone and walk onto the Glowing Switch in the middle - you will be teleported to the tower. If you step on one of the four strange carvings, you will be teleported back away from the tower."
+        },
+        {
+          "kind": "go",
+          "text": "You land south of the tower. Cut a path through the jungle grass with your machete to the switchplate and the door. Wait until the grass at the door grows back, then step on the plate and run to the stairs that appear inside the tower. Get your whole group inside first.",
+          "at": [
+            32479,
+            31923,
+            7
+          ],
+          "source": "Cut grass from point A to point D. Then cut to point B. After that, sit at point B and wait (~5 minutes) until the grass at the door starts growing back. Right when it does, step on point C and run to point D where stairs will have appeared."
+        },
+        {
+          "kind": "go",
+          "text": "Set the 6 levers from left to right: right, right, left, left, right, left (the book reads backwards). Pull the lever: a ladder appears here.",
+          "at": [
+            32476,
+            31904,
+            6
+          ],
+          "source": "The next room will have a couple of bookshelves and a series of levers, which need to be in the following directions (from left to right): Right, Right, Left, Left, Right, Left. This is found out when reading the text in this book backwards."
+        },
+        {
+          "kind": "go",
+          "text": "Pull the lever to make a ghoul appear. When it stands on the plate in the top left corner, the ladder appears: go up quickly.",
+          "at": [
+            32478,
+            31904,
+            5
+          ],
+          "source": "In the next room, flip the switch to make a Ghoul appear. If it stands on the right tile a ladder will appear until it walks away."
+        },
+        {
+          "kind": "key",
+          "at": [
+            32479,
+            31903,
+            4
+          ],
+          "source": "In this room you will need to use the Key 3899 that you got from the Dead Tree."
+        },
+        {
+          "kind": "go",
+          "text": "Put the fruit on the tables from left to right: melon, banana, cherry, apple, grapes, coconut. Pull the lever: a ladder appears here.",
+          "at": [
+            32476,
+            31904,
+            4
+          ],
+          "source": "Place the fruit on the tables in the following order (from left to right): melon, banana, cherry, apple, grapes, coconut. When the fruit is on the tables, flip the lever and a ladder will appear."
+        },
+        {
+          "kind": "go",
+          "text": "Put the black and the white knight on the sides the two statues show and pull the lever: another ladder appears here.",
+          "at": [
+            32479,
+            31904,
+            3
+          ],
+          "source": "There will be two statues on the far wall. Examine them and place the black and white knight chess pieces on the correct sides and pull the lever. Another ladder will appear. Go up again."
+        },
+        {
+          "kind": "talk",
+          "npc": "Riddler",
+          "say": [
+            "hi",
+            "test",
+            "yes",
+            "goshnar",
+            "demonbunny",
+            "tha'kull",
+            "yes",
+            "breath",
+            "silence",
+            "old",
+            "yes",
+            "green",
+            "none"
+          ],
+          "text": "Any colour works, but remember it. Answer \"1 plus 1\" with any number: it's wrong, and you're sent to Hellgate. Any other wrong answer and you have to start the test again.",
+          "source": "There is a question that the Riddler will ask you: \"What is your favorite color?\". Any color will do the first time; however you have to answer with the same color the next time it is asked, and when you talk to A Prisoner. Because your last answer was wrong, you are sent to Hellgate."
+        }
+      ]
+    },
+    {
+      "name": "The secret of mathemagics",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "The Riddler sends you to Hellgate. You meet skeletons, ghouls, rotworms, carrion worms and bonelords on the way out, maybe elder bonelords and demon skeletons.",
+          "at": [
+            32725,
+            31589,
+            12
+          ],
+          "source": "Because your last answer was wrong, you are sent to Hellgate. If you follow the maps you will only meet Skeletons, Ghouls, Rotworms, Carrion Worms and Bonelords, but be prepared to face Elder Bonelords, Demon Skeletons and possibly The Evil Eye."
+        },
+        {
+          "kind": "go",
+          "text": "Walk out of Hellgate: down to the lowest floor, exani hur up twice, then up this ladder.",
+          "at": [
+            32659,
+            31638,
+            13
+          ],
+          "source": "After following the path shown on 9th map, you have to levitate 2x then go up the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Rope up through the wasp cave. If there's no bridge upstairs, pull the switch in the room below first. Then walk to Ab'Dendriel and take the boat to Thais.",
+          "at": [
+            32603,
+            31704,
+            8
+          ],
+          "source": "There will be a room with a switch. The switch makes a bridge appear upstairs, pull it if after roping up there's no bridge. Now you should be able to go out of the Wasp cave and walk to Ab'Dendriel. Take the boat from Ab'Dendriel to Thais."
+        },
+        {
+          "kind": "get",
+          "text": "Mintwallin: take key 3620 from the drawers in the guards' bedroom near the south gate.",
+          "at": [
+            32411,
+            32155,
+            15
+          ],
+          "items": [
+            [
+              2969,
+              1
+            ]
+          ],
+          "source": "You may need to find Key 3620 to unlock a door, which is in the guards' sleeping quarters near the south gates."
+        },
+        {
+          "kind": "key",
+          "at": [
+            32393,
+            32136,
+            14
+          ],
+          "source": "He is two levels up in the prison of Mintwallin. You may need to find Key 3620 to unlock a door."
+        },
+        {
+          "kind": "talk",
+          "npc": "A Prisoner",
+          "say": [
+            "hi",
+            "math",
+            "yes",
+            "green",
+            "yes"
+          ],
+          "text": "Say the colour you told the Riddler (see your quest log). Remember the number he tells you.",
+          "source": "Talk with him and say \"hi\", \"math\", \"yes\", \"<your color, see quest log>\", \"yes\". A Prisoner will provide you with a number unique to you, which is 'the secret of mathemagics'. This is the number you have to tell Riddler."
+        }
+      ]
+    },
+    {
+      "name": "Back to the Riddler",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Up the mountain again: exani hur up (or parcels) 4 times, then use your rope twice.",
+          "at": [
+            32571,
+            31976,
+            7
+          ],
+          "source": "Go back to the Paradox Tower and talk to Riddler again."
+        },
+        {
+          "kind": "go",
+          "text": "Again a skull on each of the 4 stones, then the switch.",
+          "at": [
+            32566,
+            31957,
+            1
+          ],
+          "source": "You will need 4 skulls EVERY time you travel to the Paradox Tower."
+        },
+        {
+          "kind": "go",
+          "text": "You land south of the tower. Cut the grass again and use the switchplate to make the stairs appear.",
+          "at": [
+            32479,
+            31923,
+            7
+          ],
+          "source": "You will need to cut the grass and wait for it to grow back EVERY time you travel to the Paradox Tower."
+        },
+        {
+          "kind": "go",
+          "text": "Up the ladder. The lever, fruit and knight puzzles stay solved until server save, unless someone switched the levers back.",
+          "at": [
+            32476,
+            31904,
+            6
+          ],
+          "source": "The fruits and chess pieces are only required to uncover the ladders to the floors above, and only need uncovering once per day unless someone else went there and switched back the levers or a floor reset has occurred."
+        },
+        {
+          "kind": "go",
+          "text": "Wait for the ghoul again, then up the ladder quickly.",
+          "at": [
+            32478,
+            31904,
+            5
+          ],
+          "source": "You will need to wait for the Ghoul to step on the plate EVERY time you travel to the Paradox Tower."
+        },
+        {
+          "kind": "go",
+          "text": "Up the ladder.",
+          "at": [
+            32476,
+            31904,
+            4
+          ],
+          "source": "When the fruit is on the tables, flip the lever and a ladder will appear. Go up the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Up the ladder.",
+          "at": [
+            32479,
+            31904,
+            3
+          ],
+          "source": "Another ladder will appear. Go up again."
+        },
+        {
+          "kind": "talk",
+          "npc": "Riddler",
+          "say": [
+            "hi",
+            "test",
+            "yes",
+            "goshnar",
+            "demonbunny",
+            "tha'kull",
+            "yes",
+            "breath",
+            "silence",
+            "old",
+            "yes",
+            "green",
+            "none"
+          ],
+          "text": "The same answers. For \"1 plus 1\" say the prisoner's number (see your quest log): you're taken to the treasure room.",
+          "source": "Go back to the Paradox Tower and talk to Riddler again. He will ask you the same questions, and they have the same answers - just be sure to tell him the number that the prisoner gave you."
+        },
+        {
+          "kind": "note",
+          "text": "Walk over exactly two switchplates to a chest: each plate destroys one of the four rewards. More plates, fewer rewards. The steps below are the pairs you can end up with.",
+          "source": "In the treasure room, there are four chests and two rows of Switchplates on the floor that you need to walk over to reach the chests. Each switch will DESTROY one of the rewards for you! If you step on more than two switchplates, you will lose more than two rewards!"
+        },
+        {
+          "kind": "rewards"
+        }
+      ]
+    }
+  ]
+}
