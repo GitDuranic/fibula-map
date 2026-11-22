@@ -112,8 +112,9 @@ function BringBox({ world, guide, seg, paths, ed, onErr }) {
   );
 }
 
-// The editors' form for one step. onSave(changes), onDelete(), onDone().
-function StepEdit({ world, step, onSave, onDelete, onDone }) {
+// The editors' form for one step. onSave(changes), onDelete(), onDone(); onAddNext(changes): save, add a step below
+// it and open that one's form (so this form isn't closed afterwards).
+function StepEdit({ world, step, onSave, onDelete, onDone, onAddNext }) {
   const [f, setF] = useState(() => ({
     kind: step.kind, text: step.text || '', npc: step.npc || '', monster: step.monster || '', items: step.items || [], checked: step.checked,
     object: step.object ?? null, dialog: step.dialog || [],
@@ -126,16 +127,17 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
-  const act = async (fn) => {
+  const act = async (fn, close = true) => {
     setBusy(true); setErr(null);
-    try { await fn(); onDone(); } catch (e) { setErr(e.message || String(e)); setBusy(false); }
+    try { await fn(); if (close) onDone(); else setBusy(false); } catch (e) { setErr(e.message || String(e)); setBusy(false); }
   };
-  const save = () => act(() => onSave({
+  const changes = () => ({
     kind: f.kind, text: f.text.trim() || null, npc: f.kind === 'talk' ? f.npc.trim() || null : null,
     monster: f.kind === 'kill' ? f.monster.trim() || null : null, items: withItems ? f.items : [], checked: f.checked,
     ...(hasReward ? { object: f.kind === 'reward' ? f.object : null } : {}),
     ...(hasDialog ? { dialog: f.kind === 'talk' ? f.dialog : [] } : {}),
-  }));
+  });
+  const save = () => act(() => onSave(changes()));
   return (
     <div className="tm-quest-edit tm-step-edit" onClick={(e) => e.stopPropagation()}>
       <label className="tm-quest-field">Kind
@@ -201,6 +203,7 @@ function StepEdit({ world, step, onSave, onDelete, onDone }) {
       {err && <div className="tm-quest-error">{err}</div>}
       <div className="tm-quest-edit-buttons">
         <button type="button" className="tm-btn" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+        {onAddNext && <button type="button" className="tm-btn" onClick={() => act(() => onAddNext(changes()), false)} disabled={busy} title="Save this step and add a new step right below it">Add next step</button>}
         <button type="button" className="tm-btn" onClick={onDone} disabled={busy}>Cancel</button>
         <button type="button" className="tm-btn" onClick={() => act(onDelete)} disabled={busy} title="Delete this step">Delete</button>
       </div>
@@ -377,7 +380,7 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                     </div>
                   </div>
                   {ed && editStep === t.id && (
-                    <StepEdit world={world} step={t} onSave={(ch) => ed.saveStep(t.id, ch)} onDelete={() => ed.deleteStep(t.id)} onDone={() => setEditStep(null)} />
+                    <StepEdit world={world} step={t} onSave={(ch) => ed.saveStep(t.id, ch)} onDelete={() => ed.deleteStep(t.id)} onDone={() => setEditStep(null)} onAddNext={(ch) => ed.addAfter(t.id, ch)} />
                   )}
                 </div>
               );

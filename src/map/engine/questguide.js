@@ -83,6 +83,24 @@ export async function addStep(cfg, guide, fields, segId) {
   return run((await dbClient(cfg)).from('map_quest_steps').insert({ quest_id: guide.questId, segment_id: seg.id, sort, ...fields }).select().single());
 }
 
+// Adds a step right below step afterId, in the same segment (the step form's "Add next step"). It takes the sort
+// number halfway to the next step; without room there the segment is renumbered first.
+export async function addStepAfter(cfg, guide, afterId, fields) {
+  const seg = guide.segments.find((s) => s.steps.some((t) => t.id === afterId));
+  if (!seg) return addStep(cfg, guide, fields);
+  const c = await dbClient(cfg);
+  let list = seg.steps.map((t) => ({ id: t.id, sort: t.sort }));
+  let i = list.findIndex((t) => t.id === afterId);
+  if (list[i + 1] && list[i + 1].sort - list[i].sort < 2) {
+    const changes = list.map((t, j) => ({ t, sort: (j + 1) * GAP })).filter(({ t, sort }) => t.sort !== sort);
+    await Promise.all(changes.map(({ t, sort }) => run(c.from('map_quest_steps').update({ sort }).eq('id', t.id))));
+    list = list.map((t, j) => ({ ...t, sort: (j + 1) * GAP }));
+  }
+  const next = list[i + 1];
+  const sort = next ? Math.floor((list[i].sort + next.sort) / 2) : list[i].sort + GAP;
+  return run(c.from('map_quest_steps').insert({ quest_id: guide.questId, segment_id: seg.id, sort, ...fields }).select().single());
+}
+
 export async function updateStep(cfg, id, changes) {
   return run((await dbClient(cfg)).from('map_quest_steps').update(changes).eq('id', id).select().single());
 }

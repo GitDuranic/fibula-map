@@ -221,6 +221,11 @@ Each slice adds something you can use on its own (user: small slices of function
 - **The route:** from the Key step on (also from earlier parts of the quest), its door counts as open for that quest's legs only; the leg to the step ends on the door square. Before the step the door stays locked (user agreed 2026-11-22: the guide follows the order you play it). A key opens every door with its number, as unlocking on the map does. The Route panel, the map's doors and "Open all locked doors" are left alone.
 - **Bring list:** a Key step adds its key ("a door to unlock"), the same entry as a locked door on the route, so it isn't listed twice.
 
+### 13m. "Add next step" in the step form (asked for 2026-11-22, built)
+- **User:** when editing a step, a button "Add next step" that adds a step under the current one.
+- The step form gets **Add next step** (between Save and Cancel): it saves the step as Save does, adds a Note step right below it in the same segment and opens the new step's form. Change its kind there; right-click the map ("Move step here") for its spot. No database step: the new step takes the sort number halfway to the next step, and when there's no room the segment is renumbered (gaps of 10) first.
+- Right-click "Add step here" and the NPC's "Add talk step" still add at the end of the last segment.
+
 ### Later (designed for, not planned yet)
 - Players choose the order of "any order" groups.
 - Ryndean's 7.2 NPC scripts swapped in, as soon as they arrive (ask him now). The converter already takes a data folder, so this is a rerun plus checking dialogs.

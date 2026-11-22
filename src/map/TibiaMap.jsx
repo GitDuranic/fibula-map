@@ -556,6 +556,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const guideEd = login.editor && guide?.guide ? { // (without database step 3 the panel says so and offers nothing)
     addNote: (segId) => editGuide((gd) => qg.addStep(dbCfg, gd, { kind: 'note' }, segId)).then((t) => t && setEditStep(t.id)),
     saveStep: (id, c) => editGuide(() => qg.updateStep(dbCfg, id, c)),
+    // "Add next step" in a step's form: saves that step, adds a note step below it and opens the new one's form.
+    addAfter: async (id, c) => {
+      await qg.updateStep(dbCfg, id, c);
+      const t = await editGuide((gd) => qg.addStepAfter(dbCfg, gd, id, { kind: 'note' }));
+      if (t) setEditStep(t.id);
+    },
     deleteStep: (id) => editGuide(() => qg.deleteStep(dbCfg, id)),
     moveStep: (id, segId, beforeId) => editGuide((gd) => qg.moveStep(dbCfg, gd, id, segId, beforeId)),
     addSegment: () => editGuide((gd) => qg.addSegment(dbCfg, gd)),
