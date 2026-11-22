@@ -43,8 +43,10 @@ export function ItemPicker({ world, placeholder, onPick }) {
 }
 
 // The editors' form (slice 13c): name, level, area, rewards, notes and the checked status of a quest's database row.
-// onSave(changes) saves it (throws with a message when it can't).
-function QuestEdit({ world, row, onSave, onDone, hasSteps }) {
+// onSave(changes) saves it (throws with a message when it can't). onDelete(): deletes the quest and its guide, after
+// a second click to confirm (steps: how many it has, for the question).
+function QuestEdit({ world, row, onSave, onDone, onDelete, hasSteps, steps }) {
+  const [asking, setAsking] = useState(false); // "Delete quest" pressed: confirm or not
   const [f, setF] = useState(() => ({
     name: row.name, level: row.level == null ? '' : String(row.level), area: row.area || '', rewards: row.rewards || '',
     notes: row.notes || '', checked: row.status === 'checked', items: row.reward_items || [],
@@ -103,17 +105,33 @@ function QuestEdit({ world, row, onSave, onDone, hasSteps }) {
       <div className="tm-quest-edit-buttons">
         <button type="button" className="tm-btn" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
         <button type="button" className="tm-btn" onClick={onDone} disabled={busy}>Cancel</button>
+        {onDelete && !asking && <button type="button" className="tm-btn" onClick={() => setAsking(true)} disabled={busy} title="Delete this quest and its guide for everyone">Delete quest</button>}
       </div>
+      {asking && (
+        <div className="tm-quest-confirm">
+          <div className="tm-quest-error">
+            Delete {row.name}{steps ? ` and its ${steps} step${steps === 1 ? '' : 's'}` : ''} for everyone? (It stays in the history, so it can be put back by hand.)
+          </div>
+          <div className="tm-quest-edit-buttons">
+            <button
+              type="button" className="tm-btn" disabled={busy}
+              onClick={async () => { setBusy(true); setErr(null); try { await onDelete(); } catch (e) { setErr(e.message || String(e)); setBusy(false); setAsking(false); } }}
+            >{busy ? 'Deleting…' : 'Yes, delete'}</button>
+            <button type="button" className="tm-btn" onClick={() => setAsking(false)} disabled={busy}>No</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // chest: { quest } (the open quest). onItem(id): the item window (a reward item's icon).
 // onQuest: the quest you're on (name) and setOn(name | null) for "I'm on this quest" (slice 13b).
-// onSave(quest, changes): an editor is logged in (13c), so the quest's database row can be edited.
+// onSave(quest, changes): an editor is logged in (13c), so the quest's database row can be edited; onDelete(quest):
+// deletes it with its guide.
 // guide: the props for QuestGuide (13d) when this quest has a database row, else null.
 // onBack: back to the quest list (the quest panel shows the list OR a quest, 13f-0b).
-export default function QuestWindow({ world, chest, onItem, onClose, onBack, onQuest, setOn, onSave, guide }) {
+export default function QuestWindow({ world, chest, onItem, onClose, onBack, onQuest, setOn, onSave, onDelete, guide }) {
   const [editing, setEditing] = useState(null); // the quest whose form is open (13c)
   const q = chest.quest;
   const d = q.db; // the quest database's row (13b), if there is one
@@ -129,7 +147,8 @@ export default function QuestWindow({ world, chest, onItem, onClose, onBack, onQ
         <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>
       </div>
       <div className="tm-window-body">
-        {editing === q && d && onSave ? <QuestEdit world={world} row={d} onSave={(changes) => onSave(q, changes)} onDone={() => setEditing(null)} hasSteps={!!guide?.guide?.steps.length} /> : (
+        {editing === q && d && onSave ? <QuestEdit world={world} row={d} onSave={(changes) => onSave(q, changes)} onDone={() => setEditing(null)} hasSteps={!!guide?.guide?.steps.length}
+          steps={guide?.guide?.steps.length || 0} onDelete={onDelete ? () => onDelete(q) : null} /> : (
         <>
         {info && <div className="tm-muted">{info}</div>}
         {/* The reward with the quest's information at the top (user 2026-11-20). */}

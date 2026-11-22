@@ -14,7 +14,7 @@ import { createRouter, routeTime } from './engine/router.js';
 import { fetchTileFixes, setTilePassable } from './engine/tilefixes.js';
 import { drawText, textWidth } from './engine/text.js';
 import { questDbConfig, questOn, setQuestOn } from './engine/questdb.js';
-import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest } from './engine/questauth.js';
+import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
 import * as qg from './engine/questguide.js';
 import './tibia-map.css';
 
@@ -516,6 +516,17 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     worldRef.current?.buildSearch();
     setQuestRev((r) => r + 1);
     redraw();
+  };
+  // Deletes quest q with its guide for everyone (the edit form's "Delete quest"), then back to the quest list.
+  const deleteDbQuest = async (q) => {
+    const id = q.db.id;
+    await deleteQuest(dbCfg, id);
+    if (onQuest === q.n) setOnQuest(null);
+    if (guideQ === q) { setEditStep(null); setGuideQ(null); }
+    setGuides(({ [id]: _gone, ...rest }) => rest);
+    worldRef.current?.dropQuest(q);
+    selectQuest(null);
+    setQuestRev((r) => r + 1);
   };
   // The guides (13d): segments and steps per quest, fetched when needed: { [quest id]: { guide, error } }.
   // guideQ: the last opened quest that's in the database, the one editors add steps to; it stays when the quest
@@ -1982,7 +1993,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
           {questSel && world && (
             <QuestWindow
               world={world} chest={questSel} onQuest={onQuest} setOn={followQuest}
-              onSave={login.editor ? saveDbQuest : null}
+              onSave={login.editor ? saveDbQuest : null} onDelete={login.editor ? deleteDbQuest : null}
               guide={dbCfg && questSel.quest.db ? {
                 guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
                 ed: guideEd, editStep, setEditStep, onGo: (p) => jump({ x: p[0], y: p[1], z: p[2] }),

@@ -151,13 +151,22 @@ export class World {
       }
       for (const r of this.questDb) {
         if (seen.has(questKey(r.name))) continue;
-        quests.push({ n: r.name, level: null, area: '', reward: '', onList: false, v: '', wiki: '', db: r });
+        quests.push({ n: r.name, level: null, area: '', reward: '', onList: false, v: '', wiki: '', db: r, dbOnly: true });
       }
       const sort = (q) => q.db?.sort ?? Infinity;
       quests.sort((a, b) => sort(a) - sort(b));
     }
     for (const q of quests) q.listed = this.questDb ? !!q.db : q.onList;
     this.quests = quests;
+  }
+
+  // An editor deleted quest q's database row: it leaves the list (a quest only in the database leaves the map).
+  dropQuest(q) {
+    if (this.questDb) this.questDb = this.questDb.filter((r) => r !== q.db);
+    if (q.dbOnly) this.quests = this.quests.filter((m) => m !== q);
+    q.db = null;
+    q.listed = false;
+    this.buildSearch();
   }
 
   // ---------- monsters ----------

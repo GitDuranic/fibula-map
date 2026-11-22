@@ -226,6 +226,13 @@ Each slice adds something you can use on its own (user: small slices of function
 - The step form gets **Add next step** (between Save and Cancel): it saves the step as Save does, adds a Note step right below it in the same segment and opens the new step's form. Change its kind there; right-click the map ("Move step here") for its spot. No database step: the new step takes the sort number halfway to the next step, and when there's no room the segment is renumbered (gaps of 10) first.
 - Right-click "Add step here" and the NPC's "Add talk step" still add at the end of the last segment.
 
+### 13n. Deleting a quest (asked for 2026-11-22, built)
+- **User:** there's no way to delete a quest entirely.
+- The quest's edit form gets **Delete quest** (after Save and Cancel). It asks once more in the form itself ("Delete X and its N steps for everyone?", Yes, delete / No; no browser dialog). Deleting removes the database row; its segments and steps go with it (on delete cascade). Then the quest panel goes back to the list.
+- **Undo:** everything stays in map_quest_history (the quest, segments and steps triggers), so a deleted quest can be put back by hand in SQL. No undo button (that's slice 13k).
+- A quest that's also in quests.json (the converted Fibula list) stays findable in search but is no longer listed, like the other quests without a row; a quest only in the database leaves the map. "I'm on this quest" is cleared when it was this one.
+- **Database step 18** (`0018_map_quest_delete.sql`): editors may delete from map_quests (before it, the form says to run step 18).
+
 ### Later (designed for, not planned yet)
 - Players choose the order of "any order" groups.
 - Ryndean's 7.2 NPC scripts swapped in, as soon as they arrive (ask him now). The converter already takes a data folder, so this is a rerun plus checking dialogs.

@@ -310,6 +310,7 @@
 .tm-quest-fields .tm-quest-field { flex: 1; min-width: 0; }
 .tm-quest-fields .tm-quest-level { flex: none; width: 42px; }
 .tm-quest-error { color: #e06060; }
+.tm-quest-confirm { margin-top: 6px; }
 .tm-quest-edit-buttons { display: flex; gap: 4px; }
 .tm-quest-edit-buttons .tm-btn { flex: 1; }
 

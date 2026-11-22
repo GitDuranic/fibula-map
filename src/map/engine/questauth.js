@@ -77,5 +77,13 @@ export async function saveQuest(cfg, id, changes) {
   return data;
 }
 
+// Deletes a quest with its guide (segments and steps go with it, database step 3's "on delete cascade"). Every row
+// stays in map_quest_history, so it can be put back by hand. Needs database step 18.
+export async function deleteQuest(cfg, id) {
+  const { data, error } = await (await sb(cfg)).from('map_quests').delete().eq('id', id).select('id');
+  if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error('Not deleted: run database step 18 (0018_map_quest_delete.sql) first, or this account may not edit quests.');
+}
+
 // The Supabase client, for the guide's writes (questguide.js).
 export const dbClient = (cfg) => sb(cfg);
