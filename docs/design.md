@@ -846,6 +846,8 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
     - The same applies to links opened at zoom 32+, Go to and travel jumps (that floor only), the floor buttons (zoomed in: this floor only), and pinch.
     - Underground (after Ctrl + wheel) the floor stays as it is.
     - This brings back the earlier "inside at 64" switch, now with the main level and Ctrl + wheel to move from it.
+  - **Changed (2026-11-22, user): zooming in keeps the floor you have set.** The jump to the area's main level is gone, and with it MAIN_LEVELS (Venore → floor 6, which on the 7.2 map has its streets on floor 7). Zooming in to 32 now only takes the layers above off.
+  - **NPCs on other floors and things under roofs (2026-11-22, user):** in a view of one floor (zoomed in on the surface, or underground) the NPCs of the other surface floors, and those one floor up or down underground, are drawn faded (alpha 0.45) with a grey name and a small up/down arrow to their floor, so an NPC on floor 6 no longer looks like it stands on floor 4. Keys and monsters on a surface floor that's under a drawn roof or upper floor are hidden, as in the client (zoomed out with all layers they showed on top of the roofs); NPCs stay over everything.
   - **NPCs** (user: "the yellow markers are a little small, maybe just show the NPC outfit and name over the roofs"):
     - The markers are gone. NPCs are drawn over everything (roofs too) from zoom 4, back to front, with their names from zoom 16.
     - **Names:** the client's outlined font (`font-outlined.png` + `fonts.json` from Tibia.pic, text.js from the planner), centred above the outfit, green #00c000 like a creature at full health, white when selected.

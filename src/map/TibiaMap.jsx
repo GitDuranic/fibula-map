@@ -42,13 +42,36 @@ function npcFrame(n, z, cut) {
   if (nz < cut) return null;
   return [x - (z - nz), y - (z - nz)];
 }
+// Where NPC n shows in view v, with the NPCs of other floors that are drawn faded (npcElsewhere), user 2026-11-22:
+// - zoomed in to one surface floor ("This floor only"), the NPCs of every surface floor, above it too (npcFrame
+//   with no cut), so you can see an NPC is above or below your floor;
+// - one floor up or down across the underground (8 and below, and between 7 and 8), at their own tile, as
+//   underground floors aren't shifted.
+function npcViewFrame(n, v) {
+  const oneFloor = v.z > 7 || v.cut >= v.z;
+  const f = npcFrame(n, v.z, oneFloor ? 0 : v.cut);
+  if (f || !oneFloor || Math.abs(n.p[2] - v.z) !== 1) return f;
+  return [n.p[0], n.p[1]];
+}
+// Is NPC n on another floor than the one you're looking at, in a view that shows one floor? (Drawn faded.)
+const npcElsewhere = (n, v) => n.p[2] !== v.z && (v.z > 7 || v.cut >= v.z);
+
+// Is something on surface floor nz, drawn at frame tile f, under a floor drawn above it (a roof, an upper floor)?
+// Keys and monsters there are hidden, as the client hides what's under a roof; NPCs stay over everything.
+// Floor zz is drawn (v.z - zz) tiles up-left, so its tile at frame f is (f + v.z - zz). User 2026-11-22: zoomed out
+// with all layers, keys on floors 7 to 1 and floor-7 monsters showed on top of the roofs.
+function covered(world, f, nz, v) {
+  if (v.z > 7 || nz > 7) return false;
+  for (let zz = v.cut; zz < nz; zz++) if (world.tile(f[0] + v.z - zz, f[1] + v.z - zz, zz)) return true;
+  return false;
+}
 
 // Places the conversation window el (NpcTalk) next to NPC n on the map: right of its tile, or left when there's no
 // room, its top level with the NPC's tile, kept inside the map. Hidden while the NPC is out of view or on a floor that
 // isn't shown. v, ox, oy, s, W, H: the view as draw() has it (canvas pixels); el is in CSS pixels.
 function placeTalk(el, n, v, ox, oy, s, W, H) {
   if (!el || !n) return;
-  const f = npcFrame(n, v.z, v.cut);
+  const f = npcViewFrame(n, v);
   const d = window.devicePixelRatio || 1;
   const x1 = (ox + f?.[0] * s) / d, x2 = x1 + s / d, y1 = (oy + f?.[1] * s) / d;
   const cw = W / d, ch = H / d;
@@ -67,17 +90,15 @@ function placeTalk(el, n, v, ox, oy, s, W, H) {
 // NPCs are drawn over everything (roofs too) from NPCS_FROM, with their names from NAMES_FROM. Zoomed out, their
 // outfit keeps at least OUTFIT_MIN of its client size (in client pixels), so they stay findable like map pins.
 const NPCS_FROM = 4, NAMES_FROM = 16, OUTFIT_MIN = 0.75;
+// How visible an NPC on another floor is when zoomed in to one floor (see the NPC drawing).
+const NPC_ELSEWHERE_ALPHA = 0.45;
 
-// Zooming in to MAIN_FROM switches to the area's main level, "this floor only": the ground floor, or the level of
-// the streets where they are higher up (Venore: +1). Ctrl + wheel goes up or down from there; zooming back out
-// brings the roofs back.
+// Zooming in to MAIN_FROM shows the floor you have set, "this floor only". Ctrl + wheel goes up or down from there;
+// zooming back out brings the roofs back. (User 2026-11-22: it used to switch to the area's main level, Venore's
+// streets on floor 6 in 7.1, but zooming in should keep the floor you chose.)
 const MAIN_FROM = 32; // was 64; user 2026-11-13: one step earlier, to see into buildings sooner
 // How close Go to, search results and "Show" route fly in (at least), and the closest zoom a route is fitted at.
 const FLY_ZOOM = 64;
-const MAIN_LEVELS = [
-  { name: 'Venore', x1: 32915, y1: 32015, x2: 33060, y2: 32140, z: 6 }, // streets on +1 (floor-6 ground, see the doc)
-];
-const mainLevelAt = (x, y) => MAIN_LEVELS.find((a) => x >= a.x1 && x <= a.x2 && y >= a.y1 && y <= a.y2)?.z ?? 7;
 
 // Where NPC n is drawn on the canvas: its outfit picture (x, y, w, h, scale) and its tile's centre.
 // ox, oy: canvas position of tile (0, 0); s: screen pixels per tile; k: screen pixels per client pixel.
@@ -94,7 +115,7 @@ function visibleNpcs(world, v, left, top, right, bottom) {
   if (v.zoom < NPCS_FROM) return [];
   const out = [];
   for (const n of world.npcs) {
-    const f = npcFrame(n, v.z, v.cut);
+    const f = npcViewFrame(n, v);
     if (f && f[0] >= left - 3 && f[0] <= right + 3 && f[1] >= top - 3 && f[1] <= bottom + 3) out.push({ n, f });
   }
   return out.sort((a, b) => a.f[1] - b.f[1] || a.f[0] - b.f[0]);
@@ -112,7 +133,7 @@ function visibleDoors(world, v, left, top, right, bottom) {
   const out = [];
   for (const d of world.doors) {
     const f = npcFrame(d, v.z, v.cut);
-    if (f && f[0] >= left - 1 && f[0] <= right + 1 && f[1] >= top - 1 && f[1] <= bottom + 1) out.push({ d, f });
+    if (f && f[0] >= left - 1 && f[0] <= right + 1 && f[1] >= top - 1 && f[1] <= bottom + 1 && !covered(world, f, d.p[2], v)) out.push({ d, f });
   }
   return out;
 }
@@ -287,7 +308,10 @@ function monsterFloor(world, v, left, top, right, bottom) {
   const above = world.layersIn(v.z, Math.floor(left), Math.floor(top), Math.floor(right), Math.floor(bottom));
   return above.find((zz) => zz >= v.cut) ?? v.z;
 }
-const monFrame = (m, v, mz) => (m.p[2] === mz ? npcFrame(m, v.z, v.cut) : null);
+const monFrame = (m, v, mz, world) => {
+  const f = m.p[2] === mz ? npcFrame(m, v.z, v.cut) : null;
+  return f && !covered(world, f, mz, v) ? f : null;
+};
 const SPIRAL = (() => {
   const out = [];
   for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) out.push([dx, dy]);
@@ -302,12 +326,12 @@ function visibleMonsters(world, v, left, top, right, bottom) {
   const mz = monsterFloor(world, v, left, top, right, bottom);
   if (v.zoom < MONSTERS_SPLIT) {
     for (const mk of world.monMarkers) {
-      const f = monFrame(mk, v, mz);
+      const f = monFrame(mk, v, mz, world);
       if (f && inView(f[0], f[1], 3)) out.push({ kind: mk.kind, f, count: mk.count, group: mk.group });
     }
   } else {
     for (const sp of world.spawnPoints) {
-      const f = monFrame(sp, v, mz);
+      const f = monFrame(sp, v, mz, world);
       if (!f || !inView(f[0], f[1], sp.radius + 3)) continue;
       const spots = SPIRAL.filter(([dx, dy]) => Math.max(Math.abs(dx), Math.abs(dy)) <= sp.radius);
       for (let i = 0; i < sp.amount; i++) {
@@ -948,30 +972,40 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     // NPCs over everything (roofs too): outfit, then the name above it in the client's outlined font, green like
     // a creature at full health (white when selected). Back to front, so the ones further south are on top.
     const k = Math.max(1, Math.round(window.devicePixelRatio || 1)), sel = selected.current;
-    const sf = sel && npcFrame(sel, v.z, v.cut);
+    const sf = sel && npcViewFrame(sel, v);
     if (sf && v.zoom >= 32) {
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = k;
       ctx.strokeRect(ox + sf[0] * s + k / 2, oy + sf[1] * s + k / 2, s - k, s - k);
     }
+    // In a view of one floor, NPCs on other floors (see npcViewFrame) are drawn faded with a grey name, so they
+    // don't look like they're on this floor (user 2026-11-22: an NPC on floor 6 looked like it stood on floor 4).
     const shown = visibleNpcs(world, v, left, top, right, bottom);
+    const elsewhere = (n) => npcElsewhere(n, v);
     for (const { n, f } of shown) {
       if (!n.img) continue;
       const r = npcRect(n, f, ox, oy, s, k);
       ctx.imageSmoothingEnabled = r.sc < 1;
+      ctx.globalAlpha = elsewhere(n) ? NPC_ELSEWHERE_ALPHA : 1;
       ctx.drawImage(world.npcSheet, n.img[0], n.img[1], n.img[2], n.img[3], r.x, r.y, r.w, r.h);
     }
+    ctx.globalAlpha = 1;
     if (v.zoom >= NAMES_FROM) {
       const fs = Math.max(k, Math.round(s / 32));
       ctx.imageSmoothingEnabled = false;
       for (const { n, f } of shown) {
         const r = npcRect(n, f, ox, oy, s, k);
         const w = textWidth(world.font, n.n) * fs;
+        // An NPC on another floor gets a small arrow after its name, up or down to its floor, in the floor-change
+        // colours (user 2026-11-22); the name and arrow are centred together.
+        const away = elsewhere(n), th = world.font.cellH * fs, a = away ? Math.round(th * 0.9) : 0, gap = away ? 3 * fs : 0;
+        const tx = Math.round(r.cx - (w + gap + a) / 2), ty = Math.round(Math.min(r.y, r.cy - 16 * r.sc) - 14 * fs);
         ctx.save();
-        ctx.translate(Math.round(r.cx - w / 2), Math.round(Math.min(r.y, r.cy - 16 * r.sc) - 14 * fs));
+        ctx.translate(tx, ty);
         ctx.scale(fs, fs);
-        drawText(ctx, world.font, n.n, 0, 0, n === sel ? '#ffffff' : '#00c000');
+        drawText(ctx, world.font, n.n, 0, 0, n === sel ? '#ffffff' : away ? '#909090' : '#00c000');
         ctx.restore();
+        if (away) drawArrow(ctx, tx + w + gap + a / 2, ty + th / 2, a, n.p[2] < v.z, fs / 2);
       }
     }
     // The quest route (13e): the guide's legs, on the floor you're looking at (the surface ones also from the other
@@ -1321,7 +1355,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     const before = v.zoom;
     flight.current = null;
     v.zoom = ZOOMS[j];
-    mainLevel(before, wx, wy);
+    mainLevel(before);
     viewChanged();
   }, [viewChanged]);
 
@@ -1335,11 +1369,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (an && d) { an.wx += d; an.wy += d; } // a zoom in progress keeps the same spot under the mouse
   };
 
-  // Crossing MAIN_FROM: zooming in goes to the main level of the place zoomed into ("this floor only");
-  // zooming out brings the roofs back. Underground (after Ctrl + wheel) the floor stays as it is.
-  const mainLevel = (before, x, y) => {
+  // Crossing MAIN_FROM: zooming in shows only the floor you're on; zooming out brings the roofs back.
+  // Underground the floor is shown on its own anyway.
+  const mainLevel = (before) => {
     const v = view.current;
-    if (before < MAIN_FROM && v.zoom >= MAIN_FROM && v.z <= 7) { changeFloor(mainLevelAt(x, y)); v.cut = v.z; }
+    if (before < MAIN_FROM && v.zoom >= MAIN_FROM && v.z <= 7) v.cut = v.z;
     else if (before >= MAIN_FROM && v.zoom < MAIN_FROM && v.z <= 7) v.cut = 0;
   };
 
@@ -1789,7 +1823,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       anim.current.anchor = { sx: mid.x, sy: mid.y, wx: v.x + (mid.x - c.width / 2) / s, wy: v.y + (mid.y - c.height / 2) / s };
       const before = d.zoom0 ?? v.zoom;
       v.zoom = nearestZoom(s);
-      mainLevel(before, anim.current.anchor.wx, anim.current.anchor.wy);
+      mainLevel(before);
       drag.current = null;
       viewChanged();
       return;
