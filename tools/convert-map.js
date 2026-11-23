@@ -508,6 +508,17 @@ npcList.forEach((n, i) => {
     else droppedTravel.push(`${n.name} -> ${t.name}`);
   }
 });
+// tools/data/scripted-passages.json: [{ npc, name, price, level, to: [x,y,z], note }]: passages the NPC scripts don't
+// give the converter (a stand-in script without it, or one behind a quest condition; user 2026-11-23: Dalbrect to the
+// Isle of the Kings on 7.2). Added when that NPC is on this map and the destination is, so a passage for a 7.2 NPC
+// only shows up on the 7.2 map.
+let scriptedPassages = [];
+try { scriptedPassages = JSON.parse(fs.readFileSync('tools/data/scripted-passages.json', 'utf8')); } catch { /* none */ }
+for (const sp of scriptedPassages) {
+  const n = npcList.find((m) => m.name.toLowerCase() === sp.npc.toLowerCase());
+  if (!n || !tileAt(...sp.to)) continue;
+  if (!passages.some((p) => p[0] === n.name && p[7] === sp.to[0] && p[8] === sp.to[1] && p[9] === sp.to[2])) passages.push([n.name, sp.name, sp.price || 0, sp.level || 0, n.x, n.y, n.z, ...sp.to]);
+}
 // The icons shown on a route's climbs (slice 11, user): a spellbook for exani hur, a parcel for parcels (client ids).
 const climbIcons = { levitate: toClient(2175), parcels: toClient(2595) };
 for (const cid of Object.values(climbIcons)) if (cid && dat.items.has(cid)) usedItems.add(cid);

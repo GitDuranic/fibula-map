@@ -1,0 +1,358 @@
+{
+  "quest": "The Postman Missions Quest",
+  "wiki": "https://tibia.fandom.com/wiki/The_Postman_Missions_Quest/Spoiler",
+  "map": "7.2: Kevin 32569,32018,6; sealed doors with chests left 32567,32024,6 (letterbag) and right 32569,32024,6 (present); Folda mailbox 32013,31562,4; Waldo's body 32514,32248,8 (troll cave shovel hole 32489,32260,7 isn't on the map); Santa's Mailbox 31948,31711,6 (no Santa Claus NPC on the map)",
+  "segments": [
+    {
+      "name": "Assistant Postman",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring food and about 700 gold for travel (and a crowbar, or buy one on the way).",
+          "source": "Since there is so much walking on \"safe\" paths, you should bring plenty of Food. Approximately 700 gp. Crowbar"
+        },
+        {
+          "kind": "talk",
+          "text": "Mission 1: at the post office between Thais and Kazordoon, ask Kevin for a mission and join his guild. He sends you to check the postal routes.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "Start out by talking to Kevin at his post office between Thais and Kazordoon. Ask him for a mission and tell him you are interested in joining his guild."
+        },
+        {
+          "kind": "note",
+          "text": "Check the postal routes by travelling them: boat Thais to Carlin (110 gp), walk to the Femor Hills and take the carpet to Edron (60 gp), boat to Venore (40 gp), walk to Kazordoon and take the steam boat in the deepest cave to Cormaya (160 gp). Then back to Kevin (cheapest: through the rotworm caves to Edron, boat to Venore, walk).",
+          "source": "Head to Thais and take the Boat to Carlin (110 gp). Walk to Femor Hills and carpet to Edron (60 gp). Boat to Venore (40 gp). Walk to Kazordoon and in deepest cave, ride the Steam Boat to Cormaya (160 gp). Return to Kevin's Post office."
+        },
+        {
+          "kind": "talk",
+          "text": "Tell Kevin you completed the mission. Mission 2: fix the mailbox on Folda.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "Tell Kevin you completed the mission."
+        },
+        {
+          "kind": "get",
+          "text": "Get a crowbar (sold in Edron, Darashia, Kazordoon, north of Thais by Lubo, and Venore).",
+          "items": [["crowbar", 1]],
+          "source": "Get a Crowbar (can be purchased from Edron, Darashia, Kazordoon, North of Thais (Lubo) and Venore)"
+        },
+        {
+          "kind": "go",
+          "text": "Take the ferry north-west of Carlin to Folda (20 gp).",
+          "at": [32233, 31677, 7],
+          "source": "Take the ferry to Folda (20 gp) - North-West of Carlin (Mapper Coords 125.233, 123.189, 7)"
+        },
+        {
+          "kind": "go",
+          "text": "Climb to the top of the mountain and use the crowbar on the mailbox.",
+          "at": [32013, 31562, 4],
+          "source": "Climb to the top of the mountain and 'use' the crowbar on the mailbox"
+        },
+        {
+          "kind": "talk",
+          "text": "Back to Kevin: ask about advancement. You are now an Assistant Postman (cheaper parcels and letters).",
+          "npc": "Kevin",
+          "say": ["hi", "advancement", "yes"],
+          "source": "Return to Kevin and ask about advancement. You are now an Assistant Postman! (cheaper parcels and letters)"
+        }
+      ]
+    },
+    {
+      "name": "Postman",
+      "steps": [
+        {
+          "kind": "talk",
+          "text": "Mission 3: Kevin gives you a bill for a magician hat and rabbits, for a famous magician.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "Ask Kevin for a new mission and receive a Bill for one Magician Hat and a bunch of rabbits to be delivered to a famous magician."
+        },
+        {
+          "kind": "talk",
+          "text": "In Venore, below the depot: ask A Strange Fellow about his hat (4 times) until he gives in and takes the bill.",
+          "npc": "A Strange Fellow",
+          "say": ["hi", "hat", "hat", "hat", "hat", "bill", "yes"],
+          "source": "Walk to Venore and seek out A Strange Fellow below the Depot. Talk to him and keep asking about his 'hat' (4 times) until he gives in and takes his 'bill'."
+        },
+        {
+          "kind": "talk",
+          "text": "Back to Kevin. Mission 4: the post officers' fund is out of bones for aggressive dogs.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "Return to Kevin. Kevin will tell you the classic post officer's plight - aggressive dogs. He will also tell you that they are running low on bones."
+        },
+        {
+          "kind": "get",
+          "text": "Get 20 bones (190 oz): skeletons on Mount Sternum drop them.",
+          "items": [["bone", 20]],
+          "source": "Get 20 bones (the easiest way is to go to Mount Sternum and kill skeletons). Bones weigh 9.50oz each, so 20 will weigh 190oz."
+        },
+        {
+          "kind": "talk",
+          "text": "Tell Kevin you completed the mission and brought all the bones (he takes them a few at a time if you can't carry all 20), then ask about advancement. You are now a Postman (post officer's hat).",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes", "advancement", "yes"],
+          "source": "Talk to Kevin and tell him that you completed the \"mission\" and that you brought \"all\" of the bones. Ask about an \"advancement\". You are now a Postman! (Post Officer's Hat)"
+        }
+      ]
+    },
+    {
+      "name": "Grand Postman",
+      "steps": [
+        {
+          "kind": "talk",
+          "text": "Mission 5: deliver a present to Dermot on Fibula.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "Ask about another mission. Kevin will tell you to deliver a present to Dermot on Fibula."
+        },
+        {
+          "kind": "reward",
+          "text": "Open the right blinking door and take the present from the chest. DON'T open the present: it disappears (a new one costs 16,000 gold from Black Bert).",
+          "at": [32569, 32024, 6],
+          "object": 2472,
+          "items": [[3218, 1]],
+          "source": "As directed, open the right blinking door and take the present from the chest. DO NOT OPEN THE PRESENT!! If you try to open it, you will get nothing and the present will disappear."
+        },
+        {
+          "kind": "talk",
+          "text": "Travel to Fibula and give Dermot the present.",
+          "npc": "Dermot",
+          "say": ["hi", "present", "yes"],
+          "source": "Travel to Fibula to Dermot and give him the present."
+        },
+        {
+          "kind": "talk",
+          "text": "Back to Kevin. Mission 6: new uniforms.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "Return to Kevin."
+        },
+        {
+          "kind": "talk",
+          "text": "In Venore, upstairs where clothes are sold, ask Hugo about the new uniforms and the dress pattern: he has no idea where Kevin got it from.",
+          "npc": "Hugo",
+          "say": ["hi", "uniform", "dress pattern"],
+          "source": "Travel to Venore and talk to Hugo. He is located upstairs where dresses and other wears are being sold. Ask Hugo about new 'uniforms' and new 'dress pattern'."
+        },
+        {
+          "kind": "talk",
+          "text": "Tell Kevin about the dress patterns: he sends you to Talphion in Kazordoon.",
+          "npc": "Kevin",
+          "say": ["hi", "dress pattern"],
+          "source": "Return to Kevin to say 'dress patterns'. He will send you to Talphion in Kazordoon."
+        },
+        {
+          "kind": "talk",
+          "text": "In Kazordoon, on the level with the rats, the west end of the passage west of the shops, down two staircases and north: say \"dress pattern\" to Talphion a few times until he understands. He sends a letter to Kevin.",
+          "npc": "Talphion",
+          "say": ["hi", "dress pattern", "dress pattern", "dress pattern"],
+          "source": "Go north to Kazordoon and talk to Talphion the technomancer. Say 'dress patterns' a few times until he understands you. He will send a letter to Kevin."
+        },
+        {
+          "kind": "talk",
+          "text": "Ask Kevin about the dress pattern: he sends you to Queen Eloise for the colours.",
+          "npc": "Kevin",
+          "say": ["hi", "dress pattern"],
+          "source": "Go Back to Kevin and ask about 'dress pattern'. He will acknowledge the message from Talphion, and send you to Queen Eloise for the perfect colors."
+        },
+        {
+          "kind": "talk",
+          "text": "In Carlin, say \"hail queen\" to Queen Eloise and ask about the uniforms: she sends samples to Kevin.",
+          "npc": "Queen Eloise",
+          "say": ["hail queen", "uniform"],
+          "source": "Go north to Carlin and find Queen Eloise. Say 'Hail Queen' and ask about 'uniforms.' She will send some samples to Kevin."
+        },
+        {
+          "kind": "talk",
+          "text": "Ask Kevin about the dress pattern (don't say mission): find out which smell dogs hate most; Noodles, King Tibianus' dog, has the best nose.",
+          "npc": "Kevin",
+          "say": ["hi", "dress pattern"],
+          "source": "Return to Kevin and ask about 'dress patterns'. DON'T SAY MISSION. He will tell you to figure out what smell dogs hate the most. He says that Noodles, King Tibianus's dog has the best sense of smell."
+        },
+        {
+          "kind": "get",
+          "text": "Gather a mouldy cheese, a banana skin and a dirty fur.",
+          "items": [["moldy cheese", 1], ["banana skin", 1], ["dirty fur", 1]],
+          "source": "Gather the Mouldy Cheese, Banana Skin and a Dirty Fur"
+        },
+        {
+          "kind": "talk",
+          "text": "In Thais castle, let Noodles sniff each one and ask \"do you like that?\", until he spits.",
+          "npc": "Noodles",
+          "say": ["hi", "sniff banana"],
+          "source": "Go to Thais Castle, and talk to Noodles, the king's dog. Say \"hi\", \"sniff banana skin\", \"do you like that?\", \"hi\", \"sniff dirty fur\", \"do you like that?\", etc. Continue doing this until Noodles spits."
+        },
+        {
+          "kind": "talk",
+          "text": "Tell Kevin about the dress pattern: he mails the patterns to Hugo; tell Hugo they're ordering them.",
+          "npc": "Kevin",
+          "say": ["hi", "dress pattern"],
+          "source": "Return to Kevin and mention \"dress pattern\". He will tell you he is mailing the patterns to Hugo, and ask you to tell Hugo that they are ordering them."
+        },
+        {
+          "kind": "talk",
+          "text": "Tell Hugo about the dress pattern: he insults it but agrees to make them.",
+          "npc": "Hugo",
+          "say": ["hi", "dress pattern"],
+          "source": "Return again to Hugo, 'dress pattern.' He will insult the patterns, but ultimately agree to making them."
+        },
+        {
+          "kind": "talk",
+          "text": "Back to Kevin: ask about advancement. You are now a Grand Postman (cheaper boat trips).",
+          "npc": "Kevin",
+          "say": ["hi", "advancement", "yes"],
+          "source": "Return to Kevin. Ask about advancement. You are now a Grand Postman! (This grants you travel discounts on boats)"
+        }
+      ]
+    },
+    {
+      "name": "Grand Postman for Special Operations",
+      "steps": [
+        {
+          "kind": "talk",
+          "text": "Mission 7: Hugo needs the measurements of all post officers (any order). Bring about 200 gold, 12 arrows and grapes.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "Kevin will tell you that Hugo needs the measurements of all of the Post Officers (in any order). Approximately 200 gp. 12 Arrows. Grapes"
+        },
+        {
+          "kind": "talk",
+          "text": "Thais depot: Benjamin's measurements.",
+          "npc": "Benjamin",
+          "say": ["hi", "measurements"],
+          "source": "Walk to Thais and get the measurements from Benjamin"
+        },
+        {
+          "kind": "talk",
+          "text": "Carlin depot: Liane wants 12 arrows (Perac sells them) for her measurements.",
+          "npc": "Liane",
+          "say": ["hi", "measurements", "yes"],
+          "source": "Take the ship to Carlin (100 gps), buy 12 arrows from Perac and get the measurements from Liane"
+        },
+        {
+          "kind": "talk",
+          "text": "Ab'Dendriel, south-west of the depot: Olrik gambles for his measurements (5 gold per dice roll).",
+          "npc": "Olrik",
+          "say": ["hi", "measurements", "yes"],
+          "source": "Walk to Ab'Dendriel and get the measurements from Olrik (Good luck with the dice). Olrik gambles with you to give his measurements (5gp per roll, bring some gold)"
+        },
+        {
+          "kind": "talk",
+          "text": "Kazordoon, north end of the depot: Lokur sends you to his armorer Kroox.",
+          "npc": "Lokur",
+          "say": ["hi", "measurements"],
+          "source": "Walk to Kazordoon and talk to Lokur, who will send you to Kroox."
+        },
+        {
+          "kind": "talk",
+          "text": "Kroox gives you Lokur's measurements.",
+          "npc": "Kroox",
+          "say": ["hi", "measurements"],
+          "source": "Get the measurements from Kroox"
+        },
+        {
+          "kind": "talk",
+          "text": "Edron, above the depot (wagon to the top of Kazordoon, carpet to Edron for 30 gold): Chrystal's measurements.",
+          "npc": "Chrystal",
+          "say": ["hi", "measurements"],
+          "source": "Use the wagon to go with Gewen on top of Kazordoon, take the carpet to Edron (30 gps) and get the measurements from Chrystal"
+        },
+        {
+          "kind": "talk",
+          "text": "Venore, downstairs in the depot (boat from Edron, 30 gold): Dove wants one bunch of grapes (Rodney sells them for 3 gold).",
+          "npc": "Dove",
+          "say": ["hi", "measurements", "yes"],
+          "source": "Take the ship to Venore (30 gps) and get the measurements from Dove. She will ask you for Grapes which you can buy from Rodney for 3gps."
+        },
+        {
+          "kind": "talk",
+          "text": "Report back to Kevin. Mission 8: the courier Waldo is missing; find him, or at least his posthorn.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "Report back to Kevin. Kevin tells you that the mail courier Waldo is missing, and that you need to find him, or at least his posthorn."
+        },
+        {
+          "kind": "go",
+          "text": "Thais troll caves: open the hole with a shovel and go down.",
+          "at": [32489, 32260, 7],
+          "source": "He is in the Thais Troll Caves (Mapper Coords 126.233, 126.4, 7). You will need a shovel to open the hole."
+        },
+        {
+          "kind": "reward",
+          "text": "Go east and down the hole, north and east past the orcs and up the ladder. Waldo lies directly west, behind a sealed door (it only opens after Kevin told you about Waldo): use his body to get Waldo's posthorn.",
+          "at": [32514, 32248, 8],
+          "object": 4240,
+          "source": "Once in the caves, go east and down the hole. Then go north and east past the Orcs, and up the ladder. Waldo will be directly west, behind a sealed door. When you find his dead body, \"use\" it to get Waldos Posthorn."
+        },
+        {
+          "kind": "talk",
+          "text": "With the posthorn, ask Kevin about advancement. You are now a Grand Postman for Special Operations (post horn). Free up 500 oz of capacity for the next mission.",
+          "npc": "Kevin",
+          "say": ["hi", "advancement", "yes"],
+          "source": "Go to Kevin with the Post Horn in your possession and ask for advancement. If you don't have the required 500 capacity you need for the next mission, it is a good idea to buy a parcel from Wally and send whatever you do not need to yourself."
+        }
+      ]
+    },
+    {
+      "name": "Arch Postman",
+      "steps": [
+        {
+          "kind": "talk",
+          "text": "Mission 9: deliver letters to Santa Claus on Vega.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "This time Kevin asks you to deliver some letters to Santa Claus on Vega."
+        },
+        {
+          "kind": "reward",
+          "text": "Open the left sealed door and take the letterbag from the chest (500 oz: it won't come out without the capacity, and nobody can carry it for you; a new one costs 8,000 gold from Black Bert).",
+          "at": [32567, 32024, 6],
+          "object": 2472,
+          "items": [[3217, 1]],
+          "source": "Open the left Sealed Door and get a Letterbag (it weighs 500 oz, and no one else can carry it for you, since it won't come out of the chest unless you have the capacity). If you lost the letterbag you can buy a replacement from NPC Black Bert at the price of 8,000 gps."
+        },
+        {
+          "kind": "talk",
+          "text": "Take Nielson's raft to Vega.",
+          "npc": "Nielson",
+          "say": ["hi"],
+          "source": "Take this letterbag to Vega by Nielson's raft"
+        },
+        {
+          "kind": "go",
+          "text": "West to Santa's house: use the letterbag on Santa's mailbox (it becomes a normal red bag).",
+          "at": [31948, 31711, 6],
+          "source": "Go west to Santa's house (Mapper Coords 124.211, 123.224, 7). Use the letterbag on Santa's Mailbox. After you deliver the letters, it will become a normal Red Bag."
+        },
+        {
+          "kind": "talk",
+          "text": "Back to Kevin for the last mission. Mission 10: a letter from his mother for Markwin in Mintwallin. A stealth ring helps: the first time you talk to Markwin he calls 8 minotaur bodyguards.",
+          "npc": "Kevin",
+          "say": ["hi", "mission", "yes"],
+          "source": "Return to Kevin for the last mission! Now Kevin gives you a letter to deliver to Markwin in Mintwallin. A Stealth Ring is advisable for this mission as he summons 4 Minotaur Archers, 2 Minotaur Guards, and 2 Minotaur Mages summoned at once!"
+        },
+        {
+          "kind": "go",
+          "text": "In Thais, the Ancient Temple: follow the route down to Mintwallin, the minotaur city.",
+          "at": [32356, 32170, 7],
+          "source": "When you are ready, go to Thais, Ancient Temple (Mapper Coords 126.100, 125.170, 7) and follow the route here to the Minotaur city of Mintwallin."
+        },
+        {
+          "kind": "talk",
+          "text": "Say hi to Markwin (invisible or with a stealth ring; or from outside the castle to lure the guards a few at a time), then hi again and give him the letter.",
+          "npc": "Markwin",
+          "say": ["hi", "letter", "yes"],
+          "source": "As soon as you say \"hi\" to Markwin, he will call for his 8 bodyguards. You can also say 'hi' to him from the outside of the castle. Say hi again, and give him his letter."
+        },
+        {
+          "kind": "talk",
+          "text": "Back to Kevin: ask about advancement. You are now an Arch Postman (royal mailboxes).",
+          "npc": "Kevin",
+          "say": ["hi", "advancement", "yes"],
+          "source": "Return to Kevin and ask about advancement. You are now an Arch Postman! (You may now use royal mailboxes)."
+        }
+      ]
+    }
+  ]
+}

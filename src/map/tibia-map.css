@@ -157,6 +157,19 @@
 }
 .tm-btn:active:not(:disabled) { border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); padding: 1px 5px 0 7px; }
 .tm-btn:disabled { cursor: default; color: #7a7a7a; }
+/* a button that is switched on (the map version, 15a): pressed in, bright text */
+.tm-btn.tm-btn-on { border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); padding: 1px 5px 0 7px; color: #fff; cursor: default; }
+/* map versions in the guide (15d): a part or step of the other version (editors only), its tag, the Map settings */
+.tm-step-other { opacity: .5; }
+.tm-step-other .tm-step-head { display: flex; gap: 4px; align-items: baseline; }
+.tm-map-tag { flex: none; padding: 0 3px; font-size: 10px; line-height: 13px; color: #fff; background: #3a5a7a; border: 1px solid #5a7a9a; }
+.tm-seg-map { width: auto; height: 16px; padding: 0 2px; margin-left: auto; }
+.tm-step-map { display: flex; gap: 4px; align-items: center; }
+.tm-step-map .tm-select { flex: 1; }
+/* the map version switch (15a) under the floor info */
+.tm-ver { display: flex; gap: 2px; }
+.tm-ver .tm-btn { height: 15px; padding: 0 5px; }
+.tm-ver .tm-btn.tm-btn-on { padding: 1px 4px 0 6px; }
 .tm-search-head { display: flex; align-items: center; justify-content: space-between; }
 
 /* route panel */

@@ -1,0 +1,43 @@
+{
+  "quest": "Parchment Room Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Parchment_Room_Quest/Spoiler",
+  "map": "7.2: the marble room on floor 14 (33225-33236, 31639-31648) is only on the 7.2 map; its coffin and parchment aren't map items there",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a pick and a rope.",
+          "source": "Required equipment: Pick, Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Enter the Edron Hero Cave.",
+          "at": [33164, 31638, 7],
+          "source": "First you have to enter the Edron Hero Cave (Mapper Coords 129.140, 123.150, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Go down through the Hero Cave (open the hole on the way with your pick) and head west to the lone gravestone: the teleporter next to it leads to the Parchment Room. Get ready for a demon before you step in.",
+          "at": [33234, 31642, 13],
+          "source": "Use a pick to open the hole. Now go down and head to the west. Here you will find a single gravestone and a teleporter to a big room with one Demon inside, the Parchment Room."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the demon in the Parchment Room.",
+          "at": [33230, 31643, 14],
+          "monster": "Demon",
+          "source": "Get prepared to face the demon and enter the teleporter. After you have killed the Demon, go to the coffin in the middle of the room."
+        },
+        {
+          "kind": "reward",
+          "text": "The coffin in the middle of the room: pushing the yellow parchment on it makes 4 demons appear around you. Kill them, or open the coffin, grab the reward (a key) and run.",
+          "at": [33230, 31643, 14],
+          "object": 1983,
+          "source": "When you push the Yellow Parchment (Buried Forever) 4 Demons will spawn around you. Now you can decide to kill the demons or to grab the reward and run away. You have to open the coffin to get the reward."
+        }
+      ]
+    }
+  ]
+}

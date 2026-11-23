@@ -146,7 +146,46 @@ export function setProgress(questId, stepId) {
 export function currentIndex(guide, at) {
   if (at === 'done') return guide.steps.length;
   const i = guide.steps.findIndex((t) => t.id === at);
-  return i < 0 ? 0 : i;
+  if (i >= 0 || !guide.raw) return i < 0 ? 0 : i;
+  // A version view (forMap) and the step you're on is the other map's (15d): the first step of this map after it.
+  const j = guide.raw.steps.findIndex((t) => t.id === at);
+  if (j < 0) return 0;
+  const next = guide.raw.steps.slice(j).find((t) => guide.steps.includes(t));
+  return next ? guide.steps.indexOf(next) : guide.steps.length;
+}
+
+// ---------- map versions (slice 15d) ----------
+// A guide as it is on this map: parts and steps marked for another map version (map_only) left out. Players see
+// this; the markers, the route, the step numbers and your progress use it. Editors also get allSegments (every part,
+// each with allSteps and onMap) to show the other version's steps greyed out. The same guide gives the same view
+// (kept per guide and version), so the map's effects don't run again for nothing. raw: the whole guide.
+const views = new WeakMap();
+export function forMap(world, guide) {
+  if (!guide || !world?.onMap) return guide;
+  const kept = views.get(guide);
+  if (kept && kept.version === world.version) return kept.view;
+  const on = (r) => world.onMap(r);
+  let view = guide;
+  if (!guide.segments.every(on) || !guide.steps.every(on)) {
+    const allSegments = guide.segments.map((s) => ({ ...s, onMap: on(s), allSteps: s.steps, steps: on(s) ? s.steps.filter(on) : [] }));
+    const segments = allSegments.filter((s) => s.onMap);
+    view = { ...guide, segments, steps: segments.flatMap((s) => s.steps), allSegments, raw: guide };
+  }
+  views.set(guide, { version: world.version, view });
+  return view;
+}
+// A part's map version (null: every version).
+export async function setSegmentMap(cfg, id, mapOnly) {
+  return run((await dbClient(cfg)).from('map_quest_segments').update({ map_only: mapOnly || null }).eq('id', id).select().single());
+}
+// "Different on this map" (15d): step id becomes `other` only, and a copy of it for `here` goes right below it.
+// Returns the copy (its form opens, so only the copy needs changing).
+export async function splitStep(cfg, guide, id, here, other) {
+  const t = guide.steps.find((s) => s.id === id);
+  if (!t) return null;
+  const { id: _id, segment_id: _seg, sort: _sort, quest_id: _q, updated_at: _ua, updated_by: _ub, created_at: _ca, ...fields } = t;
+  await updateStep(cfg, id, { map_only: other });
+  return addStepAfter(cfg, guide, id, { ...fields, map_only: here, checked: false });
 }
 
 // ---------- the bring list (slice 13h) ----------

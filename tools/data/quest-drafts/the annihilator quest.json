@@ -1,0 +1,86 @@
+{
+  "quest": "The Annihilator Quest",
+  "wiki": "https://tibia.fandom.com/wiki/The_Annihilator_Quest/Spoiler",
+  "map": "7.2: gate of expertise 33214,31671,13, quest door 33216,31671, four stone tiles 33222-33225,31671, lever 33226,31671, demon room 33219-33224,31657-31661, door 33225,31659, chests 33227/29/31/33,31656, forcefield 33236,31659",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "A team of four players, each level 100 or higher (130 recommended), none of whom has done this quest. Bring plenty of healing.",
+          "source": "This quest needs a team of four players. It mandates a full team of four individuals who have not previously completed this quest. It is recommended that you be over Level 130 to succeed."
+        },
+        {
+          "kind": "go",
+          "text": "Enter the Edron Hero Cave (hunters outside).",
+          "at": [33164, 31638, 7],
+          "source": "The quest is located in the central cave of north Edron, the Hero Cave. First encounter is Hunters outside the cave."
+        },
+        {
+          "kind": "go",
+          "text": "Down through the Hero Cave to the deepest floor (wild warriors, demon skeletons, priestesses, dragons, monks, heroes, minotaur guards). Take the passage south across from the fire elemental room to the level 100 gate of expertise.",
+          "at": [33213, 31671, 13],
+          "source": "Three levels down of Wild Warriors, Demon Skeletons and Priestesses. The fourth level has 3 Dragons. Fifth has 2 Monks and a Hero. Go on to the next passages that goes south, across from the Fire Elemental room. Hunters and such are here, and at the end is an level 100 gate of expertise and a quest door that leads to the teleport room."
+        },
+        {
+          "kind": "go",
+          "text": "Through the gate and the quest door: all four stand on the four stone tiles in a row, the blocker (highest level) on the east one, next to the lever. The east player pulls the lever.",
+          "at": [33225, 31671, 13],
+          "source": "The four members of the team must each stand on the four tiles. Once all four members are in place, the lever must be pushed in order to teleport the entire team instantaneously to the dungeon. Remember, the blocker or highest level should be farthest to the right."
+        },
+        {
+          "kind": "kill",
+          "text": "The lever sends you to a room with six demons: two north, two south, two in front of the door east. Kill only the two in front of the door, both at once on the first.",
+          "at": [33224, 31659, 13],
+          "monster": "Demon",
+          "source": "Upon entering you will see 6 Angry Demons. Attack only the two staying between the team and the door that leads to the reward room to the east. Make sure the entire team attacks the first of the two demons at the same time in order to kill it as fast as possible."
+        },
+        {
+          "kind": "go",
+          "text": "Run east through the door to the reward room and close it behind you.",
+          "at": [33225, 31659, 13],
+          "source": "Once the two demons are dead, immediately run east through the door which will not be locked. Close the door behind you so that stray Fire Elementals and great fireball attacks do not make it through the door."
+        },
+        {
+          "kind": "reward",
+          "text": "Choose ONE reward, you can only take one: the demon armor.",
+          "at": [33227, 31656, 13],
+          "object": 2472,
+          "items": [[3388, 1]],
+          "source": "You can only enter this door once, so choose your reward wisely. Demon Armor"
+        },
+        {
+          "kind": "reward",
+          "text": "Or the magic sword.",
+          "at": [33229, 31656, 13],
+          "object": 2472,
+          "items": [[3288, 1]],
+          "source": "Magic Sword (Atk:48 Def:35 +3) It's the Sword of Valor."
+        },
+        {
+          "kind": "reward",
+          "text": "Or the stonecutter axe.",
+          "at": [33231, 31656, 13],
+          "object": 2472,
+          "items": [[3319, 1]],
+          "source": "Stonecutter's Axe (Atk:50 Def:30 +3) You feel the power of this Mighty Axe."
+        },
+        {
+          "kind": "reward",
+          "text": "Or the present.",
+          "at": [33233, 31656, 13],
+          "object": 2472,
+          "items": [[2856, 1]],
+          "source": "Annihilation Bear: I braved the Annihilator and all I got is this lousy teddy bear."
+        },
+        {
+          "kind": "go",
+          "text": "The teleporter east of the chests takes you back in front of the level 100 gate.",
+          "at": [33236, 31659, 13],
+          "source": "After choosing your reward, go through the teleport that is east of the reward choices. This will teleport you in front of the level 100 door at the beginning of the quest."
+        }
+      ]
+    }
+  ]
+}

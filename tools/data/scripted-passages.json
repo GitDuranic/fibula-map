@@ -1,0 +1,16 @@
+[
+  {
+    "npc": "Dalbrect",
+    "name": "Isle of the Kings",
+    "price": 10,
+    "to": [32187, 31960, 7],
+    "note": "7.2 (user 2026-11-23: White Raven Monastery). Once you gave him the family brooch, Dalbrect sails you to the Isle of the Kings for 10 gold (TibiaWiki transcript). The TVP 7.6 stand-in script has no such passage. Lands next to Captain Jack."
+  },
+  {
+    "npc": "Captain Jack",
+    "name": "Tibia (Dalbrect)",
+    "price": 20,
+    "to": [32205, 31756, 7],
+    "note": "7.2: back from the Isle of the Kings for 20 gold, once the abbot allowed it. In the script, but only behind a quest condition, which the converter's passage reader doesn't take."
+  }
+]

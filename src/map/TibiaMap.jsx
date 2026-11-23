@@ -1,5 +1,6 @@
 // Tibia Map: a Google Maps-style viewer of the Tibia 7.1 world, drawn with the real game sprites.
-// Props: dataUrl (where the converted map data lives), height (CSS height of the map), syncUrl (keep the view in the URL hash).
+// Props: maps (the versions to switch between, default MAPS) and defaultMap, or dataUrl (one data folder, no switch);
+// height (CSS height of the map), syncUrl (keep the view in the URL hash and the version in ?map=).
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { World } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
@@ -24,6 +25,17 @@ const SPRITES_FROM = 16; // below this: only the pre-drawn overview images (live
 // ?debug=walk: show the router's walk data (red = can't walk, arrows = floor changes) to check it against the game.
 const DEBUG_WALK = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'walk';
 const START = { x: 32369, y: 32221, z: 7, zoom: 32 }; // Thais
+// The map versions you can switch between (slice 15a, user 2026-11-23: for everyone, 7.2 by default for now).
+// id: in the link (?map=72) and the browser's memory; url: the data folder (convert-map.js --out).
+export const MAPS = [{ id: '71', label: '7.1', url: '/map-data' }, { id: '72', label: '7.2', url: '/map-data-72' }];
+export const DEFAULT_MAP = '72';
+// The version to open: ?map= in the link, else the one chosen last in this browser, else the default.
+function startMap(maps, def, syncUrl) {
+  const ok = (id) => (maps.some((m) => m.id === id) ? id : null);
+  let saved = null;
+  try { saved = window.localStorage.getItem('tm-map'); } catch { /* storage blocked: fine */ }
+  return (syncUrl && ok(new URLSearchParams(window.location.search).get('map'))) || ok(saved) || ok(def) || maps[0].id;
+}
 
 const nearestZoom = (s) => ZOOMS.reduce((b, z) => (Math.abs(Math.log(z / s)) < Math.abs(Math.log(b / s)) ? z : b), ZOOMS[0]);
 
@@ -148,7 +160,12 @@ const ROUTE_OTHER_FLOORS = false;
 // User 2026-11-21: the quest route (a guide's segment, 13e) does show on other floors, dashed (the Route panel's route not).
 // User 2026-11-15: on the surface or above it, the route on every surface floor (0-7) always shows, the parts on
 // other floors than yours dashed, at this alpha (also behind you; underground parts don't show).
-const ROUTE_SURFACE_ALPHA = 0.8;
+// User 2026-11-23 (Steel Helmet quest): overlapping dashes on other floors read as solid lines. Other floors are now
+// sparse short dots, thinner, in a paler gold than this floor's line, at 0.55 instead of 0.8.
+const ROUTE_SURFACE_ALPHA = 0.55;
+const ROUTE_OTHER_COLOR = '#e8dca0';
+const ROUTE_OTHER_DASH = [1.5, 6]; // times k (client pixels)
+const ROUTE_OTHER_WIDTH = 1.5; // times k
 function routeAlpha(z, vz) {
   if (z === vz) return 1;
   if (z <= 7 && vz <= 7) return ROUTE_FADE[1];
@@ -436,7 +453,13 @@ function drawMini(mc, world, v, s, box) {
 }
 
 // supabaseUrl + supabaseKey (the public key, as for the house planner): the quest database (slice 13b).
-export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncUrl = true, supabaseUrl, supabaseKey }) {
+export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = DEFAULT_MAP, height = '80vh', syncUrl = true, supabaseUrl, supabaseKey }) {
+  // The map version (15a): switched in the panel, unless a single dataUrl is given.
+  const [mapId, setMapId] = useState(() => (fixedUrl ? null : startMap(maps, defaultMap, syncUrl)));
+  const dataUrl = fixedUrl || maps.find((m) => m.id === mapId)?.url || maps[0].url;
+  // This map's version label and, with exactly two versions, the other one (15d: "different on this map").
+  const mapLabel = fixedUrl ? null : maps.find((m) => m.id === mapId)?.label || null;
+  const otherLabel = mapLabel && maps.length === 2 ? maps.find((m) => m.label !== mapLabel).label : null;
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const miniRef = useRef(null); // the minimap canvas
@@ -537,7 +560,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (onQuest === q.n && row.name !== q.n) setOnQuest(row.name);
     Object.assign(q.db, row);
     q.n = row.name;
-    worldRef.current?.buildSearch();
+    worldRef.current?.filterQuests(); // (its "came in" version may hide it on this map version now, 15b; the open window stays)
     setQuestRev((r) => r + 1);
     redraw();
   };
@@ -603,6 +626,12 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     renameSegment: (id, name) => editGuide(() => qg.renameSegment(dbCfg, id, name)),
     deleteSegment: (id) => editGuide(() => qg.deleteSegment(dbCfg, id)),
     saveBring: (id, bring) => editGuide(() => qg.saveBring(dbCfg, id, bring)),
+    // Map versions (15d): a part only on one map, and "different on this map" for a step.
+    setSegmentMap: (id, v) => editGuide(() => qg.setSegmentMap(dbCfg, id, v)),
+    splitStep: async (id) => {
+      const t = await editGuide((gd) => qg.splitStep(dbCfg, gd, id, mapLabel, otherLabel));
+      if (t) setEditStep(t.id);
+    },
   } : null;
   // The top item on a tile that isn't ground (a Reward step's chest, box or corpse), or null.
   const topItemAt = ([x, y, z]) => {
@@ -635,7 +664,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   // segment's steps get numbered markers (stepMarks, drawn by draw()).
   const onQuestQ = ready && onQuest ? worldRef.current?.quests?.find((q) => q.n === onQuest && q.db) : null;
   const markQ = (login.editor && questSelQ?.db) ? questSelQ : onQuestQ || null;
-  const markGuide = markQ ? guides[markQ.db.id]?.guide : null;
+  // (as it is on this map version: other versions' parts and steps left out, 15d)
+  const markGuide = markQ ? qg.forMap(worldRef.current, guides[markQ.db.id]?.guide) : null;
   useEffect(() => {
     if (markQ && !guides[markQ.db.id]) loadGuide(markQ);
   }, [markQ, guides, loadGuide]);
@@ -1030,9 +1060,16 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             ctx.moveTo(ax, ay); ctx.lineTo(bx, by); any = true;
           }
           if (!any) continue;
-          ctx.globalAlpha = here ? base : base * ROUTE_SURFACE_ALPHA;
-          if (q.state === 'cur') { ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 5 * k; ctx.stroke(); }
-          ctx.strokeStyle = '#ffd700'; ctx.lineWidth = (q.state === 'cur' ? 3 : 2) * k; ctx.stroke();
+          if (here) {
+            ctx.globalAlpha = base;
+            if (q.state === 'cur') { ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = 5 * k; ctx.stroke(); }
+            ctx.strokeStyle = '#ffd700'; ctx.lineWidth = (q.state === 'cur' ? 3 : 2) * k; ctx.stroke();
+          } else {
+            ctx.globalAlpha = base * ROUTE_SURFACE_ALPHA;
+            ctx.setLineDash(ROUTE_OTHER_DASH.map((d) => d * k));
+            ctx.strokeStyle = ROUTE_OTHER_COLOR; ctx.lineWidth = ROUTE_OTHER_WIDTH * k; ctx.stroke();
+            ctx.setLineDash([]);
+          }
         }
       }
       ctx.globalAlpha = 1;
@@ -1077,8 +1114,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
             ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3 * k; ctx.stroke();
           } else {
             ctx.globalAlpha = a;
-            ctx.setLineDash([4 * k, 4 * k]);
-            ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2 * k; ctx.stroke();
+            ctx.setLineDash(ROUTE_OTHER_DASH.map((d) => d * k));
+            ctx.strokeStyle = ROUTE_OTHER_COLOR; ctx.lineWidth = ROUTE_OTHER_WIDTH * k; ctx.stroke();
             ctx.globalAlpha = 1;
           }
         }
@@ -1284,7 +1321,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   useEffect(() => {
     // "ready" belongs to this World only: React may run this twice (StrictMode in development, or a new dataUrl),
     // and a ready flag left over from the first one must not make the panel use the second one half-loaded.
-    const world = new World(dataUrl, () => redraw(), { questDb: dbCfg });
+    // The map version as a number (15b: quests that came in later are hidden); a single dataUrl: no filter.
+    const version = fixedUrl ? null : Number(maps.find((m) => m.url === dataUrl)?.label) || null;
+    const world = new World(dataUrl, () => redraw(), { questDb: dbCfg, version });
     worldRef.current = world;
     setReady(false);
     world.load().then(() => {
@@ -1534,7 +1573,18 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       return r;
     });
   }, [dataUrl, redraw, showRoute]);
-  useEffect(() => () => router.current?.terminate(), []);
+  // On unmount (also on a code reload while developing, which runs the cleanup and keeps the refs) the worker is
+  // stopped and forgotten, so the next search makes a new one (user 2026-11-23: a stopped worker stayed in the ref
+  // and every route search after it waited forever: quest routes and the Route panel).
+  useEffect(() => () => { router.current?.terminate(); router.current = null; }, []);
+  // Another map version (15a): its own router (the worker loads one map's walk data), made on the next search.
+  const routerUrl = useRef(dataUrl);
+  useEffect(() => {
+    if (routerUrl.current === dataUrl) return;
+    routerUrl.current = dataUrl;
+    router.current?.terminate();
+    router.current = null;
+  }, [dataUrl]);
   // Shows the fastest or the cheapest route.
   const pickRoute = (i) => {
     const path = route.result?.routes?.[i]?.path;
@@ -1552,7 +1602,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   const doorsKey = `${doors.all}:${doors.open.join(';')}:${[...tileFixes].join(';')}`;
   useEffect(() => {
     if (routeRef.current.from && routeRef.current.to) updateRoute({}, true);
-  }, [oracleLevel, climb, doorsKey, updateRoute]);
+  }, [oracleLevel, climb, doorsKey, updateRoute]); // (updateRoute changes with dataUrl: another map version searches again, 15a)
   const clearRoute = () => { routeSeq.current++; router.current?.cancel(); routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
 
   // "I'm on this quest" (user 2026-11-21): the view goes straight to the end of the quest, its (last) Reward step,
@@ -1568,7 +1618,7 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (!g) { loadGuide(q); return; }
     if (!g.guide && !g.error) return; // still loading
     flyToReward.current = null;
-    const spots = (g.guide?.steps || []).map((t) => [t, qg.stepPos(world, t)]).filter(([, p]) => p);
+    const spots = (qg.forMap(world, g.guide)?.steps || []).map((t) => [t, qg.stepPos(world, t)]).filter(([, p]) => p);
     const end = [...spots].reverse().find(([t]) => t.kind === 'reward') || spots[spots.length - 1];
     if (end) jump({ x: end[1][0], y: end[1][1], z: end[1][2] });
   }, [onQuest, guides]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1611,10 +1661,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
   // The legs found (fastest only), by where they go and what the router was told (as the panel searches again).
   // Asked one at a time, and only while the Route panel isn't searching: a leg's search in the shared worker would
   // stop the panel's cheapest search.
-  const legBase = `${oracleLevel}:${climb}:${doorsKey}`;
+  const legBase = `${dataUrl}:${oracleLevel}:${climb}:${doorsKey}`; // (another map version: its own legs, 15a)
   const legKey = (l) => `${l.from}>${l.to}|${l.open.join(';')}|${legBase}`;
   const [legRes, setLegRes] = useState({}); // legKey -> { path } | { error, locked }
   const legBusy = useRef(false);
+  const [legRetry, setLegRetry] = useState(0); // bumped when a leg's search was stopped, to ask again
   useEffect(() => {
     if (!questLegs || legBusy.current || route.busy || route.cheapBusy) return;
     const l = questLegs.legs.find((x) => !(legKey(x) in legRes));
@@ -1626,9 +1677,11 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
       .then((res) => (res.routes || !more.length ? res : tryFrom(more)));
     tryFrom(l.starts).then((res) => {
       legBusy.current = false;
+      // The worker was stopped mid-search: not a real answer, so don't keep it; search again with a new worker.
+      if (res.stopped) { setLegRetry((n) => n + 1); return; }
       setLegRes((all) => ({ ...all, [key]: res.routes ? { path: res.routes[0].path } : { error: res.error || 'No route found.', locked: res.locked } }));
     });
-  }, [questLegs, legRes, legBase, route.busy, route.cheapBusy, dataUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [questLegs, legRes, legBase, route.busy, route.cheapBusy, dataUrl, legRetry]); // eslint-disable-line react-hooks/exhaustive-deps
   // For draw(): the whole segment's legs, one after another, are drawn as the route (floor-change markers, boat arcs,
   // dashed lines on other floors, see-through; user 2026-11-21: was only the leg to the step you're on), unless the
   // Route panel has a route of its own: that one wins and the legs are plain bright lines.
@@ -1697,6 +1750,30 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
     if (d) { setItem(null); selected.current = null; setNpc(null); selectedMon.current = null; setMon(null); }
     redraw();
   }, [redraw]);
+  // Switching the map version (15a): the other data folder loads in place, the view stays. The NPC, monster, item and
+  // door windows close (they show the old map's things); the quest panel, the quest you're on and the Route panel
+  // stay and are searched again on the new map. Remembered in the browser and the link (?map=, the hash stays).
+  const switchMap = (id) => {
+    if (id === mapId) return;
+    openTalk(null); selectNpc(null); selectMonster(null); selectDoor(null); setItem(null);
+    monSearch.current = null; hoverLink.current = null; setResults([]);
+    setMapId(id);
+    try { window.localStorage.setItem('tm-map', id); } catch { /* storage blocked: fine */ }
+    if (syncUrl) {
+      const u = new URL(window.location.href);
+      u.searchParams.set('map', id);
+      window.history.replaceState(window.history.state, '', u);
+    }
+  };
+  // The open quest belongs to the old map's quest list: once the new one is loaded, the same quest (by name) there,
+  // else the window closes (a quest that isn't on this map version).
+  useEffect(() => {
+    const world = worldRef.current;
+    if (!ready || !world?.quests) return;
+    const same = (q) => (q && !world.quests.includes(q) ? world.quests.find((x) => x.n === q.n) || null : q);
+    if (questSel?.quest) { const q = same(questSel.quest); if (q !== questSel.quest) selectQuest(q ? { ...questSel, quest: q } : null); }
+    if (guideQ) { const q = same(guideQ); if (q !== guideQ) setGuideQ(q); }
+  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
   // Unlocking and locking: the doors are drawn again (open or closed) and the route searched again.
   const setDoors = (st) => {
     doorsRef.current = st;
@@ -1846,6 +1923,9 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
         // A Talk step's marker sits on its NPC: open the conversation too (13f-0b).
         const sn = st.step.kind === 'talk' && st.step.npc && worldRef.current.npcs?.find((x) => x.n.toLowerCase() === st.step.npc.toLowerCase());
         if (sn) { selectNpc(sn); openTalk(sn); return; }
+        // A step marker on another floor (the surface floors show through) only opens the quest: its floor change
+        // isn't clickable from here (user 2026-11-23).
+        if (st.pos[2] !== view.current.z) return;
         // A step on a hole or stairs (13j drafts put "go down" steps there): the click takes it too (user 2026-11-21).
         const sl = floorChangeAtPoint(toCanvas(e));
         if (sl) { takeLink(sl); return; }
@@ -2029,7 +2109,8 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
               world={world} chest={questSel} onQuest={onQuest} setOn={followQuest}
               onSave={login.editor ? saveDbQuest : null} onDelete={login.editor ? deleteDbQuest : null}
               guide={dbCfg && questSel.quest.db ? {
-                guide: guide?.quest === questSel.quest ? guide.guide : null, error: guide?.quest === questSel.quest ? guide.error : null,
+                guide: guide?.quest === questSel.quest ? qg.forMap(world, guide.guide) : null, error: guide?.quest === questSel.quest ? guide.error : null,
+                versions: fixedUrl ? [] : maps.map((m) => m.label), mapLabel, otherLabel,
                 ed: guideEd, editStep, setEditStep, onGo: (p) => jump({ x: p[0], y: p[1], z: p[2] }),
                 at: atOf(questSel.quest.db.id), setAt: (id) => { setViewSeg(null); setAt(questSel.quest.db.id, id); },
                 // The segment on the map (only for the guide on the map), and a click on a step shows its segment.
@@ -2118,6 +2199,16 @@ export default function TibiaMap({ dataUrl = '/map-data', height = '80vh', syncU
               <div title="Ctrl + mouse wheel (or Ctrl + +/-): a floor down (forward) or up (backward)">
                 {ui.z > 7 || ui.cut >= ui.z ? 'This floor only' : ui.cut ? `Layers from floor ${ui.cut}` : 'All layers'}
               </div>
+              {!fixedUrl && maps.length > 1 && (
+                <div className="tm-ver" role="group" aria-label="Map version">
+                  {maps.map((m) => (
+                    <button
+                      key={m.id} type="button" className={`tm-btn${m.id === mapId ? ' tm-btn-on' : ''}`} aria-pressed={m.id === mapId}
+                      onClick={() => switchMap(m.id)} title={`Show the Tibia ${m.label} map`}
+                    >{m.label}</button>
+                  ))}
+                </div>
+              )}
               <div className="tm-pos">{hover ? `${hover.x}, ${hover.y}, ${hover.z}` : ' '}</div>
             </div>
           </div>

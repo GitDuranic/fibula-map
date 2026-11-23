@@ -114,11 +114,14 @@ function BringBox({ world, guide, seg, paths, ed, onErr }) {
 
 // The editors' form for one step. onSave(changes), onDelete(), onDone(); onAddNext(changes): save, add a step below
 // it and open that one's form (so this form isn't closed afterwards).
-function StepEdit({ world, step, onSave, onDelete, onDone, onAddNext }) {
+// versions: the map versions ('7.1', '7.2'; none: no Map setting); mapLabel / otherLabel and onSplit(): "different on
+// this map" (15d), offered on a step that's on every map.
+function StepEdit({ world, step, onSave, onDelete, onDone, onAddNext, versions = [], mapLabel, otherLabel, onSplit }) {
   const [f, setF] = useState(() => ({
     kind: step.kind, text: step.text || '', npc: step.npc || '', monster: step.monster || '', items: step.items || [], checked: step.checked,
-    object: step.object ?? null, dialog: step.dialog || [],
+    object: step.object ?? null, dialog: step.dialog || [], mapOnly: step.map_only || '',
   }));
+  const hasMap = step.map_only !== undefined && versions.length > 1; // database step 25 run (0025_map_quest_versions.sql)
   const hasDialog = step.dialog !== undefined; // database step 7 run (0007_map_quest_step_dialogs.sql)
   const [building, setBuilding] = useState(false); // the dialog builder is open (13f-1)
   const formNpc = f.npc.trim() && world.npcs?.find((m) => m.n.toLowerCase() === f.npc.trim().toLowerCase());
@@ -136,6 +139,7 @@ function StepEdit({ world, step, onSave, onDelete, onDone, onAddNext }) {
     monster: f.kind === 'kill' ? f.monster.trim() || null : null, items: withItems ? f.items : [], checked: f.checked,
     ...(hasReward ? { object: f.kind === 'reward' ? f.object : null } : {}),
     ...(hasDialog ? { dialog: f.kind === 'talk' ? f.dialog : [] } : {}),
+    ...(hasMap ? { map_only: f.mapOnly || null } : {}),
   });
   const save = () => act(() => onSave(changes()));
   return (
@@ -197,6 +201,22 @@ function StepEdit({ world, step, onSave, onDelete, onDone, onAddNext }) {
         {step.x != null ? `Spot: ${step.x}, ${step.y}, ${step.z}` : 'No spot on the map'} · right-click the map: "Move step here"
         {step.x != null && <> · <button type="button" className="tm-link" disabled={busy} onClick={() => act(() => onSave({ x: null, y: null, z: null }))}>remove spot</button></>}
       </div>
+      {hasMap && (
+        <div className="tm-quest-field">Map
+          <div className="tm-step-map">
+            <select className="tm-input tm-select" value={f.mapOnly} onChange={set('mapOnly')} title="Which map versions this step is on">
+              <option value="">Every map</option>
+              {versions.map((v) => <option key={v} value={v}>Only {v}</option>)}
+            </select>
+            {!step.map_only && mapLabel && otherLabel && onSplit && (
+              <button
+                type="button" className="tm-btn" disabled={busy} onClick={() => act(onSplit, false)}
+                title={`This step becomes "only ${otherLabel}", and a copy "only ${mapLabel}" goes right below it, for you to change`}
+              >Different on {mapLabel}</button>
+            )}
+          </div>
+        </div>
+      )}
       <label className="tm-check" title="You went through this step and it's right">
         <input type="checkbox" checked={f.checked} onChange={set('checked')} /> Checked
       </label>
@@ -222,7 +242,9 @@ function StepEdit({ world, step, onSave, onDelete, onDone, onAddNext }) {
 // onTalk(npc): open that NPC's conversation (going to it), from a Talk step's icon or name (13f-0b).
 // seg: the segment the map shows (its route and markers; null when this guide isn't on the map); onSeg(segment id):
 // a click on a step's icon, title or text shows its segment on the map (user 2026-11-22).
-export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onRouteTo, onTalk, seg, onSeg }) {
+// versions, mapLabel, otherLabel (15d): the map versions and the one shown; guide is the view for this map
+// (questguide.js forMap): editors also see the other version's parts and steps, greyed out with their tag.
+export default function QuestGuide({ world, guide, error, ed, editStep, setEditStep, onGo, at, setAt, legs, onRouteTo, onTalk, seg, onSeg, versions = [], mapLabel, otherLabel }) {
   const [open, setOpen] = useState({}); // segment id -> shown (default: all of them, user 2026-11-21)
   const [drag, setDrag] = useState(null); // the step being dragged (id)
   const [renaming, setRenaming] = useState(null); // { id, name }
@@ -287,9 +309,19 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
           <button type="button" className="tm-btn" onClick={() => go(0)} title="Untick every step">Start over</button>
         </div>
       )}
-      {guide.segments.map((s, si) => {
+      {(ed && guide.allSegments ? guide.allSegments : guide.segments).map((s, si) => {
         const many = guide.segments.length > 1 || ed;
         const shown = isOpen(s);
+        const segOn = s.onMap !== false; // (false: a part of the other map version, shown only to editors, 15d)
+        const segMap = ed && versions.length > 1 && s.map_only !== undefined && (
+          <select
+            className="tm-input tm-select tm-seg-map" value={s.map_only || ''} title="Which map versions this part is on"
+            onChange={(e) => tryEd(() => ed.setSegmentMap(s.id, e.target.value))}
+          >
+            <option value="">Every map</option>
+            {versions.map((v) => <option key={v} value={v}>Only {v}</option>)}
+          </select>
+        );
         return (
           <div key={s.id} className="tm-guide-seg" onDragOver={ed ? (e) => e.preventDefault() : undefined} onDrop={ed ? drop(s.id, null) : undefined}>
             {many && (renaming?.id === s.id ? (
@@ -298,16 +330,34 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                   onChange={(e) => setRenaming({ id: s.id, name: e.target.value })} onKeyDown={(e) => { if (e.key === 'Escape') setRenaming(null); }} />
               </form>
             ) : (
-              <div className="tm-guide-seg-head">
+              <div className={`tm-guide-seg-head${segOn ? '' : ' tm-step-other'}`}>
                 <button type="button" className="tm-guide-seg-name" onClick={() => setOpen({ ...open, [s.id]: !shown })}>
                   {shown ? '▾' : '▸'} {s.name || `Part ${si + 1}`} <span className="tm-muted">({s.steps.length})</span>
                 </button>
+                {s.map_only && <span className="tm-map-tag" title={`Only on the ${s.map_only} map`}>{s.map_only}</span>}
+                {segMap}
                 {ed && <button type="button" className="tm-link" onClick={() => setRenaming({ id: s.id, name: s.name || '' })}>rename</button>}
                 {ed && !s.steps.length && <button type="button" className="tm-link" onClick={() => tryEd(() => ed.deleteSegment(s.id))}>delete</button>}
               </div>
             ))}
-            {shown && s.id === curSeg && <BringBox world={world} guide={guide} seg={s} paths={legs?.paths} ed={ed} onErr={setErr} />}
-            {s.steps.map((t) => {
+            {shown && segOn && s.id === curSeg && <BringBox world={world} guide={guide} seg={s} paths={legs?.paths} ed={ed} onErr={setErr} />}
+            {(ed && s.allSteps ? s.allSteps : s.steps).map((t) => {
+              // A step of the other map version (editors only, 15d): greyed out, its tag, no number or tick.
+              if (!segOn || !s.steps.includes(t)) {
+                if (!shown) return null;
+                return (
+                  <div key={t.id} className="tm-step tm-step-card tm-step-other" title={`Only on the ${t.map_only || s.map_only} map: players on this map don't see it`}>
+                    <div className="tm-step-head">
+                      <span className="tm-map-tag">{t.map_only || s.map_only}</span>
+                      <span className="tm-step-title">{card(t).title}</span>
+                      {editStep !== t.id && <button type="button" className="tm-link" onClick={() => setEditStep(t.id)} title="Change this step">edit</button>}
+                    </div>
+                    {editStep === t.id && (
+                      <StepEdit world={world} step={t} versions={versions} onSave={(ch) => ed.saveStep(t.id, ch)} onDelete={() => ed.deleteStep(t.id)} onDone={() => setEditStep(null)} />
+                    )}
+                  </div>
+                );
+              }
               const i = n++;
               if (!shown) return null;
               const pos = stepPos(world, t), done = i < cur, c = card(t);
@@ -334,6 +384,7 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                           title={c.npc ? `Talk to ${c.npc.n}: open the conversation` : pos ? `Go to ${pos.join(', ')}` : t.source ? `From: ${t.source}` : undefined}
                         >{c.title}</button>
                         {!t.checked && <span className="tm-step-unchecked" title="Not checked yet: may be wrong">•</span>}
+                        {ed && t.map_only && <span className="tm-map-tag" title={`Only on the ${t.map_only} map`}>{t.map_only}</span>}
                         {ed && editStep !== t.id && <button type="button" className="tm-link" onClick={() => setEditStep(t.id)} title="Change this step">edit</button>}
                       </div>
                       {c.text && (
@@ -380,7 +431,10 @@ export default function QuestGuide({ world, guide, error, ed, editStep, setEditS
                     </div>
                   </div>
                   {ed && editStep === t.id && (
-                    <StepEdit world={world} step={t} onSave={(ch) => ed.saveStep(t.id, ch)} onDelete={() => ed.deleteStep(t.id)} onDone={() => setEditStep(null)} onAddNext={(ch) => ed.addAfter(t.id, ch)} />
+                    <StepEdit
+                      world={world} step={t} onSave={(ch) => ed.saveStep(t.id, ch)} onDelete={() => ed.deleteStep(t.id)} onDone={() => setEditStep(null)} onAddNext={(ch) => ed.addAfter(t.id, ch)}
+                      versions={versions} mapLabel={mapLabel} otherLabel={otherLabel} onSplit={() => ed.splitStep(t.id)}
+                    />
                   )}
                 </div>
               );

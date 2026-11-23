@@ -50,8 +50,10 @@ function QuestEdit({ world, row, onSave, onDone, onDelete, hasSteps, steps }) {
   const [f, setF] = useState(() => ({
     name: row.name, level: row.level == null ? '' : String(row.level), area: row.area || '', rewards: row.rewards || '',
     notes: row.notes || '', checked: row.status === 'checked', items: row.reward_items || [],
+    cameIn: row.wiki_version || '', goneIn: row.gone_in || '',
   }));
   const hasItems = row.reward_items !== undefined; // database step 4 run (0004_map_quest_reward_items.sql)
+  const hasGone = row.gone_in !== undefined; // database step 25 run (0025_map_quest_versions.sql, slice 15d)
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
@@ -61,10 +63,15 @@ function QuestEdit({ world, row, onSave, onDone, onDelete, hasSteps, steps }) {
     const level = f.level.trim() === '' ? null : parseInt(f.level, 10);
     if (level != null && !(level > 0 && level < 1000)) { setErr('Level: a number, or empty for none.'); return; }
     const blank = (s) => s.trim() || null;
+    // Came in / gone in (15b, 15d): a version like 7.2 or 7.24; "came in" may also be a range ("6.61-6.97").
+    const cameIn = blank(f.cameIn), goneIn = blank(f.goneIn);
+    if (cameIn && !/^\d+(\.\d+)?(-\d+(\.\d+)?)?$/.test(cameIn)) { setErr('Came in: a version like 7.2, or empty.'); return; }
+    if (goneIn && !/^\d+(\.\d+)?$/.test(goneIn)) { setErr('Gone in: a version like 7.2, or empty.'); return; }
     setBusy(true); setErr(null);
     try {
       await onSave({
-        name, level, area: blank(f.area), rewards: blank(f.rewards), notes: blank(f.notes),
+        name, level, area: blank(f.area), rewards: blank(f.rewards), notes: blank(f.notes), wiki_version: cameIn,
+        ...(hasGone ? { gone_in: goneIn } : {}),
         ...(hasItems ? { reward_items: f.items } : {}), ...(hasSteps ? {} : { status: f.checked ? 'checked' : 'not checked' }),
       });
       onDone();
@@ -76,6 +83,14 @@ function QuestEdit({ world, row, onSave, onDone, onDelete, hasSteps, steps }) {
       <div className="tm-quest-fields">
         <label className="tm-quest-field tm-quest-level">Level<input className="tm-input" value={f.level} onChange={set('level')} inputMode="numeric" maxLength={3} /></label>
         <label className="tm-quest-field">Area<input className="tm-input" value={f.area} onChange={set('area')} maxLength={60} spellCheck={false} /></label>
+      </div>
+      <div className="tm-quest-fields">
+        <label className="tm-quest-field" title="The version the quest came in: hidden on maps before it (7.24 counts as 7.2). Empty: on every map.">
+          Came in<input className="tm-input" value={f.cameIn} onChange={set('cameIn')} maxLength={20} placeholder="e.g. 7.2" spellCheck={false} />
+        </label>
+        <label className="tm-quest-field" title={hasGone ? 'The version from which the quest is gone: hidden on that map and later ones. Empty: still there.' : 'Run database step 25 (0025_map_quest_versions.sql) first'}>
+          Gone in<input className="tm-input" value={f.goneIn} onChange={set('goneIn')} maxLength={10} placeholder="e.g. 7.2" spellCheck={false} disabled={!hasGone} />
+        </label>
       </div>
       <label className="tm-quest-field">Rewards<textarea className="tm-input" rows={2} value={f.rewards} onChange={set('rewards')} maxLength={500} placeholder="e.g. Choice of two of these rewards:" /></label>
       {row.wiki_reward && <div className="tm-muted" title="For reference: TibiaWiki describes today's Tibia, often not 7.x">TibiaWiki: {row.wiki_reward}</div>}

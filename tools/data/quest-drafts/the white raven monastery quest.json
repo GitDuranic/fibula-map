@@ -1,0 +1,118 @@
+{
+  "quest": "The White Raven Monastery Quest",
+  "wiki": "https://tibia.fandom.com/wiki/The_White_Raven_Monastery_Quest/Spoiler",
+  "map": "7.2: wall hole 32218,31767,7; house stairs 32246,31837,7; brooch coffins 32248-32249,31866-31867,8 by the stairs 32251,31866,8; Dalbrect 32211,31756,7; Costello 32180,31936,7; cave hole 32223,31860,7; switch 32212,31888,12; magic walls 32259,31890-31891,10; dead human 32262,31861,11. The giant spider's switch wasn't found on the map (a note without a spot).",
+  "segments": [
+    {
+      "name": "Access to the Isle of the Kings",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope and a shovel.",
+          "source": "Required Equipment: Rope, Shovel"
+        },
+        {
+          "kind": "go",
+          "text": "West of Carlin: go under the wall into the Ghostlands through the hole.",
+          "at": [32218, 31767, 7],
+          "source": "First, enter the Ghostlands west of Carlin by going under the wall through the hole (Mapper Coords 125.219, 124.24, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "In the Ghostlands, go down inside the abandoned house to the south.",
+          "at": [32246, 31837, 7],
+          "source": "Once, in the Ghostlands, go to the abandoned house to the south (Mapper Coords 125.246, 124.93, 7), and go down inside it."
+        },
+        {
+          "kind": "go",
+          "text": "In the basement (a demon skeleton, a ghoul or two) follow the corridor south and go down the stairs.",
+          "at": [32242, 31850, 8],
+          "source": "Once in the house basement you may face a Demon Skeleton and a Ghoul or two. From here, follow the corridor to the south, and go down the stairs."
+        },
+        {
+          "kind": "go",
+          "text": "Go east to the end of the passage (stalkers; north are more stalkers, demon skeletons and a wild warrior), around to the south room (demon skeletons, stalkers, ghouls) and up the stairs.",
+          "at": [32251, 31867, 8],
+          "source": "On this level, go east to the end of the passage. Then go around to the south room. In this final room are about 2 Demon Skeletons, 2 Stalkers, and 2-4 Ghouls, here go up the stairs."
+        },
+        {
+          "kind": "reward",
+          "text": "Use the head of the top coffin: the family brooch.",
+          "at": [32248, 31866, 8],
+          "object": 2476,
+          "items": [[3205, 1]],
+          "source": "Simply \"use\" the head of the top coffin to find the Family Brooch."
+        },
+        {
+          "kind": "talk",
+          "text": "Bring the brooch to Dalbrect and give it to him: from now on he sails you to the Isle of the Kings.",
+          "npc": "Dalbrect",
+          "say": ["hi", "brooch"],
+          "source": "After this, bring the brooch to Dalbrect and you will be able to go to the Isle of the Kings."
+        }
+      ]
+    },
+    {
+      "name": "The investigation",
+      "steps": [
+        {
+          "kind": "talk",
+          "text": "Sail with Dalbrect to the Isle of the Kings (10 gold).",
+          "npc": "Dalbrect",
+          "say": ["hi", "passage"],
+          "source": "Now you can ask him whenever you want for a passage and he will take you to the Isle of the Kings for 10gp."
+        },
+        {
+          "kind": "talk",
+          "text": "Ask the abbot Costello about Brother Fugio and agree to investigate: you may now open the warded doors to the catacombs.",
+          "npc": "Costello",
+          "say": ["hi", "fugio", "yes"],
+          "source": "You first need to go to the Isle of the Kings and talk to the abbot there, Costello. Ask him about \"Brother Fugio\", and he will let you enter the catacombs and instruct you to search for a lost brother."
+        },
+        {
+          "kind": "go",
+          "text": "Back in the Ghostlands near Carlin, go down into this cave (scorpions).",
+          "at": [32223, 31860, 7],
+          "source": "Get the Monk's Diary from this cave (Mapper Coords 125.223, 124.117, 7) in the Ghostlands near Carlin. Head down to the cave, labelled A, which has several Scorpions."
+        },
+        {
+          "kind": "go",
+          "text": "At the end of the cave, in a structure with undead (demon skeletons, stalkers, a bonelord): pull the switch, then hurry back to where the pair of magic walls were.",
+          "at": [32212, 31888, 12],
+          "source": "Go to the end of the cave and in a structure you will encounter some Undead Creatures like: Demon Skeletons, Stalkers, and a Bonelord. Defeat some of them, pull the switch and then haste back where the pair of magic walls were."
+        },
+        {
+          "kind": "note",
+          "text": "Three levels down, in the large cave, the far right passage: kill the giant spider and pull the switch it guards, then hurry back to the magic walls.",
+          "source": "Go down three levels to the large cave in the last picture. The far right passage, labelled B, leads to a Giant Spider guarding a switch to lower one of the magic wall. Defeat the giant spider, pull the switch, and then Haste back to where the magic walls were."
+        },
+        {
+          "kind": "go",
+          "text": "The whole team at once through where the magic walls were, and stay together: a spot before the hole puts the walls back. Go down the hole and follow the passage north (demon skeletons, ghosts, stalkers, ghouls, a mummy).",
+          "at": [32259, 31891, 10],
+          "source": "Get your whole team at once through where the magic walls were, at C, but stay together, because there is a spot before the hole that resets the walls. Go down the hole and follow the passage north. You will encounter Demon Skeletons, Ghosts, Stalkers, Ghouls, and a Mummy."
+        },
+        {
+          "kind": "reward",
+          "text": "Use the dead human: a backpack with the monk's diary (the book \"They Are Coming\") and some other things.",
+          "at": [32262, 31861, 11],
+          "object": 4240,
+          "items": [[2854, 1]],
+          "source": "Farther, you will find a Dead Human (Quest). \"Use\" the body and receive a Backpack with a book and some other things in it. This book is the Monk's Diary."
+        },
+        {
+          "kind": "note",
+          "text": "Go back down the passage and take the portal out of the cave.",
+          "source": "Go back down the passage and take the portal out of the cave."
+        },
+        {
+          "kind": "talk",
+          "text": "On the Isle of the Kings, give the diary to Costello (the building on the east side): a blessed ankh. Say \"diary\" to him once more to finish the quest.",
+          "npc": "Costello",
+          "say": ["hi", "diary", "yes"],
+          "source": "Take the book to the Isle of the Kings and talk to Costello, who is inside the building on the east side. Ask him about the diary. He will examine it and give you a Blessed Ankh."
+        }
+      ]
+    }
+  ]
+}

@@ -19,15 +19,18 @@
 // (a Kill step's monster must spawn near it; the wiki lists later monsters too, e.g. troll champions, 8.10).
 // Positions are also checked with the route finder: each step must be reachable from the one before it (all doors
 // open, rope and shovel, exani hur and parcels); an unreachable one is only reported (exani hur, a boat...), it stays as it is.
-// Usage: node tools/drafts-to-sql.js <database step number> <file name part> [quest keys...]   (no keys: all drafts)
+// Usage: node tools/drafts-to-sql.js <database step number> <file name part> [quest keys...] [--data=<dir>]
+//   (no keys: all drafts; --data: the map version to check against, default public/map-data = 7.1)
 //   e.g. node tools/drafts-to-sql.js 10 wiki_drafts_test "bear room quest" "troll cave quest"
 import fs from 'fs';
 import { questKey } from '../src/map/engine/questdata.js';
 import { dialogLine, sayText } from '../src/map/engine/dialog.js';
 import { nodeRouter } from './lib/noderouter.js';
 
-const DATA = 'public/map-data', DRAFTS = 'tools/data/quest-drafts';
-const [stepNo, namePart, ...keys] = process.argv.slice(2);
+// --data=<dir>: check against another map version's data (slice 15: 7.2 quests, --data=public/map-data-72).
+const dataArg = process.argv.find((a) => a.startsWith('--data='));
+const DATA = dataArg ? dataArg.slice(7) : 'public/map-data', DRAFTS = 'tools/data/quest-drafts';
+const [stepNo, namePart, ...keys] = process.argv.slice(2).filter((a) => !a.startsWith('--data='));
 if (!stepNo || !namePart) { console.log('Usage: node tools/drafts-to-sql.js <step number> <file name part> [quest keys...]'); process.exit(1); }
 const json = (f) => JSON.parse(fs.readFileSync(f, 'utf8'));
 

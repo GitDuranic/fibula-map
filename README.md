@@ -72,18 +72,28 @@ npm run convert      # if the map data isn't built yet
 npm run build
 ```
 
-This writes the whole site to `dist/` (the app plus a copy of `public/map-data`, about 110 MB). Upload the contents
-of `dist/` to any web host. To try the built site locally first: `npm run preview` and open http://localhost:5181.
+This writes the whole site to `dist/` (the app plus a copy of `public/map-data` and `public/map-data-72`). Upload
+the contents of `dist/` to any web host. To try the built site locally first: `npm run preview` and open
+http://localhost:5181.
+
+The 7.2 map data is built with:
+
+```sh
+node --max-old-space-size=8192 tools/convert-map.js --map "<dir>/map72.otbm" --spawn "<dir>/map-spawn.xml" --out public/map-data-72
+```
 
 To put the map inside another React site instead, use the component directly:
 
 ```jsx
 import TibiaMap from './map/TibiaMap.jsx';
 
-<TibiaMap dataUrl="/map-data" height="80vh" />
+<TibiaMap height="80vh" />
 ```
 
-- `dataUrl`: where the map data is served from (the contents of `public/map-data`).
+- `maps`, `defaultMap`: the map versions players can switch between in the panel (7.1 | 7.2). By default
+  7.1 is served from `/map-data` and 7.2 from `/map-data-72`, and 7.2 opens first. Serve both folders. `?map=71` or
+  `?map=72` in the link opens that version; a player's last choice is remembered in their browser.
+- `dataUrl` (optional): show only this one data folder, without the switch.
 - `height`: the map's height (any CSS size).
 - `syncUrl` (default `true`): keep the view in the address (`#x,y,z,zoom`) so links can be shared, and let the
   browser's back button work with the map's Back button. Set it to `false` if the page uses the address itself.

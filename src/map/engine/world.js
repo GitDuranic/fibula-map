@@ -29,11 +29,26 @@ export function floorsFor(z, mode) {
   return [z];
 }
 
+// The version a quest came in, as a number: the first one in its "came in" text (the database's wiki_version, else
+// the converter's v), cut to one decimal, because sub-versions belong to their version (user 2026-11-23: Mad Mage
+// Room, 7.24, was hidden on the 7.2 map): "7.24" -> 7.2, "6.61-6.97" -> 6.6. NaN when it has none.
+export function questVersion(q) {
+  return versionNumber(q.db?.wiki_version || q.v);
+}
+// A version text as a number cut to one decimal ("7.24" -> 7.2; the first one of a range); NaN when there's none.
+export function versionNumber(text) {
+  const m = /\d+(?:\.\d+)?/.exec(text || '');
+  return m ? Math.floor(Number(m[0]) * 10 + 1e-9) / 10 : NaN;
+}
+
 export class World {
   // options.questDb: the quest database's { url, key } (questdb.js), or null.
+  // options.version: the map's version as a number (7.1, 7.2; slice 15b): quests that came in later are left out of
+  // this.quests (list, search, guides); null shows them all. Quests without a version always show.
   constructor(base, onChange, options = {}) {
     this.base = base;
     this.questDbCfg = options.questDb || null;
+    this.version = options.version ?? null;
     this.onChange = onChange; // called when new data arrives (redraw)
     this.chunks = new Map(); // "z:cx:cy" -> tiles[] (index = row-major) | 'loading' | 'missing'
     this.canvases = new Map(); // key -> { canvas, pixels }
@@ -157,13 +172,34 @@ export class World {
       quests.sort((a, b) => sort(a) - sort(b));
     }
     for (const q of quests) q.listed = this.questDb ? !!q.db : q.onList;
-    this.quests = quests;
+    this.allQuests = quests;
+    this.filterQuests(false);
+  }
+
+  // Whether quest q was there in this map's version (15b): not when it came in later, nor when it was gone by then
+  // (its "gone in", 15d: gone in 7.2 = only on maps before 7.2).
+  inVersion(q) {
+    if (this.version == null) return true;
+    const v = questVersion(q), gone = versionNumber(q.db?.gone_in);
+    return !(v > this.version + 1e-9) && !(gone <= this.version + 1e-9);
+  }
+
+  // Whether a guide's part or step is on this map (15d): map_only empty = on every version, else only on that one.
+  onMap(row) {
+    return this.version == null || !row?.map_only || Math.abs(versionNumber(row.map_only) - this.version) < 1e-9;
+  }
+
+  // this.quests: the quests of this map's version, from all of them (again after an editor changed a quest's
+  // "came in" version).
+  filterQuests(rebuild = true) {
+    this.quests = (this.allQuests || []).filter((q) => this.inVersion(q));
+    if (rebuild) this.buildSearch();
   }
 
   // An editor deleted quest q's database row: it leaves the list (a quest only in the database leaves the map).
   dropQuest(q) {
     if (this.questDb) this.questDb = this.questDb.filter((r) => r !== q.db);
-    if (q.dbOnly) this.quests = this.quests.filter((m) => m !== q);
+    if (q.dbOnly) { this.allQuests = this.allQuests.filter((m) => m !== q); this.quests = this.quests.filter((m) => m !== q); }
     q.db = null;
     q.listed = false;
     this.buildSearch();

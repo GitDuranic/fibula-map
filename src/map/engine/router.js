@@ -505,6 +505,12 @@ export function createRouter(base) {
     // newer request (or cancel()) replaced it.
     cheapest: async (from, to, speed, level, doors, climb = 0) => { await ready; return ask({ type: 'cheapest', from, to, speed, level, doors, climb }); },
     cancel: () => { ask({ type: 'cancel' }); },
-    terminate: () => worker.terminate(),
+    // Stops the worker. Requests still waiting are answered with { error, stopped } so nobody waits forever
+    // (user 2026-11-23: after a code reload the quest routes never came back).
+    terminate: () => {
+      worker.terminate();
+      for (const p of pending.values()) p({ error: 'The route search was stopped.', stopped: true });
+      pending.clear();
+    },
   };
 }
