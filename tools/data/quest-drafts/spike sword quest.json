@@ -1,0 +1,54 @@
+{
+  "quest": "Spike Sword Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Spike_Sword_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel, a rope, a pick, and invisible or stealth rings for the fire devils.",
+          "source": "Required Equipment: Shovel, Rope, Pick, Invisible spell or Stealth Rings for Fire Devils"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the small cave east of Mount Sternum, and down another level.",
+          "source": "Go to the small cave east of Mount Sternum, and go down. You will be in a small room, go down another level."
+        },
+        {
+          "kind": "go",
+          "text": "Pick a hole just to the south-west and go down it.",
+          "source": "In this room, you will need to pick a hole just to the south-west, as indicated on the map. Go down the hole."
+        },
+        {
+          "kind": "go",
+          "text": "A fire devil. Follow the passage around to the west and go down.",
+          "source": "In this room is one Fire Devil. Follow the passage around to the west, and go down another level."
+        },
+        {
+          "kind": "go",
+          "text": "Fire devils: in the south-west corner pick another hole and go down.",
+          "source": "On this level, there will be 5 Fire Devils. Head to the south-west corner of the room, and pick another hole, then go down."
+        },
+        {
+          "kind": "reward",
+          "text": "Lava all around and many fire devils: the spike sword is in the body hidden behind a pillar.",
+          "at": [
+            32568,
+            32085,
+            12
+          ],
+          "object": 4285,
+          "items": [
+            [
+              3271,
+              1
+            ]
+          ],
+          "source": "The reward is inside a body that is hidden behind a pillar."
+        }
+      ]
+    }
+  ]
+}

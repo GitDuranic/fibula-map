@@ -1,0 +1,94 @@
+{
+  "quest": "Throwing Star Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Throwing_Star_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a pick, a rope, and an antidote or destroy field runes for the poison fields.",
+          "source": "Pick, Rope. Recommended Antidote, Antidote Rune, or Destroy Field for Poison Fields"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Ancient Temple north of Thais, two floors.",
+          "at": [
+            32356,
+            32170,
+            7
+          ],
+          "source": "Go to the Ancient Temple, north of Thais. Go down two levels, and head as far north as you can go."
+        },
+        {
+          "kind": "go",
+          "text": "Head as far north as you can and go down two floors to the rotworms.",
+          "at": [
+            32354,
+            32138,
+            9
+          ],
+          "source": "Go down to the level with the Rotworms."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and south and go down the ladder (rotworms, poison spiders, orcs and orc spearmen).",
+          "at": [
+            32502,
+            32217,
+            11
+          ],
+          "source": "Follow this path to the east and south, and go down the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Through the poison fields (antidote or destroy field) and down another level.",
+          "at": [
+            32493,
+            32215,
+            12
+          ],
+          "source": "On this level, there will be a lot of Poison Fields. You can either run through them and then use Antidote, or you can use Destroy Field to clear a path. Go down another level."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and north (poison spiders, minotaurs) and go down the hole (cyclopes).",
+          "at": [
+            32577,
+            32179,
+            13
+          ],
+          "source": "Follow this path to the east and north. Be careful of Minotaurs. Go down the hole that is circled on the map. You will face a couple Cyclopes down this hole."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path around to the underground park (minotaurs, minotaur archers and guards, cyclopes) and use your pick on the muddy floor here.",
+          "at": [
+            32517,
+            32107,
+            14
+          ],
+          "source": "Follow this path around to the underground park and use the Pick where indicated."
+        },
+        {
+          "kind": "reward",
+          "text": "The box just south-east of the ladder: 10 throwing stars.",
+          "at": [
+            32522,
+            32111,
+            15
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3287,
+              10
+            ]
+          ],
+          "source": "The quest box will be just south-east of the ladder."
+        }
+      ]
+    }
+  ]
+}

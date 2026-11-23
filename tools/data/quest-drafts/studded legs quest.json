@@ -1,0 +1,69 @@
+{
+  "quest": "Studded Legs Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Studded_Legs_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Required equipment: Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go to the wasp tower in north-west Rookgaard and rope up four times to the top (wasps).",
+          "at": [
+            32000,
+            32139,
+            7
+          ],
+          "source": "Go to the Wasp tower in North-west Rookgaard. Rope yourself up killing or simply ignoring the Wasps you will face."
+        },
+        {
+          "kind": "get",
+          "text": "Use the honey flower patch to the right: a honey flower.",
+          "at": [
+            32005,
+            32139,
+            3
+          ],
+          "items": [
+            [
+              2984,
+              1
+            ]
+          ],
+          "source": "At the top simply \"use\" on the Honeyflower Patch to the right and you will get a Honey Flower."
+        },
+        {
+          "kind": "talk",
+          "text": "Give Lee'Delle the honey flower.",
+          "npc": "Lee'Delle",
+          "say": [
+            "hi",
+            "honey flower"
+          ],
+          "source": "Head to Lee'Delle's Shop, on premium account area, and trade your Honey Flower for a pair of Studded Legs."
+        },
+        {
+          "kind": "reward",
+          "text": "Lee'Delle gives the studded legs.",
+          "at": [
+            32024,
+            32196,
+            7
+          ],
+          "items": [
+            [
+              3362,
+              1
+            ]
+          ],
+          "source": "Oh, thank you so much! Please take this piece of armor as reward."
+        }
+      ]
+    }
+  ]
+}

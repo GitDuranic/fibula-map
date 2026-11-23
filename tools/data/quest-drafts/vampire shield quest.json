@@ -1,0 +1,105 @@
+{
+  "quest": "Vampire Shield Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Vampire_Shield_Quest/Spoiler",
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Go down the hole there."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Edron Hero Cave.",
+          "at": [
+            33164,
+            31636,
+            7
+          ],
+          "source": "Go to the Hero Cave, north of the city of Edron (1). You will face three Hunters at the entrance. Go down the hole there."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave down five floors: wild warriors, demon skeletons, a beholder, monks, then dragons and a hero.",
+          "at": [
+            33144,
+            31589,
+            12
+          ],
+          "source": "Follow the route bellow."
+        },
+        {
+          "kind": "go",
+          "text": "Be ready to be swamped (wild warriors, stalkers, hunters, priestesses, monks, demon skeletons): head south to the end and then east; at the crossing (a minotaur mage) take the south path and go down the stairs.",
+          "at": [
+            33192,
+            31658,
+            13
+          ],
+          "source": "Be prepared to be swamped with creatures. Kill them, and head south to the end and then east. At the next crossroads are some Minotaurs. Take the south path and down the stairs (7)."
+        },
+        {
+          "kind": "reward",
+          "text": "The Temple of Xayepocax: demon skeletons, monks, heroes, priestesses, witches, a warlock and a stalker. At the back of the room, the box outside the level 70 gates: a strange symbol, a black pearl and a mysterious fetish in a bag.",
+          "at": [
+            33188,
+            31682,
+            14
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3058,
+              1
+            ],
+            [
+              3027,
+              1
+            ],
+            [
+              3078,
+              1
+            ]
+          ],
+          "source": "There is also a quest box outside of the level 70 door. This quest box contains the Strange Symbol, Black Pearl and Mysterious Fetish (8)."
+        },
+        {
+          "kind": "reward",
+          "text": "Through the west level 70 gate of expertise, the box: a dragon lance.",
+          "at": [
+            33189,
+            31688,
+            14
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3302,
+              1
+            ]
+          ],
+          "source": "Enter the level 70 gate of expertise, and retrieve your reward of a Vampire Shield and a Dragon Lance from the chests."
+        },
+        {
+          "kind": "reward",
+          "text": "Through the east level 70 gate of expertise, the box: the vampire shield.",
+          "at": [
+            33195,
+            31688,
+            14
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3434,
+              1
+            ]
+          ],
+          "source": "Enter the level 70 gate of expertise, and retrieve your reward of a Vampire Shield and a Dragon Lance from the chests."
+        }
+      ]
+    }
+  ]
+}

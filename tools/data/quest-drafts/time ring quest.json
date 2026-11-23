@@ -1,0 +1,88 @@
+{
+  "quest": "Time Ring Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Time_Ring_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Go to Shadowthorn, the elf town in the swamp south-east of Venore.",
+          "source": "Find your way to Shadowthorn and enter the hole here."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the trapdoor south-west of the town (elves).",
+          "at": [
+            33059,
+            32181,
+            7
+          ],
+          "source": "Find your way to Shadowthorn and enter the hole here (Mapper Coords 129.36, 125.182, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Head west (elf scouts) and go down the ramp.",
+          "at": [
+            33047,
+            32177,
+            8
+          ],
+          "source": "When you come down, head west."
+        },
+        {
+          "kind": "reward",
+          "text": "Down the ramp: elf arcanists, elf scouts and ghouls. The three chests are at the north end of the room; the west one: a crystal ball.",
+          "at": [
+            33038,
+            32171,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3076,
+              1
+            ]
+          ],
+          "source": "Down the ramp you will find 4 Elf Arcanists, at least 4 Elf Scouts, two Ghouls and one Demon Skeleton. The three quest boxes are located in the north end of this room."
+        },
+        {
+          "kind": "reward",
+          "text": "The middle chest: the time ring.",
+          "at": [
+            33039,
+            32171,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3053,
+              1
+            ]
+          ],
+          "source": "The three quest boxes are located in the north end of this room."
+        },
+        {
+          "kind": "reward",
+          "text": "The east chest: an elven amulet.",
+          "at": [
+            33040,
+            32171,
+            9
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3082,
+              1
+            ]
+          ],
+          "source": "The three quest boxes are located in the north end of this room."
+        }
+      ]
+    }
+  ]
+}

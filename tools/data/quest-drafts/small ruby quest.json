@@ -1,0 +1,134 @@
+{
+  "quest": "Small Ruby Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Small_Ruby_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel and a rope.",
+          "source": "Required Equipment: Shovel, Rope or Magic Rope"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Ancient Temple north of Thais, two floors.",
+          "at": [
+            32356,
+            32170,
+            7
+          ],
+          "source": "Follow the road to Route:Mintwallin."
+        },
+        {
+          "kind": "go",
+          "text": "Head as far north as you can and go down two floors to the rotworms.",
+          "at": [
+            32354,
+            32138,
+            9
+          ],
+          "source": "Follow the road to Route:Mintwallin."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and south and go down the ladder (rotworms, poison spiders, orcs and orc spearmen).",
+          "at": [
+            32502,
+            32217,
+            11
+          ],
+          "source": "Follow the road to Route:Mintwallin."
+        },
+        {
+          "kind": "go",
+          "text": "Through the poison fields (antidote or destroy field) and down another level.",
+          "at": [
+            32493,
+            32215,
+            12
+          ],
+          "source": "Follow the road to Route:Mintwallin."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path east and north (poison spiders, minotaurs) and go down the hole (cyclopes).",
+          "at": [
+            32577,
+            32179,
+            13
+          ],
+          "source": "Follow the road to Route:Mintwallin."
+        },
+        {
+          "kind": "go",
+          "text": "Up two ladders in the north-west, then down two floors again and follow the long tunnel (minotaurs) to Mintwallin: go down into the city.",
+          "at": [
+            32484,
+            32101,
+            14
+          ],
+          "source": "Follow the road to Route:Mintwallin."
+        },
+        {
+          "kind": "go",
+          "text": "In Mintwallin go south and up the stairs to the throne room.",
+          "at": [
+            32426,
+            32135,
+            15
+          ],
+          "source": "When you have come to Mintwallin you go south and up the stairs to the throne room"
+        },
+        {
+          "kind": "go",
+          "text": "Take the ladder slightly south-west of the stairs.",
+          "at": [
+            32415,
+            32149,
+            14
+          ],
+          "source": "and you take the ladder slightly southwest from the stairs in there."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the pit: a dragon.",
+          "at": [
+            32435,
+            32171,
+            13
+          ],
+          "source": "When you have gone down the ladder in to the pit, you will face 1 dragon"
+        },
+        {
+          "kind": "go",
+          "text": "Go down the hole: two dragons.",
+          "at": [
+            32436,
+            32188,
+            14
+          ],
+          "source": "and when you go down the hole you will face 2 dragons."
+        },
+        {
+          "kind": "reward",
+          "text": "North of the room: the small ruby lies under the fire.",
+          "at": [
+            32437,
+            32174,
+            15
+          ],
+          "object": 3030,
+          "items": [
+            [
+              3030,
+              1
+            ]
+          ],
+          "source": "Browse the field on the fire located north of the room."
+        }
+      ]
+    }
+  ]
+}

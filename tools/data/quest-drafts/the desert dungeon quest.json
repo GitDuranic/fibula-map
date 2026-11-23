@@ -1,0 +1,92 @@
+{
+  "quest": "The Desert Dungeon Quest",
+  "wiki": "https://tibia.fandom.com/wiki/The_Desert_Dungeon_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Four players, one of each vocation, and a shovel. Each brings the item for their basin: knight a sword, paladin a crossbow, druid a red apple, sorcerer a spellbook. The items are destroyed.",
+          "source": "4-5 players, one of each vocation. Each player should bring an item which will be destroyed at the end of the quest: Spellbook (Sorcerer only), Crossbow (Paladin only), Red Apple (Druid only), Sword (Knight only)"
+        },
+        {
+          "kind": "go",
+          "text": "In the middle of the Jakundaf Desert, open the loose stone pile with your shovel and drop down.",
+          "at": [
+            32649,
+            32093,
+            7
+          ],
+          "source": "Open the Loose Stone Pile in the middle of the desert and drop down."
+        },
+        {
+          "kind": "go",
+          "text": "Go down 4 more holes, to the floor with spiders.",
+          "at": [
+            32643,
+            32093,
+            11
+          ],
+          "source": "Go down 4 more times to reach a floor with Spiders."
+        },
+        {
+          "kind": "go",
+          "text": "Go north, turn east as soon as you can and follow the cave south to the ladder up (spiders, slimes).",
+          "at": [
+            32658,
+            32112,
+            12
+          ],
+          "source": "Go north and turn east as soon as you can, and then follow the cave south to find the next ladder up."
+        },
+        {
+          "kind": "go",
+          "text": "Go west to the next ladder up. Do not go down the hole to the south with the warning sign.",
+          "at": [
+            32646,
+            32110,
+            11
+          ],
+          "source": "Go up the ladder and west to find another ladder (do not go down the hole to the south with the Warning Sign)."
+        },
+        {
+          "kind": "go",
+          "text": "Go south and up the ladder.",
+          "at": [
+            32628,
+            32133,
+            10
+          ],
+          "source": "Go south and up the ladder."
+        },
+        {
+          "kind": "go",
+          "text": "Go east and north to a hole (do not go down), then east and north again and follow the path to the last ladder up.",
+          "at": [
+            32670,
+            32099,
+            9
+          ],
+          "source": "Now go east and then north to find a hole, but do not go down. Go east and north again and follow the path to find the final ladder."
+        },
+        {
+          "kind": "go",
+          "text": "In the vocation room each puts the item on their basin, then steps on the tile in front of it: knight south, paladin north, druid west, sorcerer east. When all four are on their tiles, the paladin pulls the lever in front of him: all four are teleported to the reward room.",
+          "at": [
+            32673,
+            32086,
+            8
+          ],
+          "source": "Sorcerers: place the Spellbook on the east basin and then step on the tile. Knights: place the Sword on the south basin and then step on the tile. Druids: place the Red Apple on the west basin and then step on the tile. Paladins: place the Crossbow on the north basin and then step on the tile. When all the switches are pressed, the Paladin must pull the Lever in front of his tile. All players will be teleported to the reward room."
+        },
+        {
+          "kind": "note",
+          "text": "Needs placing: the reward room with its 2 chests, west: 100 platinum coins; east: a bag with a ring of healing, a protection amulet, an ankh and a magic light wand (north of the vocation room on the wiki and the 7.6 map; not on the 7.1 map).",
+          "source": "There are 2 reward chests: one to the west and one to the east. One of them contains Golden Bag with 25 Platinum Coins for each vocation that participated, the other contains a Green Bag with with a Protection Amulet, a Magic Light Wand, a Ring of Healing, and an Ankh."
+        }
+      ]
+    }
+  ]
+}

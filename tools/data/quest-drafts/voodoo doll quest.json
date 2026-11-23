@@ -1,0 +1,66 @@
+{
+  "quest": "Voodoo Doll Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Voodoo_Doll_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go down the hole on the north side of the Green Claw Swamp (east of the Dwarf Bridge, west of Venore).",
+          "at": [
+            32739,
+            31952,
+            7
+          ],
+          "source": "Travel to Green Claw Swamp, and find the hole on the north side of the swamp (Mapper Coords 127.225, 124.209, 7). You can get to this hole from the west of Venore (by walking east from the Dwarf Bridge)."
+        },
+        {
+          "kind": "go",
+          "text": "Go west and down one more level.",
+          "at": [
+            32736,
+            31951,
+            8
+          ],
+          "source": "Once down the hole, go directly west and down one more level."
+        },
+        {
+          "kind": "reward",
+          "text": "Three witches on this floor: lure them one at a time at the corners of the entryway. In the large room to the east, against the east wall, the north box: the voodoo doll.",
+          "at": [
+            32758,
+            31952,
+            9
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3209,
+              1
+            ]
+          ],
+          "source": "On this level are 3 Witches, you will find the quest boxes in the large room to the east, against the east wall. You can easily use the corners of the entryway to lure the witches one at a time."
+        },
+        {
+          "kind": "reward",
+          "text": "The south box: a magic light wand.",
+          "at": [
+            32757,
+            31957,
+            9
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3046,
+              1
+            ]
+          ],
+          "source": "You will find the quest boxes in the large room to the east, against the east wall."
+        }
+      ]
+    }
+  ]
+}

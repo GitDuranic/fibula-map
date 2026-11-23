@@ -1,0 +1,91 @@
+{
+  "quest": "Wedding Ring Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Wedding_Ring_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope.",
+          "source": "Follow the route bellow."
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the Edron Hero Cave.",
+          "at": [
+            33164,
+            31636,
+            7
+          ],
+          "source": "Go into the Edron Hero Cave (Mapper Coords 129.140, 123.150, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the cave down five floors: wild warriors, demon skeletons, a beholder, monks, then dragons and a hero.",
+          "at": [
+            33144,
+            31589,
+            12
+          ],
+          "source": "Follow the route bellow."
+        },
+        {
+          "kind": "go",
+          "text": "This floor is crowded (wild warriors, stalkers, hunters, priestesses, monks, demon skeletons): go down in the south-east.",
+          "at": [
+            33152,
+            31619,
+            13
+          ],
+          "source": "Follow the route bellow."
+        },
+        {
+          "kind": "go",
+          "text": "Past the monks and down the next hole.",
+          "at": [
+            33157,
+            31618,
+            14
+          ],
+          "source": "Follow the route bellow."
+        },
+        {
+          "kind": "reward",
+          "text": "Three heroes here. The north box: the wedding ring.",
+          "at": [
+            33158,
+            31621,
+            15
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3004,
+              1
+            ]
+          ],
+          "source": "In screen 8 you will face 3 Heroes and a Dark Apprentice. Use the chests to get a Wedding Ring and a Dragon Necklace."
+        },
+        {
+          "kind": "reward",
+          "text": "The south box: a dragon necklace.",
+          "at": [
+            33158,
+            31622,
+            15
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3085,
+              1
+            ]
+          ],
+          "source": "Use the chests to get a Wedding Ring and a Dragon Necklace."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "quest": "Studded Shield Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Studded_Shield_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "get",
+          "text": "Use the banana palm in the east of Rookgaard to get a banana.",
+          "at": [
+            32172,
+            32169,
+            7
+          ],
+          "items": [
+            [
+              3587,
+              1
+            ]
+          ],
+          "source": "Head to the Bananapalm located in East Rookgaard. \"Use\" the Bananapalm to get the Banana."
+        },
+        {
+          "kind": "talk",
+          "text": "Give the banana to Willie in the town.",
+          "npc": "Willie",
+          "say": [
+            "hi",
+            "banana",
+            "yes"
+          ],
+          "source": "Head to Willie in the town and trade the 'Banana' for a Studded Shield."
+        },
+        {
+          "kind": "reward",
+          "text": "Willie gives you a studded shield.",
+          "at": [
+            32047,
+            32204,
+            7
+          ],
+          "object": 3426,
+          "items": [
+            [
+              3426,
+              1
+            ]
+          ],
+          "source": "Willie: A banana! Great. Here, take this shield, I don't need it anyway."
+        }
+      ]
+    }
+  ]
+}

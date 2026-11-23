@@ -1,0 +1,121 @@
+{
+  "quest": "Skull of Ratha Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Skull_of_Ratha_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go north from Venore through the Green Claw Swamp to the Amazon camp (amazons). Witch Hill is in the middle of the camp: go up.",
+          "at": [
+            32845,
+            31922,
+            7
+          ],
+          "source": "Travel through Green Claw Swamp to the Amazon Encampment, North of Venore. \"Witch Hill\" is located near the center of the camp."
+        },
+        {
+          "kind": "kill",
+          "text": "On the hill: two witches, valkyries and a lion.",
+          "at": [
+            32846,
+            31919,
+            6
+          ],
+          "monster": "Witch",
+          "source": "After defeating two Witches, three Valkeries and two Lions, open the two boxes to obtain 2 bags"
+        },
+        {
+          "kind": "reward",
+          "text": "The left box: a bag with the skull of Ratha and a white pearl.",
+          "at": [
+            32845,
+            31917,
+            6
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3207,
+              1
+            ],
+            [
+              3026,
+              1
+            ]
+          ],
+          "source": "open the two boxes to obtain 2 bags: one containing a White Pearl, the Skull of Ratha"
+        },
+        {
+          "kind": "reward",
+          "text": "The right box: a bag with a wolf tooth chain and a dwarven ring.",
+          "at": [
+            32847,
+            31917,
+            6
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3012,
+              1
+            ],
+            [
+              3097,
+              1
+            ]
+          ],
+          "source": "and a second containing a Wolf Tooth Chain and a Dwarven Ring."
+        },
+        {
+          "kind": "go",
+          "text": "Go back down the hill and down the trapdoor of the witch house.",
+          "at": [
+            32844,
+            31917,
+            7
+          ],
+          "source": "To get there go downstairs the \"Witch house\" (purple mark)."
+        },
+        {
+          "kind": "kill",
+          "text": "Follow the basement east: a witch and valkyries guard the chest.",
+          "at": [
+            32864,
+            31911,
+            8
+          ],
+          "monster": "Valkyrie",
+          "source": "Follow the map of this basement in order to obtain your reward, it is guarded by a Witch and 3-5 Valkeries."
+        },
+        {
+          "kind": "reward",
+          "text": "The chest: a bag with 100 gold, a crystal necklace and 2 black pearls.",
+          "at": [
+            32867,
+            31909,
+            8
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3008,
+              1
+            ],
+            [
+              3027,
+              2
+            ],
+            [
+              3031,
+              100
+            ]
+          ],
+          "source": "Once they are defeated, open the chest to find a bag with 100gp, a Crystal Necklace, and 2 Black Pearls."
+        }
+      ]
+    }
+  ]
+}

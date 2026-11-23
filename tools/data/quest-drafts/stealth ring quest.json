@@ -1,0 +1,97 @@
+{
+  "quest": "Stealth Ring Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Stealth_Ring_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go down into the Minotaur Pyramid north-east of Darashia (minotaurs).",
+          "at": [
+            33312,
+            32281,
+            7
+          ],
+          "source": "Head to the Minotaur Pyramid north-east of Darashia. You will only have to face Minotaurs on the ground level. Go down the staircase."
+        },
+        {
+          "kind": "go",
+          "text": "Minotaurs and minotaur guards: follow the path south-west and go down.",
+          "at": [
+            33300,
+            32290,
+            8
+          ],
+          "source": "Down these steps you will face Minotaurs and one or two Minotaur Guards. Follow this path to the south-west, and go down another staircase."
+        },
+        {
+          "kind": "go",
+          "text": "Head east (minotaur guards, minotaur archers) and go down.",
+          "at": [
+            33315,
+            32283,
+            9
+          ],
+          "source": "Head to the East/North-East. There will be several Minotaur Guards and Minotaur Archers on this floor. There will be another staircase to go down."
+        },
+        {
+          "kind": "go",
+          "text": "All kinds of minotaurs, minotaur mages too: head north and go down.",
+          "at": [
+            33308,
+            32278,
+            10
+          ],
+          "source": "On the next level are all kinds of Minotaurs, including about 4 Minotaur Mages. On this level, head North. Look for another staircase down."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the mummy.",
+          "at": [
+            33311,
+            32280,
+            11
+          ],
+          "monster": "Mummy",
+          "source": "Down this staircase, you will face one Mummy."
+        },
+        {
+          "kind": "reward",
+          "text": "The south-east coffin: the stealth ring.",
+          "at": [
+            33315,
+            32282,
+            11
+          ],
+          "object": 1983,
+          "items": [
+            [
+              3049,
+              1
+            ]
+          ],
+          "source": "After killing the Mummy, the Stealth Ring can be found in the south-east coffin"
+        },
+        {
+          "kind": "reward",
+          "text": "The north-east coffin: the protection amulet.",
+          "at": [
+            33315,
+            32277,
+            11
+          ],
+          "object": 1983,
+          "items": [
+            [
+              3084,
+              1
+            ]
+          ],
+          "source": "and the Protection Amulet can be found in the north-east coffin."
+        }
+      ]
+    }
+  ]
+}

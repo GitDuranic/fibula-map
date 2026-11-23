@@ -1,0 +1,74 @@
+{
+  "quest": "Two Rubies Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Six_Rubies_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope and a destroy field rune.",
+          "source": "Required equipment: Rope, Destroy Field (at least 1 charge)"
+        },
+        {
+          "kind": "go",
+          "text": "Go down both sets of stairs in the Ancient Temple north of Thais.",
+          "at": [
+            32356,
+            32170,
+            7
+          ],
+          "source": "Find your way to Ancient Temple and go down both sets of the stairs (Mapper Coords 126.100, 125.171, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "South through the first door, west down the hall to a second door facing south, through it and south past two crossings (east at the second), then down the hole on the east.",
+          "at": [
+            32371,
+            32242,
+            9
+          ],
+          "source": "In words, head south through the first door, then west down the hall until you reach a second door facing south. Go south through this door, then pass the intersection, continue heading south. You'll come to a second intersection where you'll go east. Head south and there will be one or two Orc Warriors. Go down the hole on the east."
+        },
+        {
+          "kind": "go",
+          "text": "South and then north-west to the stairs with fire underneath: go down.",
+          "at": [
+            32356,
+            32248,
+            10
+          ],
+          "source": "In words, south and then to the north west until you see stairs leading down with fire underneath. There are no monsters at the bottom of the stairs, so go down."
+        },
+        {
+          "kind": "go",
+          "text": "Walk around the fire fields, south to a hole: two dragons are below it, on an island in the lava. Lure them to the hole and kill them, then go down.",
+          "at": [
+            32361,
+            32265,
+            11
+          ],
+          "source": "Continue heading south until you see a hole. Beneath this hole are 2 Dragons, on an island surrounded by Lava with some Fire Fields on the island. For most people, its easier to lure the dragons to the roping point and kill them one at a time."
+        },
+        {
+          "kind": "reward",
+          "text": "On the east side of the island a fire covers a small hole: destroy the fire with the destroy field rune and use the hole (you can't go down it): 2 small rubies.",
+          "at": [
+            32370,
+            32265,
+            12
+          ],
+          "object": 387,
+          "items": [
+            [
+              3030,
+              2
+            ]
+          ],
+          "source": "To the east side of the island you will notice a fire that is covering a hole. Use the Destroy Field rune on the fire, just leaving the hole. Use the hole, and you will get the reward. Note, you can't go down the hole, you have to use it."
+        }
+      ]
+    }
+  ]
+}

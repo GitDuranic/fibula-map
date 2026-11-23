@@ -1,0 +1,364 @@
+{
+  "quest": "The Outlaw Camp Quest",
+  "wiki": "https://tibia.fandom.com/wiki/The_Outlaw_Camp_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": "The keys",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a rope, a shovel, a power ring, a barrel and 3 parcels (or exani hur).",
+          "source": "Rope, Shovel, 1-2 Power Rings, Barrel, 3 Parcels (or Levitate if you have it)"
+        },
+        {
+          "kind": "get",
+          "text": "Key 3301 is in the dead tree next to the minotaur tower (a dead body next to it). Mind the pitfall next to it.",
+          "at": [
+            32617,
+            32250,
+            7
+          ],
+          "items": [
+            [
+              2970,
+              1
+            ]
+          ],
+          "source": "Copper Key 3301: In a dead tree right next to the minotaur tower. There is a dead body next to the tree."
+        },
+        {
+          "kind": "get",
+          "text": "Key 3302 is in the dead tree just north of the minotaur tower.",
+          "at": [
+            32609,
+            32244,
+            7
+          ],
+          "items": [
+            [
+              2970,
+              1
+            ]
+          ],
+          "source": "Silver Key 3302: Just north of the minotaur tower, in a dead tree."
+        },
+        {
+          "kind": "get",
+          "text": "Key 3303 is in the dead tree at the campsite south of the main buildings.",
+          "at": [
+            32651,
+            32244,
+            7
+          ],
+          "items": [
+            [
+              2970,
+              1
+            ]
+          ],
+          "source": "Copper Key 3303: In a campsite south of the main buildings of the Outlaw Camp, in a dead tree."
+        },
+        {
+          "kind": "go",
+          "text": "Dig open the hole behind the trees: the wild warrior cave.",
+          "at": [
+            32632,
+            32228,
+            7
+          ],
+          "source": "Now, take these keys, and go into the Wild Warrior cave. The shovel hole is hidden behind a tree."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the path north (wild warriors) to the room with four ladders down; take the one in the north-west corner.",
+          "at": [
+            32619,
+            32181,
+            8
+          ],
+          "source": "At the end of this path is a larger room with four ladders going down. Take the ladder in the north-west corner."
+        },
+        {
+          "kind": "key",
+          "at": [
+            32614,
+            32175,
+            9
+          ],
+          "text": "Open the door with key 3303.",
+          "source": "Here you will see a locked door with a switch behind it. Unlock the door with Key 3303, and flip the switch."
+        },
+        {
+          "kind": "go",
+          "text": "Flip the switch: it moves the oven in the room south of you.",
+          "at": [
+            32614,
+            32173,
+            9
+          ],
+          "source": "This switch moves an oven in the room directly south of you."
+        },
+        {
+          "kind": "go",
+          "text": "Go back up and down the ladder to the south.",
+          "at": [
+            32619,
+            32186,
+            8
+          ],
+          "source": "Go back up the ladder, and then down the ladder to your south."
+        },
+        {
+          "kind": "get",
+          "text": "Behind the oven: key 3304.",
+          "at": [
+            32623,
+            32187,
+            9
+          ],
+          "items": [
+            [
+              2972,
+              1
+            ]
+          ],
+          "source": "There will be an oven with a Chest (Quest) behind it. If the switch is in the correct position, you can fit behind the oven and open the chest to get Key 3304."
+        }
+      ]
+    },
+    {
+      "name": "The barrel",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Bring the barrel to the shovel hole near the water north of the camp and go down.",
+          "at": [
+            32603,
+            32206,
+            7
+          ],
+          "source": "Drag a barrel back to the Outlaw Camp, and down a shovel hole near the water to the north."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the only way to its end and go down.",
+          "at": [
+            32598,
+            32199,
+            8
+          ],
+          "source": "There is only one way you can go in this cave. Follow it all the way to the end, where you can go no further."
+        },
+        {
+          "kind": "go",
+          "text": "In this very small room, put the barrel in the north-west corner. You rope it up through a hole later.",
+          "at": [
+            32595,
+            32199,
+            9
+          ],
+          "source": "In this very small room, place the barrel in the north-west corner. You will rope it up through a hole later on."
+        }
+      ]
+    },
+    {
+      "name": "The bright sword",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go up the minotaur tower, two floors.",
+          "at": [
+            32615,
+            32252,
+            7
+          ],
+          "source": "Once the barrel is in place, go back to the minotaur tower to the south, and go up two levels."
+        },
+        {
+          "kind": "go",
+          "text": "Past the \"Point of No Return\" sign, walk off the roof: you fall all the way underground.",
+          "at": [
+            32616,
+            32249,
+            5
+          ],
+          "source": "There will be a sign that says \"Point of No Return\". This leads to the Giant Spiders. Simply walk off of the roof and you will fall all the way underground."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the passage west and north (a giant spider). At the north end, go down the ledge with exani hur or 3 parcels (orc spearmen and an orc berserker below).",
+          "at": [
+            32593,
+            32238,
+            8
+          ],
+          "source": "At the north end of this cave, there will be a ledge. You'll need Levitate or three parcels. The typical spawn down the ledge consists of Orc Spearman and Orc Berserkers."
+        },
+        {
+          "kind": "go",
+          "text": "Take the left of the two passages north. Put the power ring on the counter, then flip the switch: the ring is teleported away.",
+          "at": [
+            32594,
+            32212,
+            9
+          ],
+          "source": "There will be two passages to the north. Go up the passage on the left. Here you will find a wooden surface and a switch. Place the Power Ring on the wooden surface, and then flip the switch."
+        },
+        {
+          "kind": "go",
+          "text": "Take the right passage north (an orc shaman, an orc warrior) and go up the ladder.",
+          "at": [
+            32600,
+            32207,
+            9
+          ],
+          "source": "Now, take the right passage to the north. You will see a ladder going up, and a ladder going down. Take the ladder UP."
+        },
+        {
+          "kind": "go",
+          "text": "Follow the short passage to the open hole: do not fall down! Use your rope on it to pull up your barrel.",
+          "at": [
+            32595,
+            32199,
+            8
+          ],
+          "source": "Follow this short passage, and you will see an open hole. DO NOT FALL DOWN THIS HOLE! \"Use\" a rope on the hole to rope-up your barrel."
+        },
+        {
+          "kind": "go",
+          "text": "Take the barrel back down and to the left, and throw it down the ladder.",
+          "at": [
+            32592,
+            32206,
+            9
+          ],
+          "source": "Now, drag the barrel back down the hole (towards the Orcs) and to the left, throw the barrel down the ladder."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the skeletons, the ghoul and the beholder first: they can push and break the barrel.",
+          "at": [
+            32599,
+            32217,
+            10
+          ],
+          "monster": "Beholder",
+          "source": "there will be some Skeletons, Ghouls and two Bonelords to the south in this room) kill them first cause ghouls and skeletons from Bonelords can push and break the barrel."
+        },
+        {
+          "kind": "go",
+          "text": "Drag the barrel east through the level 45 door, down the passage to the wall. Put it in the gap at the south part of the wall: it stops the wall when you flip the next switch.",
+          "at": [
+            32614,
+            32209,
+            10
+          ],
+          "source": "Drag the barrel to the east, and through the level 45 Gate of Expertise. Continue down this passage until you come to a wall blocking your path. On the south part of this wall, there will be a small portion of the wall that the barrel will fit into. Place the barrel here."
+        },
+        {
+          "kind": "go",
+          "text": "Back at the minotaur tower, fall down the pitfall next to the dead tree.",
+          "at": [
+            32617,
+            32253,
+            7
+          ],
+          "source": "Now go back to the Minotaur camp. Instead of going up, fall down the hole next to the dead tree. This is a pitfall."
+        },
+        {
+          "kind": "key",
+          "at": [
+            32619,
+            32241,
+            8
+          ],
+          "text": "Follow the passage north: open the first door with key 3301.",
+          "source": "Follow the passage to the north. You will need to go through two locked doors. The first one needs Key 3301, and the second one needs Key 3302."
+        },
+        {
+          "kind": "key",
+          "at": [
+            32619,
+            32240,
+            8
+          ],
+          "text": "Open the second door with key 3302.",
+          "source": "The first one needs Key 3301, and the second one needs Key 3302."
+        },
+        {
+          "kind": "go",
+          "text": "At the ladder up and the ladder down, go down, and down again.",
+          "at": [
+            32616,
+            32226,
+            8
+          ],
+          "source": "You will eventually come to a ladder going up, and a ladder going down. Go down."
+        },
+        {
+          "kind": "go",
+          "text": "In the room with the mill, flip the switch: your power ring turns into a fire field.",
+          "at": [
+            32614,
+            32222,
+            10
+          ],
+          "source": "Continue until you see a room with Fire Fields on the floor. This room also has a Mill with a switch. Flip the switch. The Power Ring will turn into a fire field."
+        },
+        {
+          "kind": "go",
+          "text": "Go back to the barrel in the wall (past the level 45 door; someone can rope you up the hole, or go through the giant spiders again). There is now a way through the wall.",
+          "at": [
+            32614,
+            32208,
+            10
+          ],
+          "source": "Now go back to where you placed the barrel in the wall (past the level 45 Gate of Expertise). If done correctly, there will be a passage through the wall."
+        },
+        {
+          "kind": "kill",
+          "text": "Demon skeletons and skeletons.",
+          "at": [
+            32620,
+            32202,
+            10
+          ],
+          "monster": "Demon Skeleton",
+          "source": "Here you will face 3 Demon Skeletons and 2 Skeletons."
+        },
+        {
+          "kind": "key",
+          "at": [
+            32620,
+            32199,
+            10
+          ],
+          "text": "Open the door with key 3304.",
+          "source": "After killing the Demon Skeletons, use Golden Key 3304 to unlock the door."
+        },
+        {
+          "kind": "reward",
+          "text": "The chest: a bag with the bright sword and a red gem.",
+          "at": [
+            32620,
+            32198,
+            10
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3295,
+              1
+            ],
+            [
+              3039,
+              1
+            ]
+          ],
+          "source": "Open the Chest (Quest) to receive your Bright Sword and Red Gem inside a bag."
+        }
+      ]
+    }
+  ]
+}

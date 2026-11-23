@@ -1,0 +1,118 @@
+{
+  "quest": "Steel Helmet Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Steel_Helmet_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Bring a shovel and a rope.",
+          "source": "Required Equipment: Shovel, Rope"
+        },
+        {
+          "kind": "go",
+          "text": "West of Kazordoon past the Dwarf Mines: dig the loose stone pile behind the plum tree and go down.",
+          "at": [
+            32489,
+            31965,
+            7
+          ],
+          "source": "Travel west of Kazordoon past the Dwarf Mines and use your shovel to dig a Loose Stone Pile hidden behind a Plum Tree."
+        },
+        {
+          "kind": "go",
+          "text": "Walk west (minotaurs) and rope up into the Secret Hideout.",
+          "at": [
+            32466,
+            31966,
+            8
+          ],
+          "source": "Once you go down the hole, walk west and rope up into the Secret Hideout."
+        },
+        {
+          "kind": "go",
+          "text": "Minotaur guards and archers: go up the ladder in the north.",
+          "at": [
+            32463,
+            31946,
+            7
+          ],
+          "source": "ground floor: 2 Minotaur Guards, 2 Minotaur Archers"
+        },
+        {
+          "kind": "go",
+          "text": "Minotaur guards: go up the next ladder.",
+          "at": [
+            32460,
+            31948,
+            6
+          ],
+          "source": "first floor: 4 Minotaur Guards, 4 Minotaur Archers"
+        },
+        {
+          "kind": "reward",
+          "text": "The drawers next to the table: 56 gold.",
+          "at": [
+            32460,
+            31951,
+            5
+          ],
+          "object": 2434,
+          "items": [
+            [
+              3031,
+              56
+            ]
+          ],
+          "source": "56 Gold Coins can be found in a Chest of Drawers next to a table"
+        },
+        {
+          "kind": "reward",
+          "text": "The box between the two beds: 47 gold.",
+          "at": [
+            32464,
+            31957,
+            5
+          ],
+          "object": 2469,
+          "items": [
+            [
+              3031,
+              47
+            ]
+          ],
+          "source": "47 Gold Coins can be found in a Chest between two beds"
+        },
+        {
+          "kind": "go",
+          "text": "Go up the ladder (minotaur archers).",
+          "at": [
+            32465,
+            31953,
+            5
+          ],
+          "source": "floor 4: North side: 4 Minotaur Archers"
+        },
+        {
+          "kind": "reward",
+          "text": "The box next to the anvil: the steel helmet.",
+          "at": [
+            32462,
+            31947,
+            4
+          ],
+          "object": 2473,
+          "items": [
+            [
+              3351,
+              1
+            ]
+          ],
+          "source": "Steel Helmet can be found in a Box next an anvil"
+        }
+      ]
+    }
+  ]
+}

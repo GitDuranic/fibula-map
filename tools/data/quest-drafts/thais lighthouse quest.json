@@ -1,0 +1,121 @@
+{
+  "quest": "Thais Lighthouse Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Thais_Lighthouse_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "You need two players.",
+          "source": "Note: you will need at least two players to complete this quest!"
+        },
+        {
+          "kind": "go",
+          "text": "Go down into the basement of the lighthouse south-west of Thais.",
+          "at": [
+            32224,
+            32275,
+            7
+          ],
+          "source": "Go to the lighthouse southwest of Thais and go down into the basement."
+        },
+        {
+          "kind": "go",
+          "text": "Move the crates in the south of the room: pull the lever under them. A ladder down appears.",
+          "at": [
+            32227,
+            32278,
+            8
+          ],
+          "source": "To access this dungeon, you'll have to find a lever under some crates which will make a ladder leading down appear."
+        },
+        {
+          "kind": "go",
+          "text": "Go down the ladder that appeared.",
+          "at": [
+            32225,
+            32276,
+            8
+          ],
+          "source": "To access this dungeon, you'll have to find a lever under some crates which will make a ladder leading down appear."
+        },
+        {
+          "kind": "go",
+          "text": "One player stands on the switch plate at the end of the north passage: stairs appear at the south end.",
+          "at": [
+            32225,
+            32268,
+            9
+          ],
+          "source": "The north passage leads to a switchplate that will make stairs appear at the south end once someone stands on it."
+        },
+        {
+          "kind": "go",
+          "text": "The other player goes down the stairs at the south end.",
+          "at": [
+            32225,
+            32283,
+            9
+          ],
+          "source": "The other person must go down the stairs and turn a lever."
+        },
+        {
+          "kind": "go",
+          "text": "Pull the lever: a teleporter appears in the east passage.",
+          "at": [
+            32225,
+            32285,
+            10
+          ],
+          "source": "Once turned, this lever will make the teleporter leading to the quest room appear in the right passage."
+        },
+        {
+          "kind": "go",
+          "text": "Go back up and take the teleporter at the end of the east passage.",
+          "at": [
+            32233,
+            32276,
+            9
+          ],
+          "source": "Once turned, this lever will make the teleporter leading to the quest room appear in the right passage."
+        },
+        {
+          "kind": "reward",
+          "text": "A cyclops guards the room. At the north end: the dark shield in one chest.",
+          "at": [
+            32226,
+            32265,
+            10
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3421,
+              1
+            ]
+          ],
+          "source": "There are only 2 Cyclopes in there, which can be either fought or ignored. The chests containing the Dark Shield and Battle Hammer are at the north end of the room."
+        },
+        {
+          "kind": "reward",
+          "text": "The battle hammer in the other chest.",
+          "at": [
+            32225,
+            32265,
+            10
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3305,
+              1
+            ]
+          ],
+          "source": "The chests containing the Dark Shield and Battle Hammer are at the north end of the room."
+        }
+      ]
+    }
+  ]
+}

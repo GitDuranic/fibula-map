@@ -1,0 +1,52 @@
+{
+  "quest": "Triangle Tower Quest",
+  "wiki": "https://tibia.fandom.com/wiki/Triangle_Tower_Quest/Spoiler",
+  "dropOldRewards": true,
+  "segments": [
+    {
+      "name": null,
+      "steps": [
+        {
+          "kind": "note",
+          "text": "The Triangle Tower (south-east of Thais) is not on the 7.1 map. If the tower is closed, pull the lever in the desert east of it to open the wall (7.2 map: 32573,32121,7).",
+          "source": "If the tower is closed you will have to go into the desert and pull the lever to open the wall, the lever is found here (Mapper Coords 127.62, 125.122, 7)."
+        },
+        {
+          "kind": "go",
+          "text": "Go into the Triangle Tower and up to the top floor: skeletons, ghouls, demon skeletons, stalkers (7.2 map: last stairs 32564,32117,4).",
+          "at": [
+            32564,
+            32117,
+            4
+          ],
+          "source": "First, head to the Triangle Tower, which is found here (Mapper Coords 127.49, 125.119, 7), and go up to the top."
+        },
+        {
+          "kind": "reward",
+          "text": "On the top floor (a monk, a witch and a dwarf geomancer), the chest: a dwarven ring, 2 small sapphires and a garlic necklace in a bag (7.2 map: 32565,32119,3).",
+          "at": [
+            32565,
+            32119,
+            3
+          ],
+          "object": 2472,
+          "items": [
+            [
+              3097,
+              1
+            ],
+            [
+              3029,
+              2
+            ],
+            [
+              3083,
+              1
+            ]
+          ],
+          "source": "After reaching the fourth floor and eventually killing everything there, open the box to get your reward."
+        }
+      ]
+    }
+  ]
+}
