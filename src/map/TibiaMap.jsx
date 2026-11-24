@@ -14,7 +14,7 @@ import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter, routeTime } from './engine/router.js';
 import { fetchTileFixes, setTilePassable } from './engine/tilefixes.js';
 import { drawText, textWidth } from './engine/text.js';
-import { questDbConfig, questOn, setQuestOn } from './engine/questdb.js';
+import { questDbConfig, questsDone, saveQuestsDone, questDoneKey } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
 import * as qg from './engine/questguide.js';
 import './tibia-map.css';
@@ -544,8 +544,8 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     try { localStorage.setItem('tm-quests-open', n ? '1' : '0'); } catch { /* private mode */ }
     return n;
   });
-  const [onQuest, setOnQuestState] = useState(questOn); // "I'm on this quest" (13b), kept in the browser
-  const setOnQuest = (name) => { setQuestOn(name); setOnQuestState(name); };
+  const [done, setDoneState] = useState(questsDone); // quests ticked Done (user 2026-11-24), kept in the browser
+  const toggleDone = (q) => setDoneState((s) => { const n = new Set(s), k = questDoneKey(q); if (n.has(k)) n.delete(k); else n.add(k); saveQuestsDone(n); return n; });
   // The quest database's settings, and the editors' Discord login (13c): { user, editor } (editor: may edit quests).
   const dbCfg = useMemo(() => questDbConfig({ url: supabaseUrl, key: supabaseKey }), [supabaseUrl, supabaseKey]);
   const [login, setLogin] = useState({ user: null, editor: false });
@@ -557,7 +557,6 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   // Saves an editor's changes to quest q's database row; the map uses the stored row straight away.
   const saveDbQuest = async (q, changes) => {
     const row = await saveQuest(dbCfg, q.db.id, changes);
-    if (onQuest === q.n && row.name !== q.n) setOnQuest(row.name);
     Object.assign(q.db, row);
     q.n = row.name;
     worldRef.current?.filterQuests(); // (its "came in" version may hide it on this map version now, 15b; the open window stays)
@@ -568,7 +567,6 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const deleteDbQuest = async (q) => {
     const id = q.db.id;
     await deleteQuest(dbCfg, id);
-    if (onQuest === q.n) setOnQuest(null);
     if (guideQ === q) { setEditStep(null); setGuideQ(null); }
     setGuides(({ [id]: _gone, ...rest }) => rest);
     worldRef.current?.dropQuest(q);
@@ -660,10 +658,9 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     const id = editStep;
     editGuide(() => qg.updateStep(dbCfg, id, { x: p[0], y: p[1], z: p[2] })).catch((e) => setLocNote(`Could not move the step: ${e.message || e}`));
   };
-  // The guide on the map (13d-2): the quest you're on, or for editors the quest whose window is open. Its current
+  // The guide on the map (13d-2): the open quest (user 2026-11-24: for everyone, "I'm on this quest" is gone). Its current
   // segment's steps get numbered markers (stepMarks, drawn by draw()).
-  const onQuestQ = ready && onQuest ? worldRef.current?.quests?.find((q) => q.n === onQuest && q.db) : null;
-  const markQ = (login.editor && questSelQ?.db) ? questSelQ : onQuestQ || null;
+  const markQ = ready && questSelQ?.db ? questSelQ : null;
   // (as it is on this map version: other versions' parts and steps left out, 15d)
   const markGuide = markQ ? qg.forMap(worldRef.current, guides[markQ.db.id]?.guide) : null;
   useEffect(() => {
@@ -1605,10 +1602,9 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   }, [oracleLevel, climb, doorsKey, updateRoute]); // (updateRoute changes with dataUrl: another map version searches again, 15a)
   const clearRoute = () => { routeSeq.current++; router.current?.cancel(); routePath.current = null; setRoute({ open: false, from: null, to: null, result: null, pick: 0, busy: false }); redraw(); };
 
-  // "I'm on this quest" (user 2026-11-21): the view goes straight to the end of the quest, its (last) Reward step,
+  // Opening a quest (from the list or search; was "I'm on this quest", user 2026-11-21): the view goes to its (last) Reward step,
   // else its last step with a spot, once the guide is loaded; the route through the current part is drawn as always.
   const flyToReward = useRef(null); // the quest's name, until it's flown to
-  const followQuest = (name) => { setOnQuest(name); flyToReward.current = name; };
   useEffect(() => {
     const name = flyToReward.current, world = worldRef.current;
     if (!name || !world) return;
@@ -1621,7 +1617,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     const spots = (qg.forMap(world, g.guide)?.steps || []).map((t) => [t, qg.stepPos(world, t)]).filter(([, p]) => p);
     const end = [...spots].reverse().find(([t]) => t.kind === 'reward') || spots[spots.length - 1];
     if (end) jump({ x: end[1][0], y: end[1][1], z: end[1][2] });
-  }, [onQuest, guides]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [questSel, guides]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------- the quest route (13e) ----------
   // The legs of the guide on the map (markQ, as its markers): step to step through its current segment, steps
@@ -1743,7 +1739,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   // editor (user 2026-11-20: players should see a clean quest panel).
   const devTools = !!login.editor;
   // A quest's window: on spot i (going there), or without a spot when it has none (slice 12).
-  const goToQuest = useCallback((q) => selectQuest({ quest: q }), [selectQuest]);
+  const goToQuest = useCallback((q) => { flyToReward.current = q.n; selectQuest({ quest: q }); }, [selectQuest]);
   const selectDoor = useCallback((d) => {
     selectedDoor.current = d;
     setDoor(d);
@@ -2100,13 +2096,13 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         <div className="tm-side tm-left" style={{ zoom: uiScale / dpr }}>
           {world && ready && !questSel && (
             <QuestList
-              world={world} selected={questSel?.quest} onQuest={onQuest} onPick={goToQuest} onClose={closeQuests}
+              world={world} selected={questSel?.quest} done={done} onPick={goToQuest} onClose={closeQuests}
               login={dbCfg ? login : null} onLogIn={() => logIn(dbCfg)} onLogOut={() => logOut(dbCfg)}
             />
           )}
           {questSel && world && (
             <QuestWindow
-              world={world} chest={questSel} onQuest={onQuest} setOn={followQuest}
+              world={world} chest={questSel} isDone={done.has(questDoneKey(questSel.quest))} onDone={() => toggleDone(questSel.quest)}
               onSave={login.editor ? saveDbQuest : null} onDelete={login.editor ? deleteDbQuest : null}
               guide={dbCfg && questSel.quest.db ? {
                 guide: guide?.quest === questSel.quest ? qg.forMap(world, guide.guide) : null, error: guide?.quest === questSel.quest ? guide.error : null,

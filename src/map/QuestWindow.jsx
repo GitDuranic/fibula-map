@@ -141,19 +141,18 @@ function QuestEdit({ world, row, onSave, onDone, onDelete, hasSteps, steps }) {
 }
 
 // chest: { quest } (the open quest). onItem(id): the item window (a reward item's icon).
-// onQuest: the quest you're on (name) and setOn(name | null) for "I'm on this quest" (slice 13b).
+// isDone, onDone(): the Done button (user 2026-11-24): ticks the quest off in the list (kept in this browser).
 // onSave(quest, changes): an editor is logged in (13c), so the quest's database row can be edited; onDelete(quest):
 // deletes it with its guide.
 // guide: the props for QuestGuide (13d) when this quest has a database row, else null.
 // onBack: back to the quest list (the quest panel shows the list OR a quest, 13f-0b).
-export default function QuestWindow({ world, chest, onItem, onClose, onBack, onQuest, setOn, onSave, onDelete, guide }) {
+export default function QuestWindow({ world, chest, onItem, onClose, onBack, isDone, onDone, onSave, onDelete, guide }) {
   const [editing, setEditing] = useState(null); // the quest whose form is open (13c)
   const q = chest.quest;
   const d = q.db; // the quest database's row (13b), if there is one
   const level = d ? d.level : q.level, area = d ? d.area : q.area, version = d?.wiki_version || q.v;
   const info = [level ? `Level ${level}` : null, area || null, version ? `came in ${version}` : null].filter(Boolean).join(' · ');
   const rewards = d ? d.rewards : q.reward, wiki = d ? d.wiki_reward : q.wiki;
-  const isOn = onQuest === q.n;
   return (
     <div className="tm-panel tm-window tm-quest">
       <div className="tm-window-title">
@@ -181,10 +180,10 @@ export default function QuestWindow({ world, chest, onItem, onClose, onBack, onQ
         )}
         {onSave && wiki && <div className="tm-muted" title="Only editors see this: TibiaWiki describes today's Tibia">TibiaWiki: {wiki}</div>}
         {d && d.status !== 'checked' && <div className="tm-quest-draft" title="Nobody has gone through this quest's guide yet: it may be wrong">Not checked yet</div>}
-        {q.listed && setOn && (
-          <button type="button" className={`tm-btn tm-quest-follow${isOn ? ' tm-pressed' : ''}`} onClick={() => setOn(isOn ? null : q.n)}
-            title={isOn ? 'Stop following this quest' : 'Keep this quest at the top of the quest list (saved in this browser)'}
-          >{isOn ? "I'm on this quest ✓" : "I'm on this quest"}</button>
+        {q.listed && onDone && (
+          <button type="button" className={`tm-btn tm-quest-follow${isDone ? ' tm-pressed' : ''}`} onClick={onDone}
+            title={isDone ? 'Not done after all' : 'Tick this quest off in the quest list (saved in this browser)'}
+          >{isDone ? 'Done ✓' : 'Done'}</button>
         )}
         {d?.notes && <div className="tm-quest-notes">{d.notes}</div>}
         {d && onSave && <button type="button" className="tm-btn tm-quest-follow" onClick={() => setEditing(q)} title="Change this quest (saved for everyone)">Edit</button>}

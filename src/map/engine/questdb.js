@@ -23,11 +23,13 @@ export async function fetchQuests(cfg) {
   return res.json();
 }
 
-// "I'm on this quest" (kept in this browser): the quest's name, or null.
-const ON_KEY = 'tm-on-quest';
-export function questOn() {
-  try { return localStorage.getItem(ON_KEY); } catch { return null; }
+// Quests you've done (user 2026-11-24, replaces "I'm on this quest"), kept in this browser: a list of quest keys
+// (questDoneKey: the database id, else the name).
+const DONE_KEY = 'tm-quests-done';
+export const questDoneKey = (q) => (q.db ? `id:${q.db.id}` : q.n);
+export function questsDone() {
+  try { localStorage.removeItem('tm-on-quest'); return new Set(JSON.parse(localStorage.getItem(DONE_KEY) || '[]')); } catch { return new Set(); }
 }
-export function setQuestOn(name) {
-  try { if (name) localStorage.setItem(ON_KEY, name); else localStorage.removeItem(ON_KEY); } catch { /* private mode */ }
+export function saveQuestsDone(set) {
+  try { localStorage.setItem(DONE_KEY, JSON.stringify([...set])); } catch { /* private mode */ }
 }

@@ -295,9 +295,7 @@
 
 /* quest list and window (slice 13b) */
 .tm-quest-search { flex: none; }
-.tm-quest-on { flex: none; }
-.tm-quest-on .tm-muted { margin: 0 0 1px; }
-.tm-quest-on-row { color: #fff; border: 1px solid #5a5a5a; }
+.tm-quest-tick { flex: none; width: 1em; color: #3c3; font-weight: bold; }
 .tm-quest-draft { margin-top: 3px; color: #d8a860; }
 .tm-quest-follow { margin-top: 4px; width: 100%; }
 .tm-quest-follow.tm-pressed, .tm-quest-follow.tm-pressed:active:not(:disabled) {

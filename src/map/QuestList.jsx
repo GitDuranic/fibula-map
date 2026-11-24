@@ -1,8 +1,9 @@
 // The quest list (slice 13b): the quests players can follow, from the quest database (or the converted list
-// without one). A search field, the quest you're on at the top, rows with name and level (area and rewards in the
+// without one). A search field, rows with a tick when done, name and level (area and rewards in the
 // tooltip). Clicking a row opens the quest. (The slice 12 spot checklist was removed in 13i.)
 import React, { useState } from 'react';
 import { displayName } from './engine/questauth.js';
+import { questDoneKey } from './engine/questdb.js';
 
 const rewardsOf = (q) => q.db?.rewards ?? (q.reward || q.wiki);
 const levelOf = (q) => (q.db ? q.db.level : q.level);
@@ -11,18 +12,19 @@ const matches = (q, text) => [q.n, areaOf(q), rewardsOf(q)].some((s) => (s || ''
 
 // login (13c): null without the quest database, else { user, editor }: a small line at the bottom to log in with
 // Discord (only the two editors can edit; anyone else who logs in is told so).
-export default function QuestList({ world, selected, onQuest, onPick, onClose, login, onLogIn, onLogOut }) {
+// done: the Set of quest keys ticked Done (user 2026-11-24): a green tick before the name.
+export default function QuestList({ world, selected, done, onPick, onClose, login, onLogIn, onLogOut }) {
   const [text, setText] = useState('');
   const quests = world.quests || [];
   const listed = quests.filter((q) => q.listed);
   const t = text.trim().toLowerCase();
   const shown = listed.filter((q) => !t || matches(q, t));
-  const on = onQuest && quests.find((q) => q.n === onQuest);
-  const row = (q, extra = '') => (
+  const row = (q) => (
     <button
-      type="button" key={q.n + extra} className={`tm-result tm-quest-row${q === selected ? ' tm-active' : ''}${extra}`}
+      type="button" key={q.n} className={`tm-result tm-quest-row${q === selected ? ' tm-active' : ''}`}
       onClick={() => onPick(q)} title={[q.n, areaOf(q), rewardsOf(q)].filter(Boolean).join(' · ')}
     >
+      <span className="tm-quest-tick">{done?.has(questDoneKey(q)) ? '✓' : ''}</span>
       <span className="tm-offer-name">{q.n.replace(/ Quest$/, '')}</span>
       {levelOf(q) ? <span className="tm-result-kind" title="Level needed">{levelOf(q)}</span> : null}
     </button>
@@ -34,12 +36,6 @@ export default function QuestList({ world, selected, onQuest, onPick, onClose, l
         <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>
       </div>
       <div className="tm-window-body">
-        {on && (
-          <div className="tm-quest-on">
-            <div className="tm-muted">You're on</div>
-            {row(on, ' tm-quest-on-row')}
-          </div>
-        )}
         <input className="tm-input tm-quest-search" value={text} onChange={(e) => setText(e.target.value)} placeholder="Find a quest, area or reward" spellCheck={false} />
         {world.questDbError && <div className="tm-muted">Quest database not reachable: showing the built-in list.</div>}
         <div className="tm-muted">{listed.length} quests</div>
