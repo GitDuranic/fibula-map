@@ -33,7 +33,7 @@ export default function QuestList({ world, selected, done, onPick, onClose, logi
     <div className="tm-panel tm-window tm-quest-list">
       <div className="tm-window-title">
         <span className="tm-window-name">Quests</span>
-        <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>
+        <button type="button" className="tm-close" onClick={onClose} title="Fold the quest panel in" aria-label="Fold in">‹</button>
       </div>
       <div className="tm-window-body">
         <input className="tm-input tm-quest-search" value={text} onChange={(e) => setText(e.target.value)} placeholder="Find a quest, area or reward" spellCheck={false} />

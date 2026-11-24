@@ -415,3 +415,12 @@
 .tm-bring-tick { position: absolute; left: 2px; top: 0; color: #8fd88f; font-weight: bold; pointer-events: none; }
 .tm-bring-hidden { opacity: 0.4; }
 .tm-bring-x { position: absolute; right: -3px; top: -3px; }
+/* The quest panel's fold-out tab (user 2026-11-24): on the map's left edge while the panel is folded in */
+.tm-fold-out {
+  position: absolute; left: 5px; top: 50%; transform: translateY(-50%); z-index: 4; width: 14px; height: 48px; padding: 0;
+  font: bold 13px/12px Verdana, sans-serif; color: var(--tm-text); cursor: pointer;
+  background: var(--tm-stone); background-color: #474747;
+  border: 1px solid; border-color: var(--tm-light) var(--tm-dark) var(--tm-dark) var(--tm-light);
+}
+.tm-fold-out:hover { color: #fff; }
+.tm-fold-out:active { border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); }

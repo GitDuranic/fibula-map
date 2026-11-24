@@ -158,7 +158,7 @@ export default function QuestWindow({ world, chest, onItem, onClose, onBack, isD
       <div className="tm-window-title">
         {onBack && <button type="button" className="tm-link tm-quest-back" onClick={onBack} title="Back to all quests">◂ All quests</button>}
         <span className="tm-window-name">{q.n}</span>
-        <button type="button" className="tm-close" onClick={onClose} title="Close" aria-label="Close">×</button>
+        <button type="button" className="tm-close" onClick={onClose} title="Fold the quest panel in" aria-label="Fold in">‹</button>
       </div>
       <div className="tm-window-body">
         {editing === q && d && onSave ? <QuestEdit world={world} row={d} onSave={(changes) => onSave(q, changes)} onDone={() => setEditing(null)} hasSteps={!!guide?.guide?.steps.length}

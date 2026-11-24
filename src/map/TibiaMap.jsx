@@ -1733,7 +1733,8 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     if (c) setQuestsOpen(true);
     redraw();
   }, [redraw]); // eslint-disable-line react-hooks/exhaustive-deps
-  const closeQuests = () => { setQuestsOpen(false); selectQuest(null); };
+  // Folding the quest panel in (‹, user 2026-11-24) keeps the open quest: its guide stays on the map.
+  const closeQuests = () => setQuestsOpen(false);
   // A Talk step's NPC (13f-0b): go to it, its window and its conversation.
   const talkTo = (n) => { jump({ x: n.p[0], y: n.p[1], z: n.p[2] }); selectNpc(n); openTalk(n); };
   // The development tools (slice 12 spot editing, named locations; only on the dev server) show only to a logged-in
@@ -2092,7 +2093,12 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   return (
     <div className="tm" style={{ ...skin, height }}>
       {/* The quest panel (13f-0): the quest list and the open quest, left of the map (the right panel is too narrow
-          for steps and dialogs). Open until closed; the map gets narrower. */}
+          for steps and dialogs). Open until closed; the map gets narrower. Folded in, a › tab on the left edge folds
+          it out (user 2026-11-24: replaces the Quests button). */}
+      {!questsOpen && ready && (
+        <button type="button" className="tm-fold-out" style={{ zoom: uiScale / dpr }} onClick={() => setQuestsOpen(true)}
+          title={questSel ? `Quests: ${questSel.quest.n}` : 'Quests'} aria-label="Fold the quest panel out">›</button>
+      )}
       {questsOpen && (
         <div className="tm-side tm-left" style={{ zoom: uiScale / dpr }}>
           {world && ready && !questSel && (
@@ -2231,7 +2237,6 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
           {/* Route and Quests on their own row: with Back and Home they don't fit the panel's width */}
           <div className="tm-goto-tools">
             <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
-            <button type="button" className="tm-btn" onClick={() => (questsOpen ? closeQuests() : setQuestsOpen(true))} disabled={!ready} title="The quests, to look up and follow (a panel left of the map)">Quests</button>
             <button type="button" className="tm-btn" onClick={() => setSettingsOpen(true)} title="Settings: the map version">Settings</button>
           </div>
         </form>
