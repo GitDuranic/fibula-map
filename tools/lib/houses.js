@@ -46,7 +46,10 @@ export function houseSpots(list, tiles, walkable) {
     const perFloor = new Map();
     for (const t of all) { if (!perFloor.has(t[2])) perFloor.set(t[2], []); perFloor.get(t[2]).push(t); }
     const z = perFloor.has(h.entry[2]) ? h.entry[2] : [...perFloor].sort((a, b) => b[1].length - a[1].length)[0][0];
-    const floor = perFloor.get(z);
+    // Some house ids have tiles in more than one place on the 7.2 map (user 2026-11-24: "Darashia 3, Flat 01" and
+    // "Flat 02" also cover tiles 40 squares away, and their names landed in another building): only the connected
+    // group of tiles closest to the house's entry counts.
+    const floor = nearestGroup(perFloor.get(z), h.entry);
     const mx = floor.reduce((s, t) => s + t[0], 0) / floor.length, my = floor.reduce((s, t) => s + t[1], 0) / floor.length;
     const pick = (list2) => list2.reduce((best, t) => {
       const d = (t[0] - mx) ** 2 + (t[1] - my) ** 2;
@@ -56,6 +59,27 @@ export function houseSpots(list, tiles, walkable) {
     out.push([h.name, ...spot]);
   }
   return out;
+}
+
+// The tiles (one floor) split into groups that touch (8 neighbours); the group with a tile closest to entry [x, y].
+function nearestGroup(tiles, entry) {
+  const key = (x, y) => `${x},${y}`, left = new Map(tiles.map((t) => [key(t[0], t[1]), t]));
+  let best = null;
+  while (left.size) {
+    const [k0, t0] = left.entries().next().value;
+    left.delete(k0);
+    const group = [t0], todo = [t0];
+    while (todo.length) {
+      const [x, y] = todo.pop();
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const k = key(x + dx, y + dy), t = left.get(k);
+        if (t) { left.delete(k); group.push(t); todo.push(t); }
+      }
+    }
+    const d = Math.min(...group.map((t) => Math.max(Math.abs(t[0] - entry[0]), Math.abs(t[1] - entry[1]))));
+    if (!best || d < best.d) best = { group, d };
+  }
+  return best.group;
 }
 
 // walkable(x, y, z) from a converted folder's map.json + walk.bin.
