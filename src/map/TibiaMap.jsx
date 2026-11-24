@@ -2184,6 +2184,17 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
               ) : [
                 ['Route from here', () => updateRoute({ from: { label: menu.tile.join(', '), pos: menu.tile } })],
                 ['Route to here', () => updateRoute({ to: { label: menu.tile.join(', '), pos: menu.tile } })],
+                // With a quest open (user 2026-11-24): from here to the quest's first step with a spot (a Talk step: its
+                // NPC), e.g. you're idling in Edron and want to get to the start of the Fanfare Quest.
+                ...(() => {
+                  const start = markGuide?.steps.map((t) => qg.stepPos(world, t)).find(Boolean);
+                  if (!start) return [];
+                  const name = markQ.n.replace(/ Quest$/, '');
+                  return [[`Route to the start of ${name}`, () => updateRoute({
+                    from: { label: menu.tile.join(', '), pos: menu.tile },
+                    to: { label: `Start of ${name}`.slice(0, 60), pos: start },
+                  })]];
+                })(),
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
                 // Editors (14a): a locked door on the map that just opens is marked "Not locked" for everyone.
                 ...(login.editor && dbCfg && world?.allDoorAt?.has(menu.tile.join(','))
