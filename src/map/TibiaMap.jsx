@@ -1090,29 +1090,32 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         if (away) drawArrow(ctx, tx + w + gap + a / 2, ty + th / 2, a, n.p[2] < v.z, fs / 2);
       }
     }
-    // Players in houses (Settings, slices 17a-b): the renter standing on a spot in the house, facing south, with the
-    // name above, as an NPC. Only renters whose outfit is known are drawn (user: no outfit, no renter); outfits are
-    // asked for only for the renters in view, from NAMES_FROM. In a one-floor view only that floor's renters (user
-    // 2026-11-24 test: grey names from the flats above overlapped the green ones).
+    // Players in houses (Settings, slices 17a-b): the renter standing on a free square in the house, facing south, at
+    // real size (one square, user 2026-11-24: 'drawn in the house real scale on a real square'), with the name above.
+    // Like the monsters: only on the floor you're on, and not under a roof that's drawn (so a town zoomed out isn't
+    // crowded with every floor's renters). Only renters whose outfit is known (user: no outfit, no renter); outfits are
+    // asked for only for the renters in view, from NAMES_FROM.
     if (housePlayers.current.length && playerOutfits.current && world.playerOutfits && v.zoom >= NAMES_FROM) {
-      const fs = Math.max(k, Math.round(s / 32));
+      const fs = Math.max(k, Math.round(s / 32)), sc = s / 32;
+      const pz = monsterFloor(world, v, left, top, right, bottom);
       const list = [];
       for (const pl of housePlayers.current) {
-        if (npcElsewhere(pl, v)) continue;
-        const f = npcViewFrame(pl, v);
-        if (!f || f[0] < left - 3 || f[0] > right + 3 || f[1] < top - 3 || f[1] > bottom + 3) continue;
+        const f = monFrame(pl, v, pz, world);
+        if (!f || f[0] < left - 2 || f[0] > right + 2 || f[1] < top - 2 || f[1] > bottom + 2) continue;
         const o = playerOutfits.current.get(pl.n), po = o && world.playerOutfit(o);
-        if (po) list.push({ pl, f, po, r: npcRect({ img: [0, 0, po.w, po.h], d: po.d }, f, ox, oy, s, k) });
+        if (!po) continue;
+        // As npcRect, but always one square per 32 sprite pixels.
+        const cx = ox + (f[0] + 0.5) * s, cy = oy + (f[1] + 0.5) * s;
+        const r = { x: Math.round(cx + (16 - po.w - po.d[0]) * sc), y: Math.round(cy + (16 - po.h - po.d[1]) * sc), w: Math.round(po.w * sc), h: Math.round(po.h * sc), cx, cy };
+        list.push({ pl, f, po, r });
       }
       list.sort((a, b) => a.f[1] - b.f[1] || a.f[0] - b.f[0]);
-      for (const { po, r } of list) {
-        ctx.imageSmoothingEnabled = r.sc < 1;
-        ctx.drawImage(po.canvas, r.x, r.y, r.w, r.h);
-      }
+      ctx.imageSmoothingEnabled = sc < 1;
+      for (const { po, r } of list) ctx.drawImage(po.canvas, r.x, r.y, r.w, r.h);
       ctx.imageSmoothingEnabled = false;
       for (const { pl, r } of list) {
         const w = textWidth(world.font, pl.n) * fs;
-        const tx = Math.round(r.cx - w / 2), ty = Math.round(Math.min(r.y, r.cy - 16 * r.sc) - 14 * fs);
+        const tx = Math.round(r.cx - w / 2), ty = Math.round(Math.min(r.y, r.cy - 16 * sc) - 14 * fs);
         ctx.save();
         ctx.translate(tx, ty);
         ctx.scale(fs, fs);

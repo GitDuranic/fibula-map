@@ -5,9 +5,9 @@
 import fs from 'fs';
 import { walkNodes, Reader } from './nodefile.js';
 
-const OTBM = { TILE_AREA: 4, HOUSETILE: 14 };
+const OTBM = { TILE_AREA: 4, ITEM: 6, HOUSETILE: 14 };
 
-// House id -> [[x, y, z], ...] from the map.
+// House id -> [[x, y, z, items], ...] from the map (items: how many items lie on the tile, the ground included).
 export function readHouseTiles(file) {
   const tiles = new Map();
   let area = null;
@@ -16,10 +16,15 @@ export function readHouseTiles(file) {
     if (node.type === OTBM.TILE_AREA) { area = [r.u16(), r.u16(), r.u8()]; return true; }
     if (node.type === OTBM.HOUSETILE) {
       const x = area[0] + r.u8(), y = area[1] + r.u8(), id = r.u32();
+      let items = 0;
+      while (r.left > 0) { const a = r.u8(); if (a === 3) r.u32(); else if (a === 9) { r.u16(); items++; } else break; }
       if (!tiles.has(id)) tiles.set(id, []);
-      tiles.get(id).push([x, y, area[2]]);
-      return false;
+      const t = [x, y, area[2], items];
+      tiles.get(id).push(t);
+      node.houseTile = t;
+      return true; // its items are counted below
     }
+    if (node.type === OTBM.ITEM) { if (node.parent?.houseTile) node.parent.houseTile[3]++; return false; }
     return node.type !== 5; // plain tiles: nothing inside them matters here
   });
   return tiles;
@@ -55,8 +60,11 @@ export function houseSpots(list, tiles, walkable) {
       const d = (t[0] - mx) ** 2 + (t[1] - my) ** 2;
       return !best || d < best.d ? { t, d } : best;
     }, null)?.t;
-    const spot = pick(floor.filter((t) => walkable(...t))) || pick(floor);
-    out.push([h.name, ...spot]);
+    // A free square (user 2026-11-24: the character stands 'on a real square in the house'): walkable with nothing
+    // but its floor on it, else any walkable one, else any.
+    const free = (t) => walkable(t[0], t[1], t[2]);
+    const spot = pick(floor.filter((t) => free(t) && t[3] <= 1)) || pick(floor.filter(free)) || pick(floor);
+    out.push([h.name, spot[0], spot[1], spot[2]]);
   }
   return out;
 }
