@@ -17,6 +17,7 @@
 //   quests.json           quests: the Fibula list merged with the chests found on the 7.1 map (src/map/engine/questdata.js)
 //   quests-auto.json      only the chests found on the 7.1 map (name/version/reward from TibiaWiki), for live merging
 //   doors.json            locked doors [[x,y,z, door id, open door id, key number (0 unknown), key id]] (client ids)
+//   houses.json           [[house name, x, y, z]]: a spot inside each house (only with --houses <map-house.xml>)
 //   refresh.bin           refresh tiles (OTBM flag 0x20), 1 bit per tile, 128 bytes per chunk in map.json chunk order;
 //                         --refresh-map <otbm> takes them from another map (7.1 has none: use the 7.2 map)
 //   walk.bin, links.json  router data: per tile 0 (blocked) or ground speed / 2, in map.json chunk order;
@@ -59,6 +60,7 @@ import { loadMonsters, spawnGroups } from './lib/monsters.js';
 import { walkRules, buildWalk, LINK_KINDS } from './lib/walk.js';
 import { buildClimbs, CLIMB_SPELL, CLIMB_PARCELS } from './lib/climb.js';
 import { readRefresh, refreshBin } from './lib/refresh.js';
+import { readHouseTiles, readHouseList, houseSpots } from './lib/houses.js';
 import { mergeQuests } from '../src/map/engine/questdata.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
@@ -260,6 +262,13 @@ fs.writeFileSync(path.join(OUT, 'walk.bin'), Buffer.concat(walkBytes.map((b) => 
   const set = readRefresh(args['refresh-map'] || MAP);
   fs.writeFileSync(path.join(OUT, 'refresh.bin'), refreshBin(set, chunkIndex, CHUNK));
   log(`Refresh tiles: ${set.size}${args['refresh-map'] ? ` (from ${args['refresh-map']})` : ''}`);
+}
+// houses.json (slice 17a): each house's name and a spot inside it, for the renters (Settings "Players in houses").
+// Only with --houses <map-house.xml> (the 7.2 map's; the Fibula API is the live 7.2 server).
+if (args.houses) {
+  const spots = houseSpots(readHouseList(args.houses), readHouseTiles(MAP), (x, y, z) => walk.speedAt(x, y, z) > 0);
+  fs.writeFileSync(path.join(OUT, 'houses.json'), JSON.stringify(spots));
+  log(`Houses: ${spots.length}`);
 }
 // Magic forcefields: stepping onto one moves you to its destination. Destination 0,0,0 (scripted, or broken) or
 // not on the map: left out.

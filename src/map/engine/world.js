@@ -496,6 +496,16 @@ export class World {
     return o === undefined ? 0 : this.walk.bytes[o + (y - cy * C) * C + (x - cx * C)] * 2;
   }
 
+  // ---------- houses (slice 17a) ----------
+  // houses.json: [[house name, x, y, z]] (a spot inside each house), or null when this data folder has none (only
+  // the 7.2 map has a house list).
+  loadHouses() {
+    this.housesPromise ||= fetch(`${this.base}/houses.json`)
+      .then((r) => (r.ok && (r.headers.get('content-type') || '').includes('json') ? r.json() : null))
+      .catch(() => null);
+    return this.housesPromise;
+  }
+
   // ---------- refresh tiles (user 2026-11-24) ----------
   // refresh.bin: 1 bit per tile, 128 bytes per chunk in map.json order (tools/lib/refresh.js). null when the data
   // folder has none (converted before 2026-11-24).

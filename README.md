@@ -79,12 +79,17 @@ http://localhost:5181.
 The 7.2 map data is built with:
 
 ```sh
-node --max-old-space-size=8192 tools/convert-map.js --map "<dir>/map72.otbm" --spawn "<dir>/map-spawn.xml" --out public/map-data-72
+node --max-old-space-size=8192 tools/convert-map.js --map "<dir>/map72.otbm" --spawn "<dir>/map-spawn.xml" --houses "<dir>/map-house.xml" --out public/map-data-72
 ```
 
 The refresh tiles (Settings → "Refresh tiles") come from the 7.2 map's tile flags; the 7.1 map has none and
 borrows them: add `--refresh-map "<dir>/map72.otbm"` when converting 7.1. Without a full convert:
 `node tools/refresh-tiles.js "<dir>/map72.otbm" public/map-data` (and `public/map-data-72`).
+
+The house list for "Players in houses" (7.2 only): add `--houses "<dir>/map-house.xml"` when converting 7.2, or
+`node tools/houses.js "<dir>/map72.otbm" "<dir>/map-house.xml" public/map-data-72`. The renters come from the Project
+Fibula API (`<TibiaMap fibulaApi="...">`, default https://api.projectfibula.org; the dev page uses the `/fibula-api`
+proxy, as the API sends no CORS header yet).
 
 To put the map inside another React site instead, use the component directly:
 

@@ -7,6 +7,6 @@ import TibiaMap from './map/TibiaMap.jsx';
 // (slice 15a; TibiaMap reads it itself, so this works on any page that embeds the map).
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <TibiaMap height="calc(100vh - 16px)" />
+    <TibiaMap height="calc(100vh - 16px)" fibulaApi="/fibula-api" />
   </React.StrictMode>,
 );

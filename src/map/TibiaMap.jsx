@@ -13,6 +13,7 @@ import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter, routeTime } from './engine/router.js';
 import { fetchTileFixes, setTileFix } from './engine/tilefixes.js';
+import { FIBULA_API, fetchHouseOwners } from './engine/fibula.js';
 import { drawText, textWidth } from './engine/text.js';
 import { questDbConfig, questsDone, saveQuestsDone, questDoneKey } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
@@ -454,7 +455,7 @@ function drawMini(mc, world, v, s, box) {
 }
 
 // supabaseUrl + supabaseKey (the public key, as for the house planner): the quest database (slice 13b).
-export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = DEFAULT_MAP, height = '80vh', syncUrl = true, supabaseUrl, supabaseKey }) {
+export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = DEFAULT_MAP, height = '80vh', syncUrl = true, supabaseUrl, supabaseKey, fibulaApi = FIBULA_API }) {
   // The map version (15a): switched in the panel, unless a single dataUrl is given.
   const [mapId, setMapId] = useState(() => (fixedUrl ? null : startMap(maps, defaultMap, syncUrl)));
   const dataUrl = fixedUrl || maps.find((m) => m.id === mapId)?.url || maps[0].url;
@@ -545,6 +546,12 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const [showRefresh, setShowRefreshState] = useState(() => { try { return localStorage.getItem('tm-show-refresh') === '1'; } catch { return false; } });
   const showRefreshRef = useRef(showRefresh);
   showRefreshRef.current = showRefresh;
+  // Players in houses (Settings, slice 17a): each house's renter (Project Fibula API) shown in the house. Kept in the
+  // browser; draw() reads housePlayers: [{ n: renter, p: [x, y, z], house }].
+  const [showHouses, setShowHousesState] = useState(() => { try { return localStorage.getItem('tm-show-houses') === '1'; } catch { return false; } });
+  const setShowHouses = (on) => { try { localStorage.setItem('tm-show-houses', on ? '1' : '0'); } catch { /* private mode */ } setShowHousesState(on); };
+  const housePlayers = useRef([]);
+  const [houseNote, setHouseNote] = useState(null); // why there are none (no house list on this map, API not reachable)
   const setShowRefresh = (on) => { try { localStorage.setItem('tm-show-refresh', on ? '1' : '0'); } catch { /* private mode */ } setShowRefreshState(on); };
   const [locName, setLocName] = useState(''); // the name being typed for "Add location here"
   // The quest panel left of the map (13f-0; the list from 13b, the slice 12 checklist in development): open until
@@ -1082,6 +1089,30 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         if (away) drawArrow(ctx, tx + w + gap + a / 2, ty + th / 2, a, n.p[2] < v.z, fs / 2);
       }
     }
+    // Players in houses (Settings, slice 17a): the renter's name over a spot in the house, placed and coloured like an
+    // NPC's name (green). In a one-floor view only that floor's renters (user 2026-11-24 test: grey names from the flats
+    // above overlapped the green ones).
+    if (housePlayers.current.length && v.zoom >= NAMES_FROM) {
+      const fs = Math.max(k, Math.round(s / 32));
+      ctx.imageSmoothingEnabled = false;
+      const list = [];
+      for (const pl of housePlayers.current) {
+        if (npcElsewhere(pl, v)) continue; // a one-floor view: only that floor's renters (other floors' stacked flats overlapped)
+        const f = npcViewFrame(pl, v);
+        if (f && f[0] >= left - 3 && f[0] <= right + 3 && f[1] >= top - 3 && f[1] <= bottom + 3) list.push({ pl, f });
+      }
+      list.sort((a, b) => a.f[1] - b.f[1] || a.f[0] - b.f[0]);
+      for (const { pl, f } of list) {
+        const r = npcRect({ img: null, d: [0, 0] }, f, ox, oy, s, k);
+        const w = textWidth(world.font, pl.n) * fs;
+        const tx = Math.round(r.cx - w / 2), ty = Math.round(Math.min(r.y, r.cy - 16 * r.sc) - 14 * fs);
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.scale(fs, fs);
+        drawText(ctx, world.font, pl.n, 0, 0, '#00c000');
+        ctx.restore();
+      }
+    }
     // The quest route (13e): the guide's legs, on the floor you're looking at (the surface ones also from the other
     // surface floors, fainter, as the route). The leg to the step you're on bright, the ones still to do dimmer, done
     // legs faint; the leg in the Route panel is drawn as the route below. Floor changes and boats: only the line.
@@ -1572,6 +1603,22 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const editorRef = useRef(false);
   editorRef.current = !!login.editor;
   useEffect(() => { if (login.editor && ready) worldRef.current?.loadWalk().then(() => redraw()); }, [login.editor, ready, redraw]);
+  // Players in houses (17a): only fetched while the setting is on; the owners are kept in the browser for a day.
+  useEffect(() => {
+    const world = worldRef.current;
+    housePlayers.current = [];
+    setHouseNote(null);
+    if (!showHouses || !ready || !world) { redraw(); return undefined; }
+    let live = true;
+    Promise.all([world.loadHouses(), fetchHouseOwners(fibulaApi)]).then(([houses, { owners, stale }]) => {
+      if (!live || worldRef.current !== world) return;
+      if (!houses) { setHouseNote('This map version has no house list.'); redraw(); return; }
+      housePlayers.current = houses.filter(([h]) => owners.has(h)).map(([h, x, y, z]) => ({ n: owners.get(h), p: [x, y, z], house: h }));
+      setHouseNote(stale ? 'Could not reach the player API: showing the last owners kept.' : null);
+      redraw();
+    }, (e) => { if (live) setHouseNote(`Could not reach the player API (${e.message || e}).`); });
+    return () => { live = false; };
+  }, [showHouses, ready, fibulaApi, redraw]);
   // Refresh tiles (Settings): loaded the first time they're shown (also after a map version switch), then drawn.
   useEffect(() => {
     if (showRefresh && ready) worldRef.current?.loadRefresh().then(() => redraw());
@@ -2384,6 +2431,11 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                   <span><span className="tm-refresh-swatch" /> Refresh tiles</span>
                 </label>
                 {showRefresh && world && world.refresh === null && <div className="tm-muted">This map version has no refresh data.</div>}
+                <label className="tm-check" title="Who rents each house on Project Fibula, shown in the house (from the Project Fibula stats API; owners are updated once a day)">
+                  <input type="checkbox" checked={showHouses} onChange={(e) => setShowHouses(e.target.checked)} />
+                  <span>Players in houses</span>
+                </label>
+                {showHouses && houseNote && <div className="tm-muted">{houseNote}</div>}
                 <div className="tm-muted">Coloured tiles are reset at server save; items stay on the others.{mapLabel === '7.1' ? ' The 7.1 map borrows these from the 7.2 map.' : ''}</div>
               </div>
             </div>

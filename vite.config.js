@@ -45,6 +45,8 @@ function customPlaces() {
 export default defineConfig({
   plugins: [react(), customPlaces()],
   server: {
+    // The Project Fibula stats API (slice 17) sends no CORS header yet: the dev page reads it through here.
+    proxy: { '/fibula-api': { target: 'https://api.projectfibula.org', changeOrigin: true, rewrite: (p) => p.replace(/^\/fibula-api/, '') } },
     // Native file watching misses some edits on this Windows setup; polling is reliable.
     watch: { usePolling: true, interval: 300, ignored: ['**/public/map-data*/**', '**/dist/**', '**/tools/data/**'] },
   },
