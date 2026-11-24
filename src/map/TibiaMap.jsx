@@ -108,15 +108,14 @@ const NPCS_FROM = 4, NAMES_FROM = 16, OUTFIT_MIN = 0.75;
 const NPC_ELSEWHERE_ALPHA = 0.45;
 
 // Where a house's renter stands (slice 17, user 2026-11-24: 'randomly also face them east or west, or put them in
-// front of their front door facing away from the door ... maybe just 25% each'): fixed per house (from its name, so
-// it doesn't change between visits): in the house facing south, east or west, or on the square outside its front
-// door facing away from it (houses.json row: [name, x, y, z, door x, y, z, direction]; without a door: south).
+// front of their front door facing away from the door ... maybe just 25% each'): in the house facing south, east or
+// west on one of its free squares, or on the square outside its front door facing away from it (houses.json row:
+// [name, [[x, y, z], ...] free squares, [x, y, z, direction] front door or null]). Random on every page load (user: 'On ctrl+f5 refresh shouldn't they move to a
+// new random spot?'), then kept while the page is open.
 function housePose(row, renter) {
-  let hash = 0;
-  for (const ch of row[0]) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-  const pick = hash % 4;
-  if (pick === 3 && row.length > 4) return { n: renter, house: row[0], p: row.slice(4, 7), dir: row[7] };
-  return { n: renter, house: row[0], p: row.slice(1, 4), dir: [2, 1, 3, 2][pick] };
+  const [house, spots, door] = row, pick = Math.floor(Math.random() * 4);
+  if (pick === 3 && door) return { n: renter, house, p: door.slice(0, 3), dir: door[3] };
+  return { n: renter, house, p: spots[Math.floor(Math.random() * spots.length)], dir: [2, 1, 3, 2][pick] };
 }
 
 // Zooming in to MAIN_FROM shows the floor you have set, "this floor only". Ctrl + wheel goes up or down from there;
