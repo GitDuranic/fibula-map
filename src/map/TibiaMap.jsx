@@ -107,6 +107,18 @@ const NPCS_FROM = 4, NAMES_FROM = 16, OUTFIT_MIN = 0.75;
 // How visible an NPC on another floor is when zoomed in to one floor (see the NPC drawing).
 const NPC_ELSEWHERE_ALPHA = 0.45;
 
+// Where a house's renter stands (slice 17, user 2026-11-24: 'randomly also face them east or west, or put them in
+// front of their front door facing away from the door ... maybe just 25% each'): fixed per house (from its name, so
+// it doesn't change between visits): in the house facing south, east or west, or on the square outside its front
+// door facing away from it (houses.json row: [name, x, y, z, door x, y, z, direction]; without a door: south).
+function housePose(row, renter) {
+  let hash = 0;
+  for (const ch of row[0]) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  const pick = hash % 4;
+  if (pick === 3 && row.length > 4) return { n: renter, house: row[0], p: row.slice(4, 7), dir: row[7] };
+  return { n: renter, house: row[0], p: row.slice(1, 4), dir: [2, 1, 3, 2][pick] };
+}
+
 // Zooming in to MAIN_FROM shows the floor you have set, "this floor only". Ctrl + wheel goes up or down from there;
 // zooming back out brings the roofs back. (User 2026-11-22: it used to switch to the area's main level, Venore's
 // streets on floor 6 in 7.1, but zooming in should keep the floor you chose.)
@@ -1102,7 +1114,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
       for (const pl of housePlayers.current) {
         const f = monFrame(pl, v, pz, world);
         if (!f || f[0] < left - 2 || f[0] > right + 2 || f[1] < top - 2 || f[1] > bottom + 2) continue;
-        const o = playerOutfits.current.get(pl.n), po = o && world.playerOutfit(o);
+        const o = playerOutfits.current.get(pl.n), po = o && world.playerOutfit(o, pl.dir);
         if (!po) continue;
         // As npcRect, but always one square per 32 sprite pixels.
         const cx = ox + (f[0] + 0.5) * s, cy = oy + (f[1] + 0.5) * s;
@@ -1625,7 +1637,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     Promise.all([world.loadHouses(), fetchHouseOwners(fibulaApi)]).then(([houses, { owners, stale }]) => {
       if (!live || worldRef.current !== world) return;
       if (!houses) { setHouseNote('This map version has no house list.'); redraw(); return; }
-      housePlayers.current = houses.filter(([h]) => owners.has(h)).map(([h, x, y, z]) => ({ n: owners.get(h), p: [x, y, z], house: h }));
+      housePlayers.current = houses.filter(([h]) => owners.has(h)).map((row) => housePose(row, owners.get(row[0])));
       setHouseNote(stale ? 'Could not reach the player API: showing the last owners kept.' : null);
       redraw();
     }, (e) => { if (live) setHouseNote(`Could not reach the player API (${e.message || e}).`); });

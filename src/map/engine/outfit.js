@@ -33,7 +33,9 @@ export function colourOutfit(base, mask, colors) {
     if (!b[p + 3]) continue;
     let c = null;
     if (m[p + 3]) {
-      const r = m[p], g = m[p + 1], bl = m[p + 2];
+      // On above half: the browser may read the mask back slightly off pure (a green legs pixel with a little red came
+      // out as head colour, user 2026-11-24: 'some pixels dont get the correct color').
+      const r = m[p] > 127, g = m[p + 1] > 127, bl = m[p + 2] > 127;
       if (r && g && !bl) c = head; else if (r && !g && !bl) c = body; else if (!r && g && !bl) c = legs; else if (!r && !g && bl) c = feet;
     }
     for (let k = 0; k < 3; k++) o[p + k] = c ? Math.round(b[p + k] * c[k] / 255) : b[p + k];

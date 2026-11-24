@@ -523,16 +523,16 @@ export class World {
   }
 
   // A player's outfit, coloured (cached): { canvas, w, h, d: displacement } or null (unknown looktype, or not
-  // loaded). o: [looktype, head, body, legs, feet].
-  playerOutfit(o) {
-    const po = this.playerOutfits, key = o.join(',');
+  // loaded). o: [looktype, head, body, legs, feet]; dir: 0 north, 1 east, 2 south, 3 west.
+  playerOutfit(o, dir = 2) {
+    const po = this.playerOutfits, key = `${o.join(',')}:${dir}`;
     if (!po) return null;
     if (po.made.has(key)) return po.made.get(key);
     const t = po.json.types[o[0]];
     let r = null;
     if (t) {
       const [col, w, h, dx, dy] = t, C = po.json.cell;
-      const base = po.cx.getImageData(col * C, 0, w, h), mask = po.cx.getImageData(col * C, C, w, h);
+      const base = po.cx.getImageData(col * C, 2 * dir * C, w, h), mask = po.cx.getImageData(col * C, (2 * dir + 1) * C, w, h);
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').putImageData(colourOutfit(base, mask, o.slice(1)), 0, 0);

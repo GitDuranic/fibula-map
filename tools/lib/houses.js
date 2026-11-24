@@ -1,7 +1,7 @@
 // Houses (slice 17a, user 2026-11-24): where to show a house's renter on the map. The map's house tiles (OTBM
 // HOUSETILE nodes carry the house id) and the house list (map-house.xml: id, name, entry) give each house a spot:
 // the walkable house tile closest to the middle of the house's tiles on its entry's floor (else the floor with the
-// most house tiles). houses.json: [[name, x, y, z]], names as in map-house.xml (the Fibula API uses the same names).
+// most house tiles). houses.json: [[name, x, y, z, (front door square: x, y, z, direction away from the door)]], names as in map-house.xml (the Fibula API uses the same names).
 import fs from 'fs';
 import { walkNodes, Reader } from './nodefile.js';
 
@@ -64,7 +64,12 @@ export function houseSpots(list, tiles, walkable) {
     // but its floor on it, else any walkable one, else any.
     const free = (t) => walkable(t[0], t[1], t[2]);
     const spot = pick(floor.filter((t) => free(t) && t[3] <= 1)) || pick(floor.filter(free)) || pick(floor);
-    out.push([h.name, spot[0], spot[1], spot[2]]);
+    // The front door (user 2026-11-24: some renters stand 'in front of their front door facing away from the door'):
+    // the entry square, outside the house, next to one of its tiles; the direction from that tile to the entry
+    // (0 north, 1 east, 2 south, 3 west). Left out when the entry isn't walkable or not next to the house.
+    const [ex, ey, ez] = h.entry, own = new Set(all.filter((t) => t[2] === ez).map((t) => `${t[0]},${t[1]}`));
+    const door = walkable(ex, ey, ez) && [[0, 1, 0], [-1, 0, 1], [0, -1, 2], [1, 0, 3]].find(([dx, dy]) => own.has(`${ex + dx},${ey + dy}`));
+    out.push(door ? [h.name, spot[0], spot[1], spot[2], ex, ey, ez, door[2]] : [h.name, spot[0], spot[1], spot[2]]);
   }
   return out;
 }
