@@ -22,7 +22,7 @@ export function nodeRouter(dir = 'public/map-data') {
   return {
     ready,
     // The fastest route from -> to ([x, y, z]); all doors open, rope and shovel as on the map, level 100.
-    route: async (from, to, { speed = 220, level = 100, climb = 0 } = {}) => { await ready; return ask({ type: 'route', from, to, speed, level, doors: { all: true, open: [] }, climb }); },
+    route: async (from, to, { speed = 220, level = 100, climb = 0, walk = [] } = {}) => { await ready; return ask({ type: 'route', from, to, speed, level, doors: { all: true, open: [], walk }, climb }); },
   };
 }
 

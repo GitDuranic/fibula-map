@@ -117,6 +117,7 @@ export function routerMain() {
     return W.mask[w] & b ? W.rank[w] + popcnt(W.mask[w] & (b - 1)) : -1;
   };
 
+  let RAW = null; // the loaded files, kept so build() can run again with other walkable tiles (14b)
   async function load(base) {
     const [bin, linksJson, map, doors] = await Promise.all([
       fetch(`${base}/walk.bin`).then((r) => r.arrayBuffer()),
@@ -124,14 +125,33 @@ export function routerMain() {
       fetch(`${base}/map.json`).then((r) => r.json()),
       fetch(`${base}/doors.json`).then((r) => r.json()).catch(() => []), // older data: no locked doors
     ]);
+    RAW = { bin, linksJson, map, doors };
+    build([]);
+  }
+
+  // Works out everything the search needs from the loaded files. walk (14b): tiles editors marked walkable
+  // ('x,y,z'): blocked tiles there get the ground speed of their walkable neighbours (else 150), so they join the
+  // walking areas too. Runs again when that list changes (rare: an editor marks a tile).
+  function build(walk) {
+    const { bin, linksJson, map, doors } = RAW;
     // Chunks: a table (floor, chunk x, chunk y) -> place in walk.bin order.
     let cx0 = Infinity, cy0 = Infinity, cx1 = -Infinity, cy1 = -Infinity;
     for (let z = 0; z < 16; z++) for (const [cx, cy] of map.chunks[z] || []) { cx0 = Math.min(cx0, cx); cy0 = Math.min(cy0, cy); cx1 = Math.max(cx1, cx); cy1 = Math.max(cy1, cy); }
     const cw = cx1 - cx0 + 1, ch = cy1 - cy0 + 1, chunkOrd = new Int32Array(16 * cw * ch).fill(-1);
     const ordX = [], ordY = [], ordZ = [];
     for (let z = 0; z < 16; z++) for (const [cx, cy] of map.chunks[z] || []) { chunkOrd[(z * cw + cx - cx0) * ch + cy - cy0] = ordX.length; ordX.push(cx); ordY.push(cy); ordZ.push(z); }
-    const bytes = new Uint8Array(bin), N = bytes.length;
-    W = { bytes, cx0, cy0, cw, ch, chunkOrd };
+    const bytes = new Uint8Array(bin.slice(0)), N = bytes.length;
+    W = { bytes, cx0, cy0, cw, ch, chunkOrd, walkKey: walk.join(';') };
+    for (const k of walk) {
+      const [x, y, z] = k.split(',').map(Number), t = tileIndex(x, y, z);
+      if (t < 0 || bytes[t]) continue;
+      let sum = 0, n = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const u = tileIndex(x + dx, y + dy, z);
+        if (u >= 0 && bytes[u]) { sum += bytes[u]; n++; }
+      }
+      bytes[t] = n ? Math.round(sum / n) : 75;
+    }
     const coordsOf = (t) => { const o = t >> 10, i = t & 1023; return [ordX[o] * C + (i & 31), ordY[o] * C + (i >> 5), ordZ[o]]; };
 
     // Links by tile; flags: 1 = stepped onto (stairs, hole, forcefield), 2 = used (ladder, grate, ...), 4 = locked door,
@@ -429,6 +449,9 @@ export function routerMain() {
       if (type === 'load') { await load(base); self.postMessage({ id, ok: true }); return; }
       if (type === 'cancel') { self.postMessage({ id, cancelled: true }); return; }
       if (!W) throw new Error('Walk data not loaded');
+      // The editors' walkable tiles changed (14b): build again with them.
+      const walk = [...(doors.walk || [])].sort();
+      if (walk.join(';') !== W.walkKey) build(walk);
       // A spot you can't stand on (a depot locker, an NPC behind its counter, a wall): the nearest walkable tile
       // on the same floor, within 3 tiles. Not a hole, stairs or forcefield either (13j: quest steps sit on holes):
       // you can't end up standing there, so the route goes to the tile next to it.
@@ -497,7 +520,7 @@ export function createRouter(base) {
   const ready = ask({ type: 'load', base: absBase });
   return {
     // The fastest route. from, to: [x, y, z]; speed: the character's speed (client value); level: for the Oracle.
-    // doors: { all, open: [unit], free: ['x,y,z'] } (see the map's doorUnit; free: tiles editors marked passable, 14a). climb: CLIMB_SPELL | CLIMB_PARCELS, what the character can climb with.
+    // doors: { all, open: [unit], free: ['x,y,z'], walk: ['x,y,z'] } (see the map's doorUnit; free: tiles editors marked passable, 14a; walk: blocked tiles they marked walkable, 14b). climb: CLIMB_SPELL | CLIMB_PARCELS, what the character can climb with.
     // Resolves to { routes: [{ name: 'Fastest', path, steps, gold }], cheaper } or { error }, also with
     // locked: [{ key, p }] when locked doors are in the way. cheaper: ask cheapest() for a route with less gold.
     route: async (from, to, speed, level, doors, climb = 0) => { await ready; return ask({ type: 'route', from, to, speed, level, doors, climb }); },

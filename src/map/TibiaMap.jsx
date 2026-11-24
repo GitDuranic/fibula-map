@@ -12,7 +12,7 @@ import QuestList from './QuestList.jsx';
 import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter, routeTime } from './engine/router.js';
-import { fetchTileFixes, setTilePassable } from './engine/tilefixes.js';
+import { fetchTileFixes, setTileFix } from './engine/tilefixes.js';
 import { drawText, textWidth } from './engine/text.js';
 import { questDbConfig, questsDone, saveQuestsDone, questDoneKey } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
@@ -514,8 +514,12 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const [tileFixes, setTileFixesState] = useState(() => new Set());
   const fixesRef = useRef(tileFixes);
   fixesRef.current = tileFixes;
-  // What the router is told about doors: the unlocked ones and the editors' passable tiles.
-  const routeDoors = () => ({ ...doorsRef.current, free: [...fixesRef.current] });
+  // Blocked tiles editors marked walkable in the database (14b, a Set of 'x,y,z' for this map): routes walk over them.
+  const [walkFixes, setWalkFixesState] = useState(() => new Set());
+  const walkFixesRef = useRef(walkFixes);
+  walkFixesRef.current = walkFixes;
+  // What the router is told about doors: the unlocked ones and the editors' passable and walkable tiles.
+  const routeDoors = () => ({ ...doorsRef.current, free: [...fixesRef.current], walk: [...walkFixesRef.current] });
   // ... and for a quest leg: also the doors its Key steps unlocked so far (13l).
   const legDoors = (l) => { const d = routeDoors(); return { ...d, open: [...d.open, ...l.open] }; };
   // The route: { open, from, to: { label, pos: [x,y,z] }, result: { routes: [{ name, path, steps, gold }] } | { error },
@@ -729,10 +733,23 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const markPassable = async (tile, on) => {
     const world = worldRef.current;
     try {
-      await setTilePassable(dbCfg, world.mapName, tile, on);
+      await setTileFix(dbCfg, world.mapName, tile, 'passable', on);
       const free = new Set(fixesRef.current), k = tile.join(',');
       if (on) free.add(k); else free.delete(k);
       applyFixes(free);
+      setLocNote(null);
+    } catch (e) { setLocNote(`Could not save the tile fix: ${e.message || e}`); }
+  };
+  // An editor marks a blocked tile walkable (on) or takes the mark away (14b); routes use it once the database has it.
+  const markWalkable = async (tile, on) => {
+    const world = worldRef.current;
+    try {
+      await setTileFix(dbCfg, world.mapName, tile, 'walkable', on);
+      const walk = new Set(walkFixesRef.current), k = tile.join(',');
+      if (on) walk.add(k); else walk.delete(k);
+      walkFixesRef.current = walk;
+      setWalkFixesState(walk);
+      redraw();
       setLocNote(null);
     } catch (e) { setLocNote(`Could not save the tile fix: ${e.message || e}`); }
   };
@@ -846,6 +863,15 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
           const c = world.refreshCanvas(v.z, cx, cy, REFRESH_RGBA);
           if (c) ctx.drawImage(c, ox + cx * C * s, oy + cy * C * s, C * s, C * s);
         }
+      }
+    }
+
+    // Editors (14b): the tiles marked walkable get a green frame, so they can be seen and taken back.
+    if (editorRef.current && walkFixesRef.current.size) {
+      ctx.strokeStyle = 'rgba(60,255,60,0.9)'; ctx.lineWidth = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      for (const k of walkFixesRef.current) {
+        const [x, y, z] = k.split(',').map(Number);
+        if (z === v.z && x >= left - 1 && x <= right && y >= top - 1 && y <= bottom) ctx.strokeRect(ox + x * s + 1, oy + y * s + 1, s - 2, s - 2);
       }
     }
 
@@ -1355,8 +1381,10 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
       viewChanged();
       // The editors' tile fixes for this map (14a); none without the database or before database step 15.
       if (dbCfg) {
-        fetchTileFixes(dbCfg, world.mapName).then((free) => {
+        fetchTileFixes(dbCfg, world.mapName).then(({ passable: free, walkable }) => {
           if (worldRef.current !== world) return;
+          walkFixesRef.current = walkable;
+          setWalkFixesState(walkable);
           world.setTileFixes(free);
           fixesRef.current = free;
           setTileFixesState(free);
@@ -1540,6 +1568,10 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   };
 
   // Shows the whole route: centred, at the closest zoom where it fits, on the floor it starts on.
+  // Editors (14b): the walk data, so the right-click menu knows which tiles are blocked; and draw() marks fixes.
+  const editorRef = useRef(false);
+  editorRef.current = !!login.editor;
+  useEffect(() => { if (login.editor && ready) worldRef.current?.loadWalk().then(() => redraw()); }, [login.editor, ready, redraw]);
   // Refresh tiles (Settings): loaded the first time they're shown (also after a map version switch), then drawn.
   useEffect(() => {
     if (showRefresh && ready) worldRef.current?.loadRefresh().then(() => redraw());
@@ -1622,7 +1654,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const routeRef = useRef(route);
   routeRef.current = route;
   // ... and when doors are unlocked or locked.
-  const doorsKey = `${doors.all}:${doors.open.join(';')}:${[...tileFixes].join(';')}`;
+  const doorsKey = `${doors.all}:${doors.open.join(';')}:${[...tileFixes].join(';')}:${[...walkFixes].join(';')}`;
   useEffect(() => {
     if (routeRef.current.from && routeRef.current.to) updateRoute({}, true);
   }, [oracleLevel, climb, doorsKey, updateRoute]); // (updateRoute changes with dataUrl: another map version searches again, 15a)
@@ -2201,6 +2233,12 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                   ? (tileFixes.has(menu.tile.join(','))
                     ? [['Locked again', () => markPassable(menu.tile, false)]]
                     : [['Not locked', () => markPassable(menu.tile, true)]])
+                  : []),
+                // Editors (14b): a blocked tile (water where a lever bridge goes, a wall...) becomes walkable for routes.
+                ...(login.editor && dbCfg && world?.walk && !world?.allDoorAt?.has(menu.tile.join(','))
+                  ? (walkFixes.has(menu.tile.join(','))
+                    ? [['Not walkable again', () => markWalkable(menu.tile, false)]]
+                    : (!world.speedAt(...menu.tile) ? [['Make walkable', () => markWalkable(menu.tile, true)]] : []))
                   : []),
                 ...(devTools && world?.customEditable ? [['Add location here', () => { setLocName(''); setMenu({ ...menu, adding: true }); }, true]] : []),
                 ...(guideEd && !guide.guide.missing ? [[`Add step here (${guide.quest.n.replace(/ Quest$/, '')})`, () => addGuideStep({ kind: 'go', x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] })]] : []),
