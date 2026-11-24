@@ -2097,7 +2097,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
           it out (user 2026-11-24: replaces the Quests button). */}
       {!questsOpen && ready && (
         <button type="button" className="tm-fold-out" style={{ zoom: uiScale / dpr }} onClick={() => setQuestsOpen(true)}
-          title={questSel ? `Quests: ${questSel.quest.n}` : 'Quests'} aria-label="Fold the quest panel out">›</button>
+          title={questSel ? `Quests: ${questSel.quest.n}` : 'Quests'} aria-label="Fold the quest panel out">Quests ›</button>
       )}
       {questsOpen && (
         <div className="tm-side tm-left" style={{ zoom: uiScale / dpr }}>
