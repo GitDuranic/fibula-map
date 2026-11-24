@@ -278,8 +278,8 @@
 /* NPC conversation window (slice 13a, reworked): comes out of the NPC on the map, placed by placeTalk() in
    TibiaMap.jsx. A tree that stays folded until you choose. Your words in the client's say-yellow, the NPC's answers in
    its light blue, conditions grey, what happens gold. */
-.tm-npc-acts { display: flex; gap: 4px; margin-bottom: 6px; }
-.tm-npc-acts .tm-btn { flex: 1; padding: 0 3px; }
+.tm-npc-acts { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.tm-npc-acts .tm-btn { flex: 1 1 auto; padding: 0 4px; white-space: nowrap; } /* sized by their text, wrap when too wide (user 2026-11-24: Route here did not fit) */
 .tm-talk-at { position: absolute; left: 0; top: 0; z-index: 5; visibility: hidden; }
 .tm-talk-window { width: 300px; max-height: 380px; box-shadow: 0 2px 8px rgba(0, 0, 0, .6); }
 .tm-talk-window .tm-window-body { line-height: 1.3; }
