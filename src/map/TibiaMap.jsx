@@ -13,7 +13,7 @@ import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter, routeTime } from './engine/router.js';
 import { fetchTileFixes, setTileFix } from './engine/tilefixes.js';
-import { FIBULA_API, fetchHouseOwners } from './engine/fibula.js';
+import { FIBULA_API, fetchHouseOwners, outfitLoader } from './engine/fibula.js';
 import { drawText, textWidth } from './engine/text.js';
 import { questDbConfig, questsDone, saveQuestsDone, questDoneKey } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
@@ -551,6 +551,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const [showHouses, setShowHousesState] = useState(() => { try { return localStorage.getItem('tm-show-houses') === '1'; } catch { return false; } });
   const setShowHouses = (on) => { try { localStorage.setItem('tm-show-houses', on ? '1' : '0'); } catch { /* private mode */ } setShowHousesState(on); };
   const housePlayers = useRef([]);
+  const playerOutfits = useRef(null); // the renters' outfits (17b, engine/fibula.js outfitLoader), while the setting is on
   const [houseNote, setHouseNote] = useState(null); // why there are none (no house list on this map, API not reachable)
   const setShowRefresh = (on) => { try { localStorage.setItem('tm-show-refresh', on ? '1' : '0'); } catch { /* private mode */ } setShowRefreshState(on); };
   const [locName, setLocName] = useState(''); // the name being typed for "Add location here"
@@ -1089,21 +1090,27 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         if (away) drawArrow(ctx, tx + w + gap + a / 2, ty + th / 2, a, n.p[2] < v.z, fs / 2);
       }
     }
-    // Players in houses (Settings, slice 17a): the renter's name over a spot in the house, placed and coloured like an
-    // NPC's name (green). In a one-floor view only that floor's renters (user 2026-11-24 test: grey names from the flats
-    // above overlapped the green ones).
-    if (housePlayers.current.length && v.zoom >= NAMES_FROM) {
+    // Players in houses (Settings, slices 17a-b): the renter standing on a spot in the house, facing south, with the
+    // name above, as an NPC. Only renters whose outfit is known are drawn (user: no outfit, no renter); outfits are
+    // asked for only for the renters in view, from NAMES_FROM. In a one-floor view only that floor's renters (user
+    // 2026-11-24 test: grey names from the flats above overlapped the green ones).
+    if (housePlayers.current.length && playerOutfits.current && world.playerOutfits && v.zoom >= NAMES_FROM) {
       const fs = Math.max(k, Math.round(s / 32));
-      ctx.imageSmoothingEnabled = false;
       const list = [];
       for (const pl of housePlayers.current) {
-        if (npcElsewhere(pl, v)) continue; // a one-floor view: only that floor's renters (other floors' stacked flats overlapped)
+        if (npcElsewhere(pl, v)) continue;
         const f = npcViewFrame(pl, v);
-        if (f && f[0] >= left - 3 && f[0] <= right + 3 && f[1] >= top - 3 && f[1] <= bottom + 3) list.push({ pl, f });
+        if (!f || f[0] < left - 3 || f[0] > right + 3 || f[1] < top - 3 || f[1] > bottom + 3) continue;
+        const o = playerOutfits.current.get(pl.n), po = o && world.playerOutfit(o);
+        if (po) list.push({ pl, f, po, r: npcRect({ img: [0, 0, po.w, po.h], d: po.d }, f, ox, oy, s, k) });
       }
       list.sort((a, b) => a.f[1] - b.f[1] || a.f[0] - b.f[0]);
-      for (const { pl, f } of list) {
-        const r = npcRect({ img: null, d: [0, 0] }, f, ox, oy, s, k);
+      for (const { po, r } of list) {
+        ctx.imageSmoothingEnabled = r.sc < 1;
+        ctx.drawImage(po.canvas, r.x, r.y, r.w, r.h);
+      }
+      ctx.imageSmoothingEnabled = false;
+      for (const { pl, r } of list) {
         const w = textWidth(world.font, pl.n) * fs;
         const tx = Math.round(r.cx - w / 2), ty = Math.round(Math.min(r.y, r.cy - 16 * r.sc) - 14 * fs);
         ctx.save();
@@ -1608,8 +1615,10 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     const world = worldRef.current;
     housePlayers.current = [];
     setHouseNote(null);
-    if (!showHouses || !ready || !world) { redraw(); return undefined; }
+    if (!showHouses || !ready || !world) { playerOutfits.current = null; redraw(); return undefined; }
     let live = true;
+    playerOutfits.current = outfitLoader(fibulaApi, () => { if (live) redraw(); });
+    world.loadPlayerOutfits().then(() => { if (live) redraw(); });
     Promise.all([world.loadHouses(), fetchHouseOwners(fibulaApi)]).then(([houses, { owners, stale }]) => {
       if (!live || worldRef.current !== world) return;
       if (!houses) { setHouseNote('This map version has no house list.'); redraw(); return; }

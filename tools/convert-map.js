@@ -17,6 +17,7 @@
 //   quests.json           quests: the Fibula list merged with the chests found on the 7.1 map (src/map/engine/questdata.js)
 //   quests-auto.json      only the chests found on the 7.1 map (name/version/reward from TibiaWiki), for live merging
 //   doors.json            locked doors [[x,y,z, door id, open door id, key number (0 unknown), key id]] (client ids)
+//   player-outfits.png/json  player outfits (plain + colour mask) for the renters in their houses (17b)
 //   houses.json           [[house name, x, y, z]]: a spot inside each house (only with --houses <map-house.xml>)
 //   refresh.bin           refresh tiles (OTBM flag 0x20), 1 bit per tile, 128 bytes per chunk in map.json chunk order;
 //                         --refresh-map <otbm> takes them from another map (7.1 has none: use the 7.2 map)
@@ -61,6 +62,7 @@ import { walkRules, buildWalk, LINK_KINDS } from './lib/walk.js';
 import { buildClimbs, CLIMB_SPELL, CLIMB_PARCELS } from './lib/climb.js';
 import { readRefresh, refreshBin } from './lib/refresh.js';
 import { readHouseTiles, readHouseList, houseSpots } from './lib/houses.js';
+import { buildPlayerOutfits } from './lib/playeroutfits.js';
 import { mergeQuests } from '../src/map/engine/questdata.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
@@ -510,6 +512,12 @@ log(`Places: ${townsHere.length} towns (of ${towns.length} in the town list), ${
 
 writePng(path.join(OUT, 'npcs.png'), npcSheetW, npcSheetH, npcSheet);
 fs.writeFileSync(path.join(OUT, 'npcs.json'), JSON.stringify(npcsOut));
+// Player outfits, plain + colour mask, for the renters in their houses (slice 17b, lib/playeroutfits.js).
+{
+  const po = buildPlayerOutfits(dat, spr);
+  writePng(path.join(OUT, 'player-outfits.png'), po.width, po.height, po.data);
+  fs.writeFileSync(path.join(OUT, 'player-outfits.json'), JSON.stringify(po.json));
+}
 log(`${npcsOut.length} NPCs, ${npcsOut.filter((n) => n.sells.length || n.buys.length).length} traders, ${npcsOut.filter((n) => n.travel.length).length} with travel`);
 if (droppedTravel.length) log(`Passages to places not on this map, left out: ${droppedTravel.join(', ')}`);
 

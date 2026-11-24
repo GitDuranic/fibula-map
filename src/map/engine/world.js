@@ -2,6 +2,7 @@
 import { drawTile, TILE } from './render.js';
 import { questKey } from './questdata.js';
 import { fetchQuests } from './questdb.js';
+import { colourOutfit } from './outfit.js';
 
 const loadImage = (src) => new Promise((resolve, reject) => {
   const img = new Image();
@@ -504,6 +505,41 @@ export class World {
       .then((r) => (r.ok && (r.headers.get('content-type') || '').includes('json') ? r.json() : null))
       .catch(() => null);
     return this.housesPromise;
+  }
+
+  // Player outfits (slice 17b): player-outfits.json/png (plain sprite + colour mask per looktype). null without them.
+  loadPlayerOutfits() {
+    this.playerOutfitsPromise ||= Promise.all([loadJson(`${this.base}/player-outfits.json`), loadImage(`${this.base}/player-outfits.png`)])
+      .then(([json, img]) => {
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        const cx = c.getContext('2d', { willReadFrequently: true });
+        cx.drawImage(img, 0, 0);
+        this.playerOutfits = { json, cx, made: new Map() };
+        return this.playerOutfits;
+      })
+      .catch(() => (this.playerOutfits = null));
+    return this.playerOutfitsPromise;
+  }
+
+  // A player's outfit, coloured (cached): { canvas, w, h, d: displacement } or null (unknown looktype, or not
+  // loaded). o: [looktype, head, body, legs, feet].
+  playerOutfit(o) {
+    const po = this.playerOutfits, key = o.join(',');
+    if (!po) return null;
+    if (po.made.has(key)) return po.made.get(key);
+    const t = po.json.types[o[0]];
+    let r = null;
+    if (t) {
+      const [col, w, h, dx, dy] = t, C = po.json.cell;
+      const base = po.cx.getImageData(col * C, 0, w, h), mask = po.cx.getImageData(col * C, C, w, h);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').putImageData(colourOutfit(base, mask, o.slice(1)), 0, 0);
+      r = { canvas, w, h, d: [dx, dy] };
+    }
+    po.made.set(key, r);
+    return r;
   }
 
   // ---------- refresh tiles (user 2026-11-24) ----------

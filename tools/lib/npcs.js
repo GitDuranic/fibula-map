@@ -4,28 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spriteIndex } from './dat.js';
 
-// ---------- outfit colours (the client's 133-colour HSI palette) ----------
-export function outfitColor(color) {
-  const H = 19, SI = 7;
-  if (color >= H * SI) color = 0;
-  let h = 0, s = 0, i;
-  if (color % H !== 0) {
-    h = (color % H) / 18;
-    [s, i] = [[0.25, 1], [0.25, 0.75], [0.5, 0.75], [0.667, 0.75], [1, 1], [1, 0.75], [1, 0.5]][Math.floor(color / H)];
-  } else {
-    i = 1 - color / H / SI;
-  }
-  if (i === 0) return [0, 0, 0];
-  if (s === 0) return [i * 255, i * 255, i * 255].map(Math.round);
-  let r, g, b;
-  if (h < 1 / 6) { r = i; b = i * (1 - s); g = b + (i - b) * 6 * h; }
-  else if (h < 2 / 6) { g = i; b = i * (1 - s); r = g - (i - b) * (6 * h - 1); }
-  else if (h < 3 / 6) { g = i; r = i * (1 - s); b = r + (i - r) * (6 * h - 2); }
-  else if (h < 4 / 6) { b = i; r = i * (1 - s); g = b - (i - r) * (6 * h - 3); }
-  else if (h < 5 / 6) { b = i; g = i * (1 - s); r = g + (i - g) * (6 * h - 4); }
-  else { r = i; g = i * (1 - s); b = r - (i - g) * (6 * h - 5); }
-  return [r * 255, g * 255, b * 255].map(Math.round);
-}
+// ---------- outfit colours: the client's 133-colour HSI palette (src/map/engine/outfit.js, shared with the map) ----------
+import { outfitColor } from '../../src/map/engine/outfit.js';
+export { outfitColor };
 
 // Draws a creature outfit standing still, facing `dir` (0 north, 1 east, 2 south, 3 west), coloured by the
 // outfit's colour mask (layer 2: yellow = head, red = body, green = legs, blue = feet).
