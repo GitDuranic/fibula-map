@@ -82,6 +82,10 @@ The 7.2 map data is built with:
 node --max-old-space-size=8192 tools/convert-map.js --map "<dir>/map72.otbm" --spawn "<dir>/map-spawn.xml" --out public/map-data-72
 ```
 
+The refresh tiles (Settings → "Refresh tiles") come from the 7.2 map's tile flags; the 7.1 map has none and
+borrows them: add `--refresh-map "<dir>/map72.otbm"` when converting 7.1. Without a full convert:
+`node tools/refresh-tiles.js "<dir>/map72.otbm" public/map-data` (and `public/map-data-72`).
+
 To put the map inside another React site instead, use the component directly:
 
 ```jsx

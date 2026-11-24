@@ -21,6 +21,7 @@ import './tibia-map.css';
 
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
 const ZOOMS = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 96, 128, 160];
+const REFRESH_RGBA = [230, 0, 255, 85]; // the refresh tiles' tint (Settings): magenta (orange hid among the roofs), a third opaque
 const SPRITES_FROM = 16; // below this: only the pre-drawn overview images (live drawing is too slow that far out)
 // ?debug=walk: show the router's walk data (red = can't walk, arrows = floor changes) to check it against the game.
 const DEBUG_WALK = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'walk';
@@ -536,6 +537,11 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   };
   const [menu, setMenu] = useState(null); // the right-click menu: { x, y (CSS px in the map), tile: [x,y,z], adding }
   const [settingsOpen, setSettingsOpen] = useState(false); // the Settings popup (user 2026-11-24): the map version
+  // Refresh tiles shown or not (Settings, user 2026-11-24), kept in the browser; draw() reads the ref.
+  const [showRefresh, setShowRefreshState] = useState(() => { try { return localStorage.getItem('tm-show-refresh') === '1'; } catch { return false; } });
+  const showRefreshRef = useRef(showRefresh);
+  showRefreshRef.current = showRefresh;
+  const setShowRefresh = (on) => { try { localStorage.setItem('tm-show-refresh', on ? '1' : '0'); } catch { /* private mode */ } setShowRefreshState(on); };
   const [locName, setLocName] = useState(''); // the name being typed for "Add location here"
   // The quest panel left of the map (13f-0; the list from 13b, the slice 12 checklist in development): open until
   // closed, remembered in the browser.
@@ -827,6 +833,20 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         drawArrow(ctx, ox + (l[0] + 0.5) * s, oy + (l[1] + 0.5) * s, Math.max(12 * kk, s * 0.6), l[5] < l[2], kk);
       }
       if (budget.n < 0) more = true;
+    }
+
+    // Refresh tiles (Settings, user 2026-11-24): a see-through tint on this floor's refresh tiles, over the map and
+    // under monsters, NPCs, markers and routes. One cached 32x32 px canvas per chunk, scaled up, so it's cheap at
+    // every zoom.
+    if (showRefreshRef.current && world.refresh) {
+      const C = world.CHUNK;
+      ctx.imageSmoothingEnabled = false;
+      for (let cy = Math.floor(top / C); cy <= Math.floor(bottom / C); cy++) {
+        for (let cx = Math.floor(left / C); cx <= Math.floor(right / C); cx++) {
+          const c = world.refreshCanvas(v.z, cx, cy, REFRESH_RGBA);
+          if (c) ctx.drawImage(c, ox + cx * C * s, oy + cy * C * s, C * s, C * s);
+        }
+      }
     }
 
     // Debug: the walk data of this floor (see DEBUG_WALK).
@@ -1520,6 +1540,11 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   };
 
   // Shows the whole route: centred, at the closest zoom where it fits, on the floor it starts on.
+  // Refresh tiles (Settings): loaded the first time they're shown (also after a map version switch), then drawn.
+  useEffect(() => {
+    if (showRefresh && ready) worldRef.current?.loadRefresh().then(() => redraw());
+    else redraw();
+  }, [showRefresh, ready, redraw]);
   const showRoute = useCallback((path) => {
     const c = canvasRef.current;
     if (!path?.length || !c) return;
@@ -2302,7 +2327,16 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                   </div>
                   <div className="tm-muted">Quests, NPCs and monsters follow the version.</div>
                 </div>
-              ) : <div className="tm-muted">Nothing to set here yet.</div>}
+              ) : null}
+              <div className="tm-section">
+                <div className="tm-section-title">Show on the map</div>
+                <label className="tm-check" title="Tiles with the map's refresh flag: restored at server save, so items left there are cleared. Items stay on tiles without the colour.">
+                  <input type="checkbox" checked={showRefresh} onChange={(e) => setShowRefresh(e.target.checked)} />
+                  <span><span className="tm-refresh-swatch" /> Refresh tiles</span>
+                </label>
+                {showRefresh && world && world.refresh === null && <div className="tm-muted">This map version has no refresh data.</div>}
+                <div className="tm-muted">Coloured tiles are reset at server save; items stay on the others.{mapLabel === '7.1' ? ' The 7.1 map borrows these from the 7.2 map.' : ''}</div>
+              </div>
             </div>
           </div>
         </>

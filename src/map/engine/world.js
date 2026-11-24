@@ -496,6 +496,44 @@ export class World {
     return o === undefined ? 0 : this.walk.bytes[o + (y - cy * C) * C + (x - cx * C)] * 2;
   }
 
+  // ---------- refresh tiles (user 2026-11-24) ----------
+  // refresh.bin: 1 bit per tile, 128 bytes per chunk in map.json order (tools/lib/refresh.js). null when the data
+  // folder has none (converted before 2026-11-24).
+  loadRefresh() {
+    this.refreshPromise ||= fetch(`${this.base}/refresh.bin`)
+      .then((r) => (r.ok && !(r.headers.get('content-type') || '').includes('html') ? r.arrayBuffer() : null))
+      .then((bin) => {
+        if (!bin) return (this.refresh = null);
+        const offset = new Map(), per = (this.CHUNK * this.CHUNK) / 8;
+        let i = 0;
+        for (let z = 0; z < 16; z++) for (const [cx, cy] of this.map.chunks[z] || []) offset.set(`${z}:${cx}:${cy}`, (i++) * per);
+        this.refresh = { bytes: new Uint8Array(bin), offset, canvases: new Map() };
+        return this.refresh;
+      })
+      .catch(() => (this.refresh = null));
+    return this.refreshPromise;
+  }
+
+  // A chunk's refresh tiles as a CHUNK x CHUNK canvas (1 px per tile, colour where the tile is a refresh tile), or
+  // null when it has none. Cached; needs loadRefresh.
+  refreshCanvas(z, cx, cy, colour) {
+    const rf = this.refresh, key = `${z}:${cx}:${cy}`;
+    if (!rf) return null;
+    if (rf.canvases.has(key)) return rf.canvases.get(key);
+    const o = rf.offset.get(key);
+    let c = null;
+    if (o !== undefined) {
+      const C = this.CHUNK, img = new ImageData(C, C);
+      let any = false;
+      for (let i = 0; i < C * C; i++) {
+        if (rf.bytes[o + (i >> 3)] & (1 << (i & 7))) { img.data.set(colour, i * 4); any = true; }
+      }
+      if (any) { c = document.createElement('canvas'); c.width = C; c.height = C; c.getContext('2d').putImageData(img, 0, 0); }
+    }
+    rf.canvases.set(key, c);
+    return c;
+  }
+
   // ---------- search ----------
 
   // One list of everything that can be searched: places, depots, NPCs and the items NPCs trade.

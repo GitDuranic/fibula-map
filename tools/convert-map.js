@@ -17,6 +17,8 @@
 //   quests.json           quests: the Fibula list merged with the chests found on the 7.1 map (src/map/engine/questdata.js)
 //   quests-auto.json      only the chests found on the 7.1 map (name/version/reward from TibiaWiki), for live merging
 //   doors.json            locked doors [[x,y,z, door id, open door id, key number (0 unknown), key id]] (client ids)
+//   refresh.bin           refresh tiles (OTBM flag 0x20), 1 bit per tile, 128 bytes per chunk in map.json chunk order;
+//                         --refresh-map <otbm> takes them from another map (7.1 has none: use the 7.2 map)
 //   walk.bin, links.json  router data: per tile 0 (blocked) or ground speed / 2, in map.json chunk order;
 //                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig, teleport);
 //                         climbs [[x,y,z, tx,ty,tz, ways]] (exani hur / parcels, ways: 1 = spell, 2 = parcels);
@@ -56,6 +58,7 @@ import { loadNpcs, renderOutfit } from './lib/npcs.js';
 import { loadMonsters, spawnGroups } from './lib/monsters.js';
 import { walkRules, buildWalk, LINK_KINDS } from './lib/walk.js';
 import { buildClimbs, CLIMB_SPELL, CLIMB_PARCELS } from './lib/climb.js';
+import { readRefresh, refreshBin } from './lib/refresh.js';
 import { mergeQuests } from '../src/map/engine/questdata.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
@@ -251,6 +254,13 @@ for (let z = 0; z < 16; z++) {
   }
 }
 fs.writeFileSync(path.join(OUT, 'walk.bin'), Buffer.concat(walkBytes.map((b) => Buffer.from(b))));
+// refresh.bin (user 2026-11-24): the refresh tiles (OTBM flag 0x20, lib/refresh.js), from --refresh-map or the map itself.
+// The 7.1 map has none: convert it with --refresh-map <the 7.2 map> (7.1 borrows 7.2's, user's choice).
+{
+  const set = readRefresh(args['refresh-map'] || MAP);
+  fs.writeFileSync(path.join(OUT, 'refresh.bin'), refreshBin(set, chunkIndex, CHUNK));
+  log(`Refresh tiles: ${set.size}${args['refresh-map'] ? ` (from ${args['refresh-map']})` : ''}`);
+}
 // Magic forcefields: stepping onto one moves you to its destination. Destination 0,0,0 (scripted, or broken) or
 // not on the map: left out.
 // Nothing leads back to Rookgaard from the mainland in the game. With doors counted as open, a GM forcefield in
