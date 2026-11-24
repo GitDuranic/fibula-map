@@ -29,7 +29,7 @@ function NpcIcon({ world, npc }) {
 const COPIED_KEY = 'tm-dialog-copied';
 
 // Game sprites for steps without an NPC, monster or item of their own (13f-0b, user: authentic icons).
-const MAP_ICON = 2822, SCROLL_ICON = 2815;
+const GO_ICON = 3552, SCROLL_ICON = 2815; // Go: leather boots (user 2026-11-24: the map didn't feel like "go")
 
 // What a step's card shows (13f-0b): { icon, title, text, npc (a Talk step's NPC), items (Get, shown under the text) }.
 // Talk / Kill / Get: the NPC, monster or items are the title and the step's text goes below; Go / Note: the text is
@@ -55,7 +55,7 @@ function stepCard(world, t) {
   if (t.kind === 'key') return { icon: <ItemIcon world={world} id={keyDoor(world, t)?.keyId || KEY_ICON} count={1} />, title: stepTitle(world, { ...t, text: '' }), text: t.text };
   // Reward (user 2026-11-20): the chest (its object) as the icon, its items as icons, a gold card.
   if (t.kind === 'reward') return { icon: <ItemIcon world={world} id={t.object || CHEST_ICON} count={1} />, title: 'Reward', text: t.text, items: t.items.length ? t.items : null };
-  return { icon: <ItemIcon world={world} id={t.kind === 'go' ? MAP_ICON : SCROLL_ICON} count={1} />, title: stepTitle(world, t), text: null };
+  return { icon: <ItemIcon world={world} id={t.kind === 'go' ? GO_ICON : SCROLL_ICON} count={1} />, title: stepTitle(world, t), text: null };
 }
 
 // The bring list of the segment you're on (13h): item icons with counts; players tick what they've packed (click a
