@@ -30,8 +30,9 @@ export default function ItemWindow({ world, item, onClose, onNpc }) {
           <div className="tm-slot"><ItemIcon world={world} id={item.id} count={item.fluid ?? 1} /></div>
           <span className="tm-offer-name">{name}</span>
         </div>
-        {sells.length > 0 && <Traders world={world} title="Sold by" rows={sells} onNpc={onNpc} />}
-        {buys.length > 0 && <Traders world={world} title="Bought by" rows={buys} onNpc={onNpc} />}
+        {/* The player's side, selling first (user 2026-11-24): NPCs you can sell it to, then buy it from */}
+        {buys.length > 0 && <Traders world={world} title="Sell to" rows={buys} onNpc={onNpc} />}
+        {sells.length > 0 && <Traders world={world} title="Buy from" rows={sells} onNpc={onNpc} />}
       </div>
     </div>
   );

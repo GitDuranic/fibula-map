@@ -49,8 +49,9 @@ export default function NpcWindow({ world, npc, onClose, onTravel, onRoute, onTa
           {npc.t && <button type="button" className="tm-btn" onClick={onTalk} title="What you can say to this NPC and what it answers">Conversation</button>}
         </div>
         {addStepTo && <button type="button" className="tm-btn tm-quest-follow" onClick={onAddStep} title={`Add a talk step with ${npc.n} to ${addStepTo}`}>Add talk step</button>}
-        {npc.sells.length > 0 && <Offers world={world} title="Sells" offers={npc.sells} />}
-        {npc.buys.length > 0 && <Offers world={world} title="Buys" offers={npc.buys} />}
+        {/* The player's side, selling first (user 2026-11-24): what you can sell to the NPC, then buy from it */}
+        {npc.buys.length > 0 && <Offers world={world} title="Sell to" offers={npc.buys} />}
+        {npc.sells.length > 0 && <Offers world={world} title="Buy from" offers={npc.sells} />}
         {npc.travel.length > 0 && (
           <div className="tm-section">
             <div className="tm-section-title">Travel</div>
