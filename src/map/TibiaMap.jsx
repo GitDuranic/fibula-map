@@ -2199,14 +2199,15 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
               <div className="tm-pos">{hover ? `${hover.x}, ${hover.y}, ${hover.z}` : ' '}</div>
             </div>
           </div>
+          {/* Back and Home under the minimap (user 2026-11-24; were in the search box) */}
+          <div className="tm-mini-btns">
+            <button type="button" className="tm-btn" onClick={goBack} disabled={!backCount} title="Back to where you were (or the browser's back key)">Back</button>
+            <button type="button" className="tm-btn" onClick={goHome} title="Show the whole world (Home key)">Home</button>
+          </div>
         </div>
         <form className="tm-panel tm-goto" onSubmit={onSearch} role="search">
           <div className="tm-search-head">
             <label htmlFor="tm-search">Search</label>
-            <span className="tm-search-btns">
-              <button type="button" className="tm-btn" onClick={goBack} disabled={!backCount} title="Back to where you were (or the browser's back key)">Back</button>
-              <button type="button" className="tm-btn" onClick={goHome} title="Show the whole world (Home key)">Home</button>
-            </span>
           </div>
           <input
             id="tm-search" className="tm-input" value={query} placeholder="Town, NPC, item or x, y, z"

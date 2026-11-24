@@ -41,6 +41,8 @@
   border: 1px solid; border-color: var(--tm-slot-dark) var(--tm-slot-light) var(--tm-slot-light) var(--tm-slot-dark);
 }
 .tm-mini-row { display: flex; gap: 6px; }
+.tm-mini-btns { display: flex; gap: 4px; }
+.tm-mini-btns .tm-btn { flex: 1; }
 
 /* the client's minimap buttons (Tibia.pic) under it: zoom out | floor up, zoom in | floor down */
 .tm-nav { display: grid; grid-template-columns: 20px 20px; column-gap: 3px; row-gap: 1px; flex: none; align-content: end; }
@@ -241,7 +243,6 @@
 .tm-loot:hover { background: rgba(255, 255, 255, .08); }
 .tm-loot.tm-active { background: rgba(255, 255, 255, .14); color: #fff; }
 .tm-muted { margin-top: 4px; color: #8a8a8a; }
-.tm-search-btns { display: flex; gap: 4px; }
 
 /* right-click menu: naming a location */
 .tm-menu-add { display: flex; gap: 4px; padding: 2px; }
