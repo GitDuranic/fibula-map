@@ -535,6 +535,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     try { window.localStorage.setItem('tm-char', JSON.stringify(c)); } catch { /* storage blocked: fine */ }
   };
   const [menu, setMenu] = useState(null); // the right-click menu: { x, y (CSS px in the map), tile: [x,y,z], adding }
+  const [settingsOpen, setSettingsOpen] = useState(false); // the Settings popup (user 2026-11-24): the map version
   const [locName, setLocName] = useState(''); // the name being typed for "Add location here"
   // The quest panel left of the map (13f-0; the list from 13b, the slice 12 checklist in development): open until
   // closed, remembered in the browser.
@@ -2195,16 +2196,6 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
               <div title="Ctrl + mouse wheel (or Ctrl + +/-): a floor down (forward) or up (backward)">
                 {ui.z > 7 || ui.cut >= ui.z ? 'This floor only' : ui.cut ? `Layers from floor ${ui.cut}` : 'All layers'}
               </div>
-              {!fixedUrl && maps.length > 1 && (
-                <div className="tm-ver" role="group" aria-label="Map version">
-                  {maps.map((m) => (
-                    <button
-                      key={m.id} type="button" className={`tm-btn${m.id === mapId ? ' tm-btn-on' : ''}`} aria-pressed={m.id === mapId}
-                      onClick={() => switchMap(m.id)} title={`Show the Tibia ${m.label} map`}
-                    >{m.label}</button>
-                  ))}
-                </div>
-              )}
               <div className="tm-pos">{hover ? `${hover.x}, ${hover.y}, ${hover.z}` : ' '}</div>
             </div>
           </div>
@@ -2240,6 +2231,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
           <div className="tm-goto-tools">
             <button type="button" className="tm-btn" onClick={() => setRoute((r) => ({ ...r, open: true }))} title="Plan a route (or right-click the map)">Route</button>
             <button type="button" className="tm-btn" onClick={() => (questsOpen ? closeQuests() : setQuestsOpen(true))} disabled={!ready} title="The quests, to look up and follow (a panel left of the map)">Quests</button>
+            <button type="button" className="tm-btn" onClick={() => setSettingsOpen(true)} title="Settings: the map version">Settings</button>
           </div>
         </form>
         {locNote && <div className="tm-panel tm-error">{locNote}</div>}
@@ -2279,6 +2271,36 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
           />
         )}
       </div>
+      {/* Settings (user 2026-11-24): a popup over the map; the map version moved here from under the minimap
+          (players hardly switch). A click outside or × closes it. */}
+      {settingsOpen && (
+        <>
+          <div className="tm-menu-catcher" onPointerDown={() => setSettingsOpen(false)} />
+          <div className="tm-panel tm-window tm-settings" style={{ zoom: uiScale / dpr }} role="dialog" aria-label="Settings"
+            onKeyDown={(e) => { if (e.key === 'Escape') setSettingsOpen(false); }}>
+            <div className="tm-window-title">
+              <span className="tm-window-name">Settings</span>
+              <button type="button" className="tm-close" onClick={() => setSettingsOpen(false)} title="Close" aria-label="Close">×</button>
+            </div>
+            <div className="tm-window-body">
+              {!fixedUrl && maps.length > 1 ? (
+                <div className="tm-section">
+                  <div className="tm-section-title">Map version</div>
+                  <div className="tm-ver" role="group" aria-label="Map version">
+                    {maps.map((m) => (
+                      <button
+                        key={m.id} type="button" className={`tm-btn${m.id === mapId ? ' tm-btn-on' : ''}`} aria-pressed={m.id === mapId}
+                        onClick={() => switchMap(m.id)} title={`Show the Tibia ${m.label} map`}
+                      >{m.label}</button>
+                    ))}
+                  </div>
+                  <div className="tm-muted">Quests, NPCs and monsters follow the version.</div>
+                </div>
+              ) : <div className="tm-muted">Nothing to set here yet.</div>}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
