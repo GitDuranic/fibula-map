@@ -832,6 +832,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     } catch (e) { setLocNote(`Could not save the tile fix: ${e.message || e}`); }
   };
   const flight = useRef(null); // a fly-to in progress: { fx, fy, tx, ty, t0, dur }
+  const exiva = useRef(null); // "Exiva here" (right-click): the tile [x, y, z] the zones are drawn around
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   const uiScale = Math.max(1, Math.round(dpr)); // whole screen pixels per client pixel in the side panel
 
@@ -985,6 +986,55 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
           if (c) ctx.drawImage(c, ox + cx * C * s, oy + cy * C * s, C * s, C * s);
         }
       }
+    }
+
+    // Exiva zones (user 2026-11-25: right-click "Exiva here"): what Find Person would say about someone standing in
+    // each part of the map, as the spell decides it (TVP's find_person.lua). Distance is the larger of the x and y
+    // differences, so the zones are squares: under 5 next to you, up to 100 "to the", up to 249 "far to the", then
+    // "very far to the". The direction is one of 8 slices whose edges lie at 22.5 degrees (tangents 0.4142, 2.4142).
+    // Drawn around the tile's middle, on every floor (the spell ignores the floor beyond "above/below").
+    const ex = exiva.current;
+    if (ex) {
+      const km = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      const cx = ox + (ex[0] + 0.5) * s, cy = oy + (ex[1] + 0.5) * s;
+      const sq = (r) => [cx - r * s, cy - r * s, 2 * r * s, 2 * r * s];
+      ctx.save();
+      // Far a little darker, very far darker still.
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.rect(...sq(249.5)); ctx.fill('evenodd');
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.beginPath(); ctx.rect(...sq(249.5)); ctx.rect(...sq(100.5)); ctx.fill('evenodd');
+      // The square edges and the 8 slice edges, from the "next to you" square outwards.
+      const lines = () => {
+        ctx.beginPath();
+        for (const r of [4.5, 100.5, 249.5]) ctx.rect(...sq(r));
+        for (let k = 0; k < 8; k++) {
+          const a = ((22.5 + 45 * k) * Math.PI) / 180, c = Math.cos(a), n = Math.sin(a), r0 = 4.5 / Math.max(Math.abs(c), Math.abs(n));
+          ctx.moveTo(cx + c * r0 * s, cy + n * r0 * s);
+          ctx.lineTo(cx + c * 20000, cy + n * 20000);
+        }
+        ctx.stroke();
+      };
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 3 * km; lines();
+      ctx.strokeStyle = '#7ad7ff'; ctx.lineWidth = km; lines();
+      // The spell's words in each zone (canvas y grows south, so 90 degrees is south).
+      const fs = km;
+      const label = (t, x, y) => {
+        const w = textWidth(world.font, t) * fs;
+        if (x + w / 2 < 0 || x - w / 2 > W || y < -20 * fs || y > H + 20 * fs) return;
+        ctx.save(); ctx.translate(Math.round(x - w / 2), Math.round(y - 6 * fs)); ctx.scale(fs, fs);
+        drawText(ctx, world.font, t, 0, 0, '#ffffff'); ctx.restore();
+      };
+      const dirs = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
+      // Short words ("far north" for "is far to the north"), so the inner square's eight fit when zoomed out.
+      for (const [pre, r] of [['', 52], ['far ', 175], ['very far ', 330]]) {
+        dirs.forEach((d, k) => {
+          const a = (45 * k * Math.PI) / 180, c = Math.cos(a), n = Math.sin(a), m = Math.max(Math.abs(c), Math.abs(n));
+          label(pre + d, cx + (c / m) * r * s, cy + (n / m) * r * s);
+        });
+      }
+      if (9 * s > textWidth(world.font, 'next to you') * fs) label('next to you', cx, cy);
+      ctx.restore();
     }
 
     // Editors (14b): the tiles marked walkable get a green frame, so they can be seen and taken back.
@@ -2448,6 +2498,14 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                   })]];
                 })(),
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
+                // Exiva zones (user 2026-11-25): zoomed out so the "to the" squares and a bit of "far" fit.
+                ['Exiva here', () => {
+                  exiva.current = menu.tile;
+                  const c = canvasRef.current, room = Math.min(c.width - coverPx(), c.height) * 0.95;
+                  const zoom = [...ZOOMS].reverse().find((zz) => 230 * zz <= room) ?? ZOOMS[0];
+                  goTo({ x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] }, { zoom: Math.min(zoom, view.current.zoom) });
+                }],
+                ...(exiva.current ? [['Clear exiva', () => { exiva.current = null; redraw(); }]] : []),
                 // Editors (14a): a locked door on the map that just opens is marked "Not locked" for everyone.
                 ...(login.editor && dbCfg && world?.allDoorAt?.has(menu.tile.join(','))
                   ? (tileFixes.has(menu.tile.join(','))
