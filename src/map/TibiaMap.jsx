@@ -383,28 +383,44 @@ const SPIRAL = (() => {
   return out.sort((a, b) => ring(a) - ring(b) || turn(a) - turn(b));
 })();
 
-// The monsters to draw for view v, back to front: [{ kind, f: [x, y], count, group }].
+// Monsters on the surface floors below the one you're on, down to the ground floor (7): drawn faded, unless a floor
+// drawn above them covers them (user 2026-11-25: going up a floor, the ground floor's monsters disappeared).
+const monBelow = (m, v, world) => {
+  const nz = m.p[2];
+  if (v.z >= 7 || nz <= v.z || nz > 7) return null;
+  const f = npcFrame(m, v.z, 0);
+  return f && !covered(world, f, nz, v) ? f : null;
+};
+
+// The monsters to draw for view v, back to front: [{ kind, f: [x, y], count, group, below }] (below: on a floor
+// under yours, drawn faded, behind the others).
 function visibleMonsters(world, v, left, top, right, bottom) {
   if (v.zoom < MONSTERS_FROM || !world.monMarkers) return [];
   const out = [], inView = (x, y, m) => x >= left - m && x <= right + m && y >= top - m && y <= bottom + m;
   const mz = monsterFloor(world, v, left, top, right, bottom);
+  const place = (m) => {
+    const f = monFrame(m, v, mz, world);
+    if (f) return { f, below: false };
+    const fb = monBelow(m, v, world);
+    return fb ? { f: fb, below: true } : null;
+  };
   if (v.zoom < MONSTERS_SPLIT) {
     for (const mk of world.monMarkers) {
-      const f = monFrame(mk, v, mz, world);
-      if (f && inView(f[0], f[1], 3)) out.push({ kind: mk.kind, f, count: mk.count, group: mk.group });
+      const at = place(mk);
+      if (at && inView(at.f[0], at.f[1], 3)) out.push({ kind: mk.kind, f: at.f, count: mk.count, group: mk.group, below: at.below });
     }
   } else {
     for (const sp of world.spawnPoints) {
-      const f = monFrame(sp, v, mz, world);
-      if (!f || !inView(f[0], f[1], sp.radius + 3)) continue;
+      const at = place(sp);
+      if (!at || !inView(at.f[0], at.f[1], sp.radius + 3)) continue;
       const spots = SPIRAL.filter(([dx, dy]) => Math.max(Math.abs(dx), Math.abs(dy)) <= sp.radius);
       for (let i = 0; i < sp.amount; i++) {
         const [dx, dy] = spots[i % spots.length];
-        out.push({ kind: sp.kind, f: [f[0] + dx, f[1] + dy], count: 1, group: sp.group });
+        out.push({ kind: sp.kind, f: [at.f[0] + dx, at.f[1] + dy], count: 1, group: sp.group, below: at.below });
       }
     }
   }
-  return out.sort((a, b) => a.f[1] - b.f[1] || a.f[0] - b.f[0]);
+  return out.sort((a, b) => b.below - a.below || a.f[1] - b.f[1] || a.f[0] - b.f[0]);
 }
 
 // Monster search (6d): every monster of the searched kind, on every floor and at every zoom, drawn bigger with a
@@ -1047,7 +1063,9 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         if (!kd2.img) continue;
         const r = npcRect(kd2, m.f, ox, oy, s, km);
         ctx.imageSmoothingEnabled = r.sc < 1;
+        ctx.globalAlpha = m.below ? NPC_ELSEWHERE_ALPHA : 1; // on a floor under yours: faded, as NPCs there
         ctx.drawImage(world.monSheet, kd2.img[0], kd2.img[1], kd2.img[2], kd2.img[3], r.x, r.y, r.w, r.h);
+        ctx.globalAlpha = 1;
         if (msel && m.group === msel.group && (msel.kind === 'all' || msel.kind === m.kind)) {
           ctx.strokeStyle = '#fff'; ctx.lineWidth = km;
           ctx.strokeRect(ox + m.f[0] * s + km / 2, oy + m.f[1] * s + km / 2, s - km, s - km);
@@ -1058,6 +1076,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         if (m.count < 2) continue;
         const t = m.count + 'x', w = textWidth(world.font, t) * fsm;
         ctx.save();
+        if (m.below) ctx.globalAlpha = NPC_ELSEWHERE_ALPHA;
         ctx.translate(Math.round(ox + (m.f[0] + 1) * s - w), Math.round(oy + (m.f[1] + 1) * s - 12 * fsm));
         ctx.scale(fsm, fsm);
         drawText(ctx, world.font, t, 0, 0, '#ffffff');
