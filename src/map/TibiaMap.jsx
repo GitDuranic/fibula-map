@@ -2,7 +2,7 @@
 // Props: maps (the versions to switch between, default MAPS) and defaultMap, or dataUrl (one data folder, no switch);
 // height (CSS height of the map), syncUrl (keep the view in the URL hash and the version in ?map=).
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { World } from './engine/world.js';
+import { World, floorsFor } from './engine/world.js';
 import NpcWindow from './NpcWindow.jsx';
 import NpcTalk from './NpcTalk.jsx';
 import DoorWindow from './DoorWindow.jsx';
@@ -125,6 +125,32 @@ function housePose(row, { renter, outfit }) {
 const MAIN_FROM = 32; // was 64; user 2026-11-13: one step earlier, to see into buildings sooner
 // How close Go to, search results and "Show" route fly in (at least), and the closest zoom a route is fitted at.
 const FLY_ZOOM = 64;
+
+// The fly-to path (user 2026-11-25: "a frog jump", zoom out, across, zoom in, instead of panning at full zoom, which
+// flickered and went black where the map wasn't loaded yet): van Wijk & Nuij's smooth zoom and pan (as d3's
+// interpolateZoom), from centre (x0, y0) showing w0 tiles across to (x1, y1) showing w1. path(t), t 0..1, gives
+// [x, y, w, u] (u: how far across, 0..1); path.S: the path's length (the duration scales with it).
+const FLY_RHO = Math.SQRT2, FLY_MS = 900; // per unit of S; clamped in goTo
+function flyPath(x0, y0, w0, x1, y1, w1) {
+  const dx = x1 - x0, dy = y1 - y0, d2 = dx * dx + dy * dy, r2 = FLY_RHO * FLY_RHO;
+  let path;
+  if (d2 < 1e-6) {
+    const S = Math.log(w1 / w0) / FLY_RHO;
+    path = (t) => [x0 + t * dx, y0 + t * dy, w0 * Math.exp(FLY_RHO * t * S), t];
+    path.S = Math.abs(S);
+  } else {
+    const d1 = Math.sqrt(d2);
+    const b0 = (w1 * w1 - w0 * w0 + r2 * r2 * d2) / (2 * w0 * r2 * d1), b1 = (w1 * w1 - w0 * w0 - r2 * r2 * d2) / (2 * w1 * r2 * d1);
+    const r0 = Math.log(Math.sqrt(b0 * b0 + 1) - b0), r1 = Math.log(Math.sqrt(b1 * b1 + 1) - b1);
+    const S = (r1 - r0) / FLY_RHO, ch = Math.cosh(r0);
+    path = (t) => {
+      const s = t * S, u = (w0 / (r2 * d1)) * (ch * Math.tanh(FLY_RHO * s + r0) - Math.sinh(r0));
+      return [x0 + u * dx, y0 + u * dy, (w0 * ch) / Math.cosh(FLY_RHO * s + r0), u];
+    };
+    path.S = S;
+  }
+  return path;
+}
 
 // Where NPC n is drawn on the canvas: its outfit picture (x, y, w, h, scale) and its tile's centre.
 // ox, oy: canvas position of tile (0, 0); s: screen pixels per tile; k: screen pixels per client pixel.
@@ -786,16 +812,28 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     const W = canvas.width, H = canvas.height, v = view.current, a = anim.current;
     let more = false;
 
-    // Fly-to (search results, travel): ease the centre to the target.
+    // Fly-to (search results, quests, travel): the frog jump (flyPath). While flying, zoom is the step nearest the
+    // shown scale, so every layer draws what fits the scale shown (not the target's full detail across the map).
     const fl = flight.current;
     if (fl) {
-      const t = Math.min(1, (performance.now() - fl.t0) / fl.dur), e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-      v.x = fl.fx + (fl.tx - fl.fx) * e; v.y = fl.fy + (fl.ty - fl.fy) * e;
-      if (t < 1) more = true; else flight.current = null;
+      const t = Math.min(1, (performance.now() - fl.t0) / fl.dur), e = t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+      if (t < 1) {
+        const [x, y, w, u] = fl.path(e), past = u >= 0.5;
+        a.s = Math.max(ZOOMS[0], Math.min(ZOOMS[ZOOMS.length - 1], W / w));
+        v.z = past ? fl.z1 : fl.z0;
+        v.x = past ? x : x - fl.d; v.y = past ? y : y - fl.d;
+        v.zoom = ZOOMS.reduce((b, zz) => (Math.abs(Math.log(zz / a.s)) < Math.abs(Math.log(b / a.s)) ? zz : b));
+        v.cut = v.zoom >= MAIN_FROM ? (past ? fl.cut1 : fl.cut0) : 0;
+        more = true;
+      } else {
+        const [x, y] = fl.path(1);
+        v.z = fl.z1; v.x = x; v.y = y; v.zoom = a.s = fl.s1; v.cut = fl.cut1;
+        flight.current = null;
+      }
     }
 
     // Zoom animation: ease the shown scale towards the target, keeping the anchor point still.
-    if (a.s !== v.zoom) {
+    if (!fl && a.s !== v.zoom) {
       const next = a.s * Math.pow(v.zoom / a.s, 0.35);
       a.s = Math.abs(Math.log(next / v.zoom)) < 0.02 ? v.zoom : next;
       if (a.anchor) { v.x = a.anchor.wx - (a.anchor.sx - W / 2) / a.s; v.y = a.anchor.wy - (a.anchor.sy - H / 2) / a.s; }
@@ -825,14 +863,22 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     for (let by = Math.floor((top - shift) / B); by <= Math.floor((bottom - shift) / B); by++) {
       for (let bx = Math.floor((left - shift) / B); bx <= Math.floor((right - shift) / B); bx++) {
         const img = world.overview(set, level, bx, by);
-        if (img) ctx.drawImage(img, ox + (bx * B + shift) * s, oy + (by * B + shift) * s, B * s, B * s);
+        if (img) { ctx.drawImage(img, ox + (bx * B + shift) * s, oy + (by * B + shift) * s, B * s, B * s); continue; }
+        // Not loaded yet: the same part of a coarser level that is (user 2026-11-25: parts went black while flying).
+        for (let li = ov.levels.indexOf(level) - 1; li >= 0; li--) {
+          const l2 = ov.levels[li], B2 = ov.px / l2, bx2 = Math.floor((bx * B) / B2), by2 = Math.floor((by * B) / B2);
+          const img2 = world.overview(set, l2, bx2, by2);
+          if (!img2) continue;
+          ctx.drawImage(img2, (bx * B - bx2 * B2) * l2, (by * B - by2 * B2) * l2, B * l2, B * l2, ox + (bx * B + shift) * s, oy + (by * B + shift) * s, B * s, B * s);
+          break;
+        }
       }
     }
 
     // Game sprites.
     if (v.zoom >= SPRITES_FROM) {
       const C = world.CHUNK, ts = v.zoom >= 32 ? 32 : 16;
-      const budget = { n: 6 };
+      const budget = { n: fl ? 2 : 6 }; // flying: fewer new chunks a frame, so it stays smooth
       ctx.imageSmoothingEnabled = s < ts;
       // Chunks drawn last can overhang into earlier ones only up-left, so draw top-left to bottom-right.
       for (let cy = Math.floor(top / C); cy <= Math.floor(bottom / C); cy++) {
@@ -1572,14 +1618,31 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   // shows that floor only, so the place isn't hidden under a roof; `cut` overrides that.
   const hashTimerFly = useRef(0);
   const goTo = useCallback((p, { zoom, cut } = {}) => {
-    const v = view.current;
-    if (worldRef.current?.floors.includes(p.z)) v.z = p.z;
-    v.zoom = zoom ?? Math.max(v.zoom, FLY_ZOOM);
-    v.cut = cut ?? (v.zoom >= MAIN_FROM && v.z <= 7 ? v.z : 0);
-    anim.current.anchor = null;
-    const dist = Math.hypot(p.x + 0.5 - v.x, p.y + 0.5 - v.y);
-    const dur = Math.min(1000, 250 + dist * 2);
-    flight.current = { fx: v.x, fy: v.y, tx: p.x + 0.5, ty: p.y + 0.5, t0: performance.now(), dur };
+    const v = view.current, a = anim.current, world = worldRef.current;
+    const z1 = world?.floors.includes(p.z) ? p.z : v.z;
+    const s1 = zoom ?? Math.max(v.zoom, FLY_ZOOM);
+    const cut1 = cut ?? (s1 >= MAIN_FROM && z1 <= 7 ? z1 : 0);
+    a.anchor = null;
+    // The frog jump (flyPath), in the target floor's tiles (floors above 7 are drawn shifted, see changeFloor); the
+    // floor switches halfway across, when zoomed out.
+    const W = canvasRef.current?.width || 1000, H = canvasRef.current?.height || 800;
+    const d = Math.min(v.z, 7) - Math.min(z1, 7), tx = p.x + 0.5, ty = p.y + 0.5;
+    const path = flyPath(v.x + d, v.y + d, W / a.s, tx, ty, W / s1);
+    const dur = Math.max(300, Math.min(2400, path.S * FLY_MS));
+    flight.current = { path, t0: performance.now(), dur, W, d, z0: v.z, cut0: v.cut, z1, cut1, s1 };
+    // Start loading where it lands, so it's there when the zoom-in ends.
+    if (world) {
+      const hw = W / s1 / 2 + 2, hh = H / s1 / 2 + 2, C = world.CHUNK;
+      const ov = world.map.overview, level = ov.levels.find((l) => l >= s1) ?? ov.levels[ov.levels.length - 1], B = ov.px / level;
+      const shift = z1 <= 7 ? 7 - z1 : 0, set = z1 <= 7 ? 'surface' : String(z1);
+      for (let by = Math.floor((ty - hh - shift) / B); by <= Math.floor((ty + hh - shift) / B); by++)
+        for (let bx = Math.floor((tx - hw - shift) / B); bx <= Math.floor((tx + hw - shift) / B); bx++) world.overview(set, level, bx, by);
+      if (s1 >= SPRITES_FROM) {
+        for (const zz of floorsFor(z1, 'above').filter((f) => f >= cut1))
+          for (let cy = Math.floor((ty - hh) / C); cy <= Math.floor((ty + hh) / C); cy++)
+            for (let cx = Math.floor((tx - hw) / C); cx <= Math.floor((tx + hw) / C); cx++) world.chunk(zz, cx, cy);
+      }
+    }
     viewChanged();
     clearTimeout(hashTimerFly.current);
     hashTimerFly.current = setTimeout(viewChanged, dur + 50); // the URL once it has arrived
