@@ -1,5 +1,8 @@
 # Daily house-renters job (for Ryndean's server)
 
+> **Replaced by `docs/house-renters-job-v2.md`** (2026-11-25): the API's `/houses` now returns the outfits too, so
+> the job needs one call instead of one per renter.
+
 These are instructions for Claude (or a person) building a small scheduled job on Ryndean's server. Paste this file
 into Claude Code on that server and ask it to build and schedule the job.
 

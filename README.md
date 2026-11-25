@@ -89,7 +89,7 @@ borrows them: add `--refresh-map "<dir>/map72.otbm"` when converting 7.1. Withou
 The house list for "Players in houses" (7.2 only): add `--houses "<dir>/map-house.xml"` when converting 7.2, or
 `node tools/houses.js "<dir>/map72.otbm" "<dir>/map-house.xml" public/map-data-72`. The renters and their outfits come from
 Supabase (table `map_house_renters`, database step 28), which one of Ryndean's servers fills once a day from the
-Project Fibula API (see `docs/house-renters-job.md`).
+Project Fibula API (see `docs/house-renters-job-v2.md`).
 
 To put the map inside another React site instead, use the component directly:
 
