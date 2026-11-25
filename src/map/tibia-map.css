@@ -266,7 +266,9 @@
 .tm-quest { flex: 1 1 0; min-height: 140px; }
 .tm-quest .tm-window-body { display: flex; flex-direction: column; gap: 3px; }
 .tm-quest-item { align-items: center; gap: 4px; }
-.tm-quest-count { width: 44px; flex: none; }
+/* also inside a form field (user 2026-11-25: .tm-quest-field .tm-input made it full width, pushing the remove × out of the
+   panel, so reward items couldn't be removed) */
+.tm-quest-count, .tm-quest-item .tm-input.tm-quest-count { width: 44px; flex: none; }
 .tm-quest-remove { flex: none; }
 .tm-quest-picker { flex: none; margin-top: 2px; }
 .tm-quest-pick { display: flex; align-items: center; gap: 4px; }
