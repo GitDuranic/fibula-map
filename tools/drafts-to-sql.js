@@ -12,6 +12,8 @@
 //   draft.replaceSteps: [step ids]: hand-made steps the draft replaces (asked for by the user; e.g. Paradox Tower's
 //           test steps): they're deleted and don't count as hand work.
 //   draft.dropOldRewards: true drops the quest's old-spot Reward steps (the draft has its own Reward step).
+//   draft.newQuest: { sort, level, area, rewards, wiki_version, wiki_reward, reward_items }: a quest that isn't in
+//           the list yet; the SQL adds it first (when no quest has that name) and writes its steps under its new id.
 //   rewards a marker, not a step: the quest's Reward steps from the old spots (database step 9) go here, in order;
 //           without the marker they go at the end.
 // Every step keeps its wiki sentence in source. Earlier drafts of a quest are replaced, unless anything in it was
@@ -69,7 +71,9 @@ let total = 0, placing = 0, usesKey = false;
 
 for (const file of files) {
   const draft = json(`${DRAFTS}/${file}`);
-  const row = dbQuests.get(questKey(draft.quest));
+  const nq = draft.newQuest;
+  // A new quest's id is only known in the SQL (the plpgsql variable qid).
+  const row = dbQuests.get(questKey(draft.quest)) || (nq ? { id: 'qid', isNew: true } : null);
   if (!row) { report.push(`--   ${draft.quest}: NOT IN THE DATABASE, left out`); continue; }
   const notes = [];
   // Hand work: a step made in the app (no source), or any step changed or ticked there (updated_by / checked).
@@ -148,7 +152,7 @@ for (const file of files) {
 
   const n = segs.reduce((a, s) => a + s.steps.filter((t) => !t.rewards).length, 0);
   total += n;
-  report.push(`--   ${draft.quest}: ${segs.length} part${segs.length > 1 ? 's' : ''}, ${n} steps + ${rewards.length} Reward step${rewards.length === 1 ? '' : 's'}${handWork ? ' (HAS HAND WORK: the SQL skips it)' : ''}`);
+  report.push(`--   ${draft.quest}: ${segs.length} part${segs.length > 1 ? 's' : ''}, ${n} steps + ${rewards.length} Reward step${rewards.length === 1 ? '' : 's'}${handWork ? ' (HAS HAND WORK: the SQL skips it)' : ''}${row.isNew ? ' (NEW QUEST: added first)' : ''}`);
   for (const x of notes) report.push(`--       ${x}`);
 
   const parts = segs.map((s, i) => {
@@ -172,9 +176,15 @@ ${lines.join('\n')}`;
   });
   blocks.push(`-- ${draft.quest}
 do $$
-declare seg bigint; new_segs bigint[] := '{}'; sort_now integer;
+declare seg bigint; new_segs bigint[] := '{}'; sort_now integer;${row.isNew ? ' qid bigint;' : ''}
 begin
-  if exists (select 1 from public.map_quest_steps where quest_id = ${row.id}${replace.length ? ` and not (id = any(array[${replace.join(', ')}]))` : ''} and (source is null or updated_by is not null or checked)) then return; end if;${replace.length ? `
+${row.isNew ? `  select id into qid from public.map_quests where name = ${q(draft.quest)};
+  if qid is null then
+    insert into public.map_quests (name, sort, level, area, rewards, wiki_version, wiki_reward, reward_items)
+    values (${q(draft.quest)}, ${nq.sort ?? 'null'}, ${nq.level ?? 'null'}, ${q(nq.area)}, ${q(nq.rewards)}, ${q(nq.wiki_version)}, ${q(nq.wiki_reward)}, '${JSON.stringify(nq.reward_items || [])}'::jsonb)
+    returning id into qid;
+  end if;
+` : ''}  if exists (select 1 from public.map_quest_steps where quest_id = ${row.id}${replace.length ? ` and not (id = any(array[${replace.join(', ')}]))` : ''} and (source is null or updated_by is not null or checked)) then return; end if;${replace.length ? `
   delete from public.map_quest_steps where quest_id = ${row.id} and id = any(array[${replace.join(', ')}]);` : ''}
   delete from public.map_quest_steps where quest_id = ${row.id} and source <> 'old quest spot';${draft.dropOldRewards ? `
   delete from public.map_quest_steps where quest_id = ${row.id} and source = 'old quest spot';` : ''}

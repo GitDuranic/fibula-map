@@ -1,10 +1,12 @@
 // A drafting aid (slice 13j): the objects around a spot, from the map chunks, so a draft can point at the real
 // lever, chest, hole or door. Ground and plain walls are left out unless a filter asks for them.
-// Usage: node tools/quest-look.js 32140,32110,11 [radius, default 8] [name filter, a regex: "lever|chest|hole"]
+// Usage: node tools/quest-look.js 32140,32110,11 [radius, default 8] [name filter, a regex: "lever|chest|hole"]  [--data=public/map-data-72]
 import fs from 'fs';
 
-const DATA = 'public/map-data', C = 32;
-const [at, r = '8', filter] = process.argv.slice(2);
+// --data=<dir>: another map version's data (e.g. --data=public/map-data-72).
+const dataArg = process.argv.find((s) => s.startsWith('--data='));
+const DATA = dataArg ? dataArg.slice(7) : 'public/map-data', C = 32;
+const [at, r = '8', filter] = process.argv.slice(2).filter((s) => !s.startsWith('--data='));
 const [px, py, pz] = at.split(',').map(Number);
 const R = Number(r), re = filter ? new RegExp(filter, 'i') : null;
 const { items: defs } = JSON.parse(fs.readFileSync(`${DATA}/items.json`, 'utf8'));

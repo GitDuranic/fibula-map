@@ -1,0 +1,20 @@
+<!-- Demon Helmet Quest | https://tibia.fandom.com/wiki/Demon_Helmet_Quest/Spoiler | fetched 2026-11-25 -->
+{{spoiler|name=Demon Helmet Quest}}
+
+==Team==
+* You will need a team capable of facing a total of at least 9 [[demon]]s (5 on the way, 4 in the quest room, and a possible respawn on the way back) and a large number of [[banshee]]s. A large team with a good amount of strong blockers and shooters is recommended. '''Even if you want to do this quest solo (not recommended), note that you will still need two other players, namely to stand on the switches {{Mapper Coords|129.167|123.141|13|4|text=here}}, which open the Gate of the Lost Souls {{Mapper Coords|129.187|123.142|13|4|text=here}}.'''
+
+==Getting There==
+* Enter the [[Edron]] [[Hero Cave]] {{Mapper Coords|129.140|123.150|7|3|text=here}} and head down until you get to the level 100 gate of expertise near the single demon spawn, here:
+[[Image:Demon_Helmet_Quest_1.png]]
+* You will need a golden [[Key 6010]] to open the door after the gate of expertise. It is obtainable through the [[Parchment Room Quest]].
+* Have two players stand on the switches {{Mapper Coords|129.167|123.141|13|4|text=here}} to get past the Gate of the Lost Souls.
+* <span style="font-style: normal; ">Once you kill all the </span>[[Fire Elemental]]s<span style="font-style: normal; ">, head down the passage until you come to a portal (there's only one way to go). Note that there is a lot of </span>[[fire]]<span style="font-style: normal; "> on the way there, but this shouldn't be a problem for level 100+'s.</span>
+
+* When you get to the portal, go through it. There will be one [[demon]] here. Kill the demon and head through the hole here:
+[[Image:Demon_Helmet_Quest_2.png]]
+* This will bring you down 2 floors to the cave where the portal into the quest room is. There are 4 [[demon]]s and a couple [[Fire Elemental]]s here, but they don't all come at once (There'll be 2 demons where you enter and if you head east there's one demon in each room). Head east and kill all the creatures. Here you will see a portal that brings you to the quest room.
+==The Quest Room==
+* The portal will bring you to a room right below you with 4 [[demon]]s and a lot of [[banshee]]s. Note that there is a switch (#2) on the east side of the room that must be pulled to activate the portal to get out . It is recommended that you do this before you kill anything in case someone needs to escape while in the room. The boxes containing the rewards are on the west side of the room (#1).
+[[File:Demon Helmet Quest 3.png]]
+*Once you have killed the creatures and got your reward, go out through the portal. Be careful of demons that may have respawned on the way out.
