@@ -1010,6 +1010,26 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
       const kq = Math.max(1, Math.round(window.devicePixelRatio || 1));
       const fq = Math.max(kq, Math.round(s / 32));
       ctx.imageSmoothingEnabled = false;
+      // A faint dotted line from each step's marker to the next one's, first to last (user 2026-11-25: "a vague
+      // dotted line going from image to image ... more like navigational steps on a path"), under the markers.
+      // Only between markers that are both shown (same floor rules as the markers); fainter once done.
+      {
+        const pts = stepMarks.current.marks.map((m) => {
+          const f = npcFrame({ p: m.pos }, v.z, v.cut);
+          return f && { x: ox + (f[0] + 0.5) * s, y: oy + (f[1] + 0.5) * s, done: m.state === 'done' };
+        });
+        ctx.save();
+        ctx.setLineDash([3 * kq, 5 * kq]);
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 2 * kq;
+        for (let i = 1; i < pts.length; i++) {
+          const a = pts[i - 1], b = pts[i];
+          if (!a || !b || (a.x === b.x && a.y === b.y)) continue;
+          ctx.strokeStyle = a.done ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255, 215, 0, 0.45)';
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+        ctx.restore();
+      }
       const order = { done: 0, todo: 1, cur: 2 }; // the step you're on drawn last (on top)
       for (const m of [...stepMarks.current.marks].sort((a, b) => order[a.state] - order[b.state])) {
         const f = npcFrame({ p: m.pos }, v.z, v.cut);
