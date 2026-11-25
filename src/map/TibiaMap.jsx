@@ -832,6 +832,11 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
       }
     }
 
+    // Flying light (user 2026-11-25: "make it more fuzzy, to make it smooth"): while the frog jump is in the air only
+    // the map is drawn: no new sprite chunks (the overview images, scaled, stand in), no monsters, names or renters.
+    // They come back on the frame it lands.
+    const flying = !!flight.current;
+
     // Zoom animation: ease the shown scale towards the target, keeping the anchor point still.
     if (!fl && a.s !== v.zoom) {
       const next = a.s * Math.pow(v.zoom / a.s, 0.35);
@@ -878,7 +883,9 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     // Game sprites.
     if (v.zoom >= SPRITES_FROM) {
       const C = world.CHUNK, ts = v.zoom >= 32 ? 32 : 16;
-      const budget = { n: fl ? 2 : 6 }; // flying: fewer new chunks a frame, so it stays smooth
+      // Flying: only chunks already drawn once. Else new ones for up to ~8 ms a frame (user 2026-11-25: six at once
+      // froze the map for up to 1/4 s right after landing).
+      const budget = { n: flying ? 0 : 6, until: performance.now() + 8 };
       ctx.imageSmoothingEnabled = s < ts;
       // Chunks drawn last can overhang into earlier ones only up-left, so draw top-left to bottom-right.
       for (let cy = Math.floor(top / C); cy <= Math.floor(bottom / C); cy++) {
@@ -915,7 +922,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         const l = hoverLink.current, kk = Math.max(1, Math.round(window.devicePixelRatio || 1));
         drawArrow(ctx, ox + (l[0] + 0.5) * s, oy + (l[1] + 0.5) * s, Math.max(12 * kk, s * 0.6), l[5] < l[2], kk);
       }
-      if (budget.n < 0) more = true;
+      if (budget.n < 0 || budget.over) more = true;
     }
 
     // Refresh tiles (Settings, user 2026-11-24): a see-through tint on this floor's refresh tiles, over the map and
@@ -1000,7 +1007,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
 
     // Monsters on this floor (6b), under the doors' keys and the NPCs: outfit, and "3x" for a marker of several.
     // The monsters of the spawn whose window is open get a white frame.
-    if (world.monSheet) {
+    if (world.monSheet && !flying) {
       const km = Math.max(1, Math.round(window.devicePixelRatio || 1)), fsm = Math.max(km, Math.round(s / 32));
       const ms = visibleMonsters(world, v, left, top, right, bottom).filter((m) => m.kind !== monSearch.current), msel = selectedMon.current;
       for (const m of ms) {
@@ -1150,7 +1157,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
       ctx.drawImage(world.npcSheet, n.img[0], n.img[1], n.img[2], n.img[3], r.x, r.y, r.w, r.h);
     }
     ctx.globalAlpha = 1;
-    if (v.zoom >= NAMES_FROM) {
+    if (v.zoom >= NAMES_FROM && !flying) {
       const fs = Math.max(k, Math.round(s / 32));
       ctx.imageSmoothingEnabled = false;
       for (const { n, f } of shown) {
@@ -1172,7 +1179,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     // real size (one square, user 2026-11-24: 'drawn in the house real scale on a real square'), with the name above.
     // Like the monsters: only on the floor you're on, and not under a roof that's drawn (so a town zoomed out isn't
     // crowded with every floor's renters). Only renters whose outfit is known (user: no outfit, no renter).
-    if (housePlayers.current.length && world.playerOutfits && v.zoom >= NAMES_FROM) {
+    if (housePlayers.current.length && world.playerOutfits && v.zoom >= NAMES_FROM && !flying) {
       const fs = Math.max(k, Math.round(s / 32)), sc = s / 32;
       const pz = monsterFloor(world, v, left, top, right, bottom);
       const list = [];

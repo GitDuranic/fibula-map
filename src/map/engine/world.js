@@ -11,6 +11,15 @@ const loadImage = (src) => new Promise((resolve, reject) => {
   img.src = src;
 });
 
+// An image decoded off the main thread (an ImageBitmap; a plain image where that isn't supported).
+const OVERVIEW_KEEP = 48;
+const loadBitmap = async (src) => {
+  if (typeof createImageBitmap !== 'function') return loadImage(src);
+  const res = await fetch(src);
+  if (!res.ok) throw new Error(`Could not load ${src} (${res.status})`);
+  return createImageBitmap(await res.blob());
+};
+
 const loadJson = async (src) => {
   const res = await fetch(src);
   if (!res.ok) throw new Error(`Could not load ${src} (${res.status})`);
@@ -353,7 +362,8 @@ export class World {
       }
     }
     if (!any || !ready) return null;
-    if (budget.n-- <= 0) return null;
+    // budget: { n: at most this many new chunks, until: and none started after this time (performance.now()) }
+    if (budget.n-- <= 0 || (budget.until && performance.now() > budget.until)) { budget.over = true; return null; } // over: more next frame
 
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = C * ts;
@@ -673,11 +683,28 @@ export class World {
   overview(set, level, bx, by) {
     const k = `${set}:${level}:${bx}:${by}`;
     const m = this.overviews.get(k);
-    if (m !== undefined) return typeof m === 'string' ? null : m;
+    if (m !== undefined) {
+      if (typeof m === 'string') return null;
+      this.overviews.delete(k); this.overviews.set(k, m); // most recent last
+      return m;
+    }
     if (!this.ovExists.has(k)) { this.overviews.set(k, 'missing'); return null; }
     this.overviews.set(k, 'loading');
-    loadImage(`${this.base}/overview/${set}/${level}/${bx}_${by}.webp`).then(
-      (img) => { this.overviews.set(k, img); this.onChange(); },
+    // Decoded off the main thread before it's first drawn (user 2026-11-25: flying stuttered; an <img> is decoded on
+    // the main thread the first time it's drawn, ~1024x1024 px each). Decoded images take memory, so only the
+    // OVERVIEW_KEEP most recently drawn are kept; the others are fetched again (from the browser's cache).
+    loadBitmap(`${this.base}/overview/${set}/${level}/${bx}_${by}.webp`).then(
+      (img) => {
+        this.overviews.set(k, img);
+        let n = 0;
+        for (const [kk, v] of this.overviews) if (typeof v !== 'string') n++;
+        for (const [kk, v] of this.overviews) {
+          if (n <= OVERVIEW_KEEP) break;
+          if (typeof v === 'string' || kk === k) continue;
+          this.overviews.delete(kk); v.close?.(); n--;
+        }
+        this.onChange();
+      },
       () => { this.overviews.set(k, 'missing'); },
     );
     return null;
