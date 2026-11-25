@@ -178,9 +178,11 @@ export class World {
         if (seen.has(questKey(r.name))) continue;
         quests.push({ n: r.name, level: null, area: '', reward: '', onList: false, v: '', wiki: '', db: r, dbOnly: true });
       }
-      const sort = (q) => q.db?.sort ?? Infinity;
-      quests.sort((a, b) => sort(a) - sort(b));
     }
+    // Alphabetical, a leading "The" left out (user 2026-11-25: "auto sort alphabetically instead of date of
+    // adding"; the database's sort column was the order they were added in).
+    const abc = (q) => (q.db?.name || q.n).replace(/^the\s+/i, '');
+    quests.sort((a, b) => abc(a).localeCompare(abc(b), 'en', { sensitivity: 'base' }));
     for (const q of quests) q.listed = this.questDb ? !!q.db : q.onList;
     this.allQuests = quests;
     this.filterQuests(false);

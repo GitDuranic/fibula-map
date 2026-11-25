@@ -94,9 +94,16 @@ for (const file of files) {
         if (!talk) return needs(st, `no conversation for ${npc.n}`);
         const dialog = [];
         let here = talk;
-        for (const w of st.say || []) {
+        const say = st.say || [];
+        for (const [wi, w] of say.entries()) {
           let hit = null;
-          for (const e of here) { const j = (e.k || []).findIndex((k) => sayText(k).toLowerCase() === w.toLowerCase()); if (j >= 0) { hit = [e, j]; break; } }
+          // Several entries for the same words (e.g. the banshee queen's "seventh": one below level 60, one not):
+          // the one whose follow-ups have the next words said, else the first.
+          const next = say[wi + 1]?.toLowerCase();
+          const saysNext = (e) => next != null && (e.n || []).some((ne) => (ne.k || []).some((k) => sayText(k).toLowerCase() === next));
+          const hits = [];
+          for (const e of here) { const j = (e.k || []).findIndex((k) => sayText(k).toLowerCase() === w.toLowerCase()); if (j >= 0) hits.push([e, j]); }
+          hit = hits.find(([e]) => saysNext(e)) || hits[0] || null;
           if (!hit && here !== talk) for (const e of talk) { const j = (e.k || []).findIndex((k) => sayText(k).toLowerCase() === w.toLowerCase()); if (j >= 0) { hit = [e, j]; here = talk; break; } }
           if (!hit) return needs(st, `${npc.n} has nothing for "${w}" there`);
           dialog.push(dialogLine(here, hit[0], hit[1]));

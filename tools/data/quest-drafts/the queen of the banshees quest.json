@@ -1,0 +1,326 @@
+{
+  "quest": "The Queen of the Banshees Quest",
+  "wiki": "https://tibia.fandom.com/wiki/The_Queen_of_the_Banshees_Quest/Spoiler",
+  "map": "7.2 map. Seal rooms from the six teleporters of the return room on floor 15 (32259-32274, 31847/31858): Hidden 32275,31905,13 (two monuments, flame 32278,31903), Logic 32312,31974,13 (six levers 32310-32314,31975-31976, flame 32311,31978), True Path 32186,31938,14 (stone tiles), Sacrifice 32245,31891,14 (sacrificial stones, stone tile 32243,31892, flame 32250,31892), Demonrage 32216,31846,15 (five levers 32220,31842-31846, flame 32215,31849), Plague 32171,31855,15 (pearl stones 32176/32177,31867, forcefields 32176-32177,31864/31869, flame 32171,31853). Switches for the magic walls (32259,31890-31891,10): 32212,31888,12 (west) and 32315,31910,12 (east, giant spider). Poison-stone lever 32266,31861,11; teleporter 32266,31857,12 -> the long hall 32266,31864,12. The queen 32260,31863,14. Final room: one-way stairs 32218-32220,31894,14 -> floor 15, chests 32212/32226,31896,15.",
+  "segments": [
+    {
+      "name": "The way in",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Level 60 (the queen won't kiss you below it). Bring a rope, a pick, a vial of blood and one black and one white pearl. Do the seals in the order of this guide: it's the quickest, though their numbers say otherwise. If you stop at a seal you have to walk back; after the queen's kiss you're teleported out.",
+          "source": "Needed: Rope, Pick, Blood (any container with blood works), 1 Black Pearl and 1 White Pearl. The quickest way to complete this quest is to do the seals out of order. If you decide to stop at any seal, you'll have to go back the way you came."
+        },
+        {
+          "kind": "go",
+          "text": "In the Ghostlands, go down this hole.",
+          "at": [
+            32223,
+            31860,
+            7
+          ],
+          "source": "First go to the Ghostlands and go down a hole (Mapper Coords 125.223, 124.117, 7)"
+        },
+        {
+          "kind": "go",
+          "text": "South and down the next hole (skeletons, ghouls, poison spiders), then south-east and down again, to the two magic walls east of the rope spot. Two switches open them: one to the west, one to the east.",
+          "at": [
+            32258,
+            31892,
+            10
+          ],
+          "source": "Go south and go down a hole. Go south-east and go the hole down. Go to the Magic Walls east from the rope spot. To open the Magic Walls you need to use 2 switches. There is 1 switch west of here and 1 switch east of here."
+        },
+        {
+          "kind": "kill",
+          "text": "East switch: kill the giant spider guarding it and pull the switch. Alone, do this one first.",
+          "at": [
+            32314,
+            31911,
+            12
+          ],
+          "monster": "Giant Spider",
+          "source": "The east switch is guarded by a Giant Spider. TIP: Start with the east switch if you go alone then the west switch"
+        },
+        {
+          "kind": "go",
+          "text": "West switch: through scorpions, 3 demon skeletons and ghouls; in the switch room 2 bonelords, a demon skeleton, stalkers and ghouls. Pull the switch, then haste back to the walls.",
+          "at": [
+            32212,
+            31888,
+            12
+          ],
+          "source": "To get to the west switch you have to go through many scorpions, 3 demon skeletons and some ghouls and then in the switch room there are 2 Bonelords, 1 Demon Skeleton, 2-3 Stalkers and Ghouls."
+        },
+        {
+          "kind": "go",
+          "text": "Through where the magic walls were, all together: hidden buttons just past them close the walls again. Go down the hole (the teleporter there leads back if the walls closed).",
+          "at": [
+            32259,
+            31891,
+            10
+          ],
+          "source": "remember to use haste from the first switch when it has been pulled because the walls close when anyone steps on the hidden buttons. After the Magic Walls, go down the hole. (The teleporter is for going back if the Magic Walls have closed.)"
+        },
+        {
+          "kind": "go",
+          "text": "Walk north through the room (mummies, ghosts, demon skeletons, stalkers). Walk over the poison fields around the stone: a switch appears. Pull it to reveal stairs. (The body at the top of the room holds Brother Fugio's diary for the White Raven Monastery Quest.)",
+          "at": [
+            32266,
+            31861,
+            11
+          ],
+          "source": "Walk north in this room. Here are mummies, ghosts, demon skeletons and stalkers. You can open the body on the top of the room to get some junk and a book... You will see a stone surrounded by poison fields. Walk over the poison fields and a switch will appear beneath it. Use the switch to reveal some stairs."
+        },
+        {
+          "kind": "go",
+          "text": "Down the stairs and through the teleporter.",
+          "at": [
+            32266,
+            31857,
+            12
+          ],
+          "source": "Go down the stairs and go through the teleporter (A)."
+        },
+        {
+          "kind": "go",
+          "text": "Go south in the long hall and use your pick in the middle of it (going on to the end teleports you back). Go down the hole.",
+          "at": [
+            32266,
+            31900,
+            12
+          ],
+          "source": "Go south in this long hall and use your pick in the middle of the hall. If you simply keep going south, you will be teleported back. Go down the pick hole to find the first seal room."
+        }
+      ]
+    },
+    {
+      "name": "The Hidden Seal",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Everyone goes through the blue flame: each one summons 2 ghosts and a demon skeleton. You land in a small room: its teleporter brings you back.",
+          "at": [
+            32278,
+            31903,
+            13
+          ],
+          "source": "In this room, you will see a blue flame. Every party member must go through the flame, and for every party member that goes through, 2 ghosts and a demon skeleton will be summoned. After going through the flame you will be teleported into a small room with another teleporter. Go through it to go back to the first seal room."
+        }
+      ]
+    },
+    {
+      "name": "The Seal of Logic",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Go south and rope yourself up, then on south. At the end go west, up the ramp and down into a round chamber (3 ghosts, 3 stalkers, 4 demon skeletons). Go down the stairs.",
+          "at": [
+            32254,
+            31942,
+            12
+          ],
+          "source": "Go south, rope yourself up and then continue south. At the end, go west, up the ramp and down into a round chamber. In this room are 3 Ghosts, 3 Stalkers and 4 Demon Skeletons. Go down the stairs."
+        },
+        {
+          "kind": "go",
+          "text": "Walk as far south-east as you can (ghosts, stalkers, demon skeletons, many scorpions). Set the six switches as in the wiki's picture, then through the flame and back through the teleporter. One player setting them is enough.",
+          "at": [
+            32312,
+            31974,
+            13
+          ],
+          "source": "Walk as far to the south-east and you will come to the second seal. You will have to go through: Ghosts, Stalkers, Demon Skeleton and many Scorpions. You need to organize the switches so the match the second image. Then go through the flame and back through teleporter. Only one person needs to do this for the others to go through."
+        }
+      ]
+    },
+    {
+      "name": "The Seal of the True Path",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Back to the stairs in the north-west of this floor and down (ghosts). On the way to the next stairs are 10 banshees, never more than 3 at a time; a quest door on the way hides the Spectral Dress (Explorer Society Quest).",
+          "source": "Backtrack to the stairs at the north-west part this floor. Go down to be faced by ghosts. On the way you will encounter 10 banshees. Keep in mind that you'll never face more than 3 at a time in this area. On the way, you will find a quest door which conceals a box with the Spectral Dress."
+        },
+        {
+          "kind": "go",
+          "text": "North-west up the stairs (one more banshee). Walk over the stone tiles in the pattern of the wiki's picture, then through the flame and back through the teleporter.",
+          "at": [
+            32186,
+            31938,
+            14
+          ],
+          "source": "Go north-west to the stairs. Careful as you'll encounter another banshee. Go up and walk on the tiles as shown on the second image. Go through the flame and back through the teleporter."
+        }
+      ]
+    },
+    {
+      "name": "The Seal of Sacrifice",
+      "steps": [
+        {
+          "kind": "note",
+          "text": "Go back down and take the stairs to the north, up into a room with 5 ghosts, 5 stalkers and 2 demon skeletons. Down the other stairs and follow the way to the next stairs: a room with poison fields, ghosts and demon skeletons.",
+          "source": "Go back down and go to the stairs north from here. Go up into the room where you'll find 5 ghosts, 5 stalkers and 2 demon skeletons. Go down the other stairs, and just follow the way to the next stairs. The next room will be filled with poison fields, Ghosts and Demon Skeletons."
+        },
+        {
+          "kind": "go",
+          "text": "Up the stairs and north through the room. In its north corner: spill the vial of blood on the tile between the two sacrificial stones. Then through the flame and back through the teleporter.",
+          "at": [
+            32244,
+            31892,
+            14
+          ],
+          "source": "Going up the stairs, walk north through this room. In the north corner of this room lies the forth seal. Use the vial and spill the blood between the two stones (on the tile that looks like the depot tiles). Go through the flame and back through the teleporter."
+        }
+      ]
+    },
+    {
+      "name": "The Seal of Demonrage",
+      "steps": [
+        {
+          "kind": "kill",
+          "text": "Through the stairs in the blood room and on. In the tight corridor to the south, stepping on one of the two special tiles summons 2 warlocks per player (one in the corridor, one in the room below). Every player must step on one. Kill them: a blocker keeps one busy below while the team kills the other.",
+          "at": [
+            32213,
+            31847,
+            15
+          ],
+          "monster": "Warlock",
+          "source": "For every person in your party, you will face 2 warlocks. In the tight corridor to the south, you will see 2 special tiles... After stepping on either one, you will spawn the 2 warlocks."
+        },
+        {
+          "kind": "go",
+          "text": "Each player pulls the five switches in the order of the wiki's picture and goes through the fire. Solo, you can ignore the warlocks and pull the switches while healing.",
+          "at": [
+            32219,
+            31844,
+            15
+          ],
+          "source": "After the whole team has stepped on a tile, each person must pull the switches in the order as shown below and proceed through the fire. An alternative strategy if you solo this part is just ignore them and pull the switches while constantly healing."
+        }
+      ]
+    },
+    {
+      "name": "The Plague Seal",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "On through the caves: 2 giant spiders to the north, use your pick on the marked spot and go down; up again into a cave with lots of demon skeletons. (A rope spot in its middle leads to the Isle of the Kings' catacombs: the quickest way out from here.) Pick again to reach the seal room.",
+          "at": [
+            32172,
+            31858,
+            15
+          ],
+          "source": "Go north (you will face 2 Giant Spiders), after that use pick on the place marked in the map and you will go down. Go up, there will be a lot of demon skeleton. Go from A to B and use pick to get access to the sixth seal room. Note: you will pass by a rope spot, this leads to the catacombs of the Isle Of The Kings."
+        },
+        {
+          "kind": "go",
+          "text": "Put the white pearl on the left stone and the black pearl on the right one, and go through a teleporter (left or right). Head north through the poison fields to the teleporter at the end, then the one in the room you arrive in, then the teleporters behind the pearls back.",
+          "at": [
+            32176,
+            31863,
+            15
+          ],
+          "source": "place the pearls where the picture shows and pass through the teleport. After you have walked through a teleport, head north through a couple of poison fields and walk through the teleport which you find at the end of the way. In the room where you now arrive, walk through the teleport which you see there."
+        }
+      ]
+    },
+    {
+      "name": "The Kiss of the Banshee Queen",
+      "steps": [
+        {
+          "kind": "kill",
+          "text": "The queen is close to the Seal of Sacrifice. Kill the banshees (4), mummies, ghosts and stalkers around her.",
+          "at": [
+            32254,
+            31863,
+            14
+          ],
+          "monster": "Banshee",
+          "source": "Go to The Queen Of The Banshee (it's close to seal #4), she is surrounded by 4 banshees, 2 mummies, 2 ghosts and 3 stalkers"
+        },
+        {
+          "kind": "talk",
+          "text": "Ask the queen for the seventh seal: she checks your six seals, then gives you her kiss. You're teleported to a small room; go up the stairs to the Ghostlands.",
+          "npc": "The Queen of the Banshee",
+          "say": [
+            "hi",
+            "seventh",
+            "yes",
+            "yes",
+            "yes",
+            "yes",
+            "yes",
+            "yes",
+            "kiss",
+            "yes"
+          ],
+          "source": "After clearing all of the banshees around the Queen talk to her and say: Hi, Seventh Seal, Yes x6, Kiss, Yes. You will then be teleported to a small room. Go up the stairs and you'll be in the surface of Ghostlands again."
+        }
+      ]
+    },
+    {
+      "name": "The final room",
+      "steps": [
+        {
+          "kind": "go",
+          "text": "Come all the way back from the Ghostlands (or via the Isle of the Kings) to the stairs west of the queen. Bring 280-300 free cap. Once down, you can't go up again.",
+          "at": [
+            32219,
+            31893,
+            14
+          ],
+          "source": "The final room is west of the Banshee Queen, you need to get there again all the way from the Ghostlands, it's also possible to go via the Isle of the Kings. Prepare 280-300 extra cap for rewards. Once you go downstairs you can't go up again."
+        },
+        {
+          "kind": "kill",
+          "text": "Kill the banshees, dragon lords and giant spiders (lure them if you can).",
+          "at": [
+            32219,
+            31898,
+            15
+          ],
+          "monster": "Banshee",
+          "source": "The final room contains 6 Banshees, 2 Dragon Lords and 2 Giant Spiders, usually you have to lure them. Kill everything, and grab your rewards."
+        },
+        {
+          "kind": "reward",
+          "text": "The chests: Boots of Haste, Giant Sword, Tower Shield, Stealth Ring, Stone Skin Amulet and 100 platinum coins. Take everything: once you leave through the magic forcefield you can't come back. It puts you on the Ghostlands surface.",
+          "at": [
+            32212,
+            31896,
+            15
+          ],
+          "items": [
+            [
+              "boots of haste",
+              1
+            ],
+            [
+              "giant sword",
+              1
+            ],
+            [
+              "tower shield",
+              1
+            ],
+            [
+              "stealth ring",
+              1
+            ],
+            [
+              "stone skin amulet",
+              1
+            ],
+            [
+              "platinum coin",
+              100
+            ]
+          ],
+          "object": 2472,
+          "source": "Once you Leave the room (walked through the Magic Forcefield), you can't enter again. So be sure to grab all the rewards. After entering the Magic Forcefield you will be teleported to the Ghostlands surface."
+        }
+      ]
+    }
+  ]
+}
