@@ -12,7 +12,8 @@ const matches = (q, text) => [q.n, areaOf(q), rewardsOf(q)].some((s) => (s || ''
 
 // login (13c): null without the quest database, else { user, editor }: a small line at the bottom to log in with
 // Discord (only the two editors can edit; anyone else who logs in is told so).
-// done: the Set of quest keys ticked Done (user 2026-11-24): a green tick before the name.
+// done: the Set of quest keys ticked Done (user 2026-11-24): the client's checkbox before the name, ticked (user
+// 2026-11-25: the dark options-window box instead of a green tick).
 export default function QuestList({ world, selected, done, onPick, onClose, login, onLogIn, onLogOut }) {
   const [text, setText] = useState('');
   const quests = world.quests || [];
@@ -24,7 +25,7 @@ export default function QuestList({ world, selected, done, onPick, onClose, logi
       type="button" key={q.n} className={`tm-result tm-quest-row${q === selected ? ' tm-active' : ''}`}
       onClick={() => onPick(q)} title={[q.n, areaOf(q), rewardsOf(q)].filter(Boolean).join(' · ')}
     >
-      <span className="tm-quest-tick">{done?.has(questDoneKey(q)) ? '✓' : ''}</span>
+      <span className="tm-quest-tick"><span className={`tm-cb${done?.has(questDoneKey(q)) ? ' tm-cb-on' : ''}`} /></span>
       <span className="tm-offer-name">{q.n.replace(/ Quest$/, '')}</span>
       {levelOf(q) ? <span className="tm-result-kind" title="Level needed">{levelOf(q)}</span> : null}
     </button>

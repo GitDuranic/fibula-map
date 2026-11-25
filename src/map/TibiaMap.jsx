@@ -2428,7 +2428,6 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
             onKeyDown={(e) => { if (e.key === 'Escape') setSettingsOpen(false); }}>
             <div className="tm-window-title">
               <span className="tm-window-name">Settings</span>
-              <button type="button" className="tm-close" onClick={() => setSettingsOpen(false)} title="Close" aria-label="Close">×</button>
             </div>
             <div className="tm-window-body">
               {!fixedUrl && maps.length > 1 ? (
@@ -2459,6 +2458,9 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                 {showHouses && houseNote && <div className="tm-muted">{houseNote}</div>}
                 <div className="tm-muted">Coloured tiles are reset at server save; items stay on the others.{mapLabel === '7.1' ? ' The 7.1 map borrows these from the 7.2 map.' : ''}</div>
               </div>
+            </div>
+            <div className="tm-settings-buttons">
+              <button type="button" className="tm-btn" onClick={() => setSettingsOpen(false)}>Ok</button>
             </div>
           </div>
         </>
