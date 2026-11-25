@@ -147,8 +147,12 @@
   border: 1px solid; border-color: var(--tm-light) var(--tm-dark) var(--tm-dark) var(--tm-light);
 }
 .tm ::-webkit-scrollbar-button:single-button { display: block; width: 12px; height: 12px; background-image: var(--tm-gui); }
-.tm ::-webkit-scrollbar-button:single-button:vertical:decrement { background-position: -234px -122px; }
-.tm ::-webkit-scrollbar-button:single-button:vertical:increment { background-position: -246px -122px; }
+/* gui.png has each arrow twice: raised (232/244, 64: light top-left edge) and pressed (234/246, 122: dark top-left
+   edge). User 2026-11-25: we always showed the pressed one; now raised, pressed only while held down. */
+.tm ::-webkit-scrollbar-button:single-button:vertical:decrement { background-position: -232px -64px; }
+.tm ::-webkit-scrollbar-button:single-button:vertical:increment { background-position: -244px -64px; }
+.tm ::-webkit-scrollbar-button:single-button:vertical:decrement:active { background-position: -234px -122px; }
+.tm ::-webkit-scrollbar-button:single-button:vertical:increment:active { background-position: -246px -122px; }
 .tm ::-webkit-scrollbar-corner { background: var(--tm-stone); }
 
 /* buttons: stone face, light top-left, dark bottom-right; inverted while pressed (as in the planner) */
