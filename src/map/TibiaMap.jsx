@@ -15,7 +15,7 @@ import { createRouter, routeTime } from './engine/router.js';
 import { fetchTileFixes, setTileFix } from './engine/tilefixes.js';
 import { fetchHouseRenters } from './engine/houserenters.js';
 import { drawText, textWidth } from './engine/text.js';
-import { exivaAnswer, exivaText, exivaOverlap, exivaStops, exivaSuggest, EXIVA_ANSWERS } from './engine/exiva.js';
+import { exivaAnswer, exivaText, exivaOverlap, exivaStops, exivaSuggest, exivaGrid, exivaLand, exivaRides, EXIVA_ANSWERS } from './engine/exiva.js';
 import { questDbConfig, questsDone, saveQuestsDone, questDoneKey } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
 import * as qg from './engine/questguide.js';
@@ -24,6 +24,8 @@ import './tibia-map.css';
 // Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
 const ZOOMS = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 96, 128, 160];
 const REFRESH_RGBA = [230, 0, 255, 85]; // the refresh tiles' tint (Settings): magenta (orange hid among the roofs), a third opaque
+// About this many tiles: two significant digits (12,345 -> 12,000).
+const roundTiles = (n) => { const p = 10 ** Math.max(0, Math.floor(Math.log10(Math.max(1, n))) - 1); return (Math.round(n / p) * p).toLocaleString('en'); };
 const SPRITES_FROM = 16; // below this: only the pre-drawn overview images (live drawing is too slow that far out)
 // A sprite chunk canvas fades in over this long the first time it's drawn (WeakMap: canvas -> first shown).
 const CHUNK_FADE_MS = 250;
@@ -843,10 +845,15 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const setExiva = (list) => {
     const answered = list.filter((r) => r.ans);
     exiva.current = list;
-    exivaMask.current = answered.length && worldRef.current ? exivaOverlap(worldRef.current.bounds, answered) : null;
+    // Slice 3: only tiles someone can stand on count (world.exivaLand, made once the walk data is loaded).
+    const w = worldRef.current;
+    exivaMask.current = answered.length && w ? exivaOverlap(w.bounds, answered, 2, w.exivaLand || null) : null;
     // Once every cast is answered: where to cast next (the boat and carpet stops; links.json is loaded with the map).
     const passages = worldRef.current?.links?.passages;
-    setExivaNext(answered.length && answered.length === list.length && passages ? exivaSuggest(exivaMask.current, exivaStops(passages)) : []);
+    // Ranked with the rides from where you cast last (slice 3).
+    const stops = passages ? exivaStops(passages) : [];
+    setExivaNext(answered.length && answered.length === list.length && passages
+      ? exivaSuggest(exivaMask.current, stops, 3, exivaRides(passages, stops, list[list.length - 1].p)) : []);
     setExivas(list);
     redraw();
   };
@@ -854,6 +861,10 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   // A new cast at tile [x, y, z] (one still waiting for its answer is replaced), zoomed out so its "to the" squares
   // and a bit of "far" fit.
   const startExiva = (tile) => {
+    // The walk data (7 MB, also used by routes): loaded with the first cast, then the land cells are worked out once
+    // and the overlap made again.
+    const w = worldRef.current;
+    if (w && !w.exivaLand) w.loadWalk().then((walk) => { w.exivaLand ||= exivaLand(walk, w.CHUNK, exivaGrid(w.bounds)); setExiva(exiva.current); }).catch(() => {});
     setExiva([...exiva.current.filter((r) => r.ans), { p: tile, ans: null }]);
     const c = canvasRef.current, room = Math.min(c.width - coverPx(), c.height) * 0.95;
     const zoom = [...ZOOMS].reverse().find((zz) => 230 * zz <= room) ?? ZOOMS[0];
@@ -2524,7 +2535,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         {exivas.length > 0 && (
           <div className="tm-exiva-bar" style={{ zoom: uiScale / dpr }}>
             <div className="tm-exiva-head">
-              <span>Exiva</span>
+              <span>Exiva{exivaMask.current?.land && exivas.some((r) => r.ans) ? ` · about ${roundTiles(exivaMask.current.tiles)} tiles left` : ''}</span>
               <button type="button" className="tm-close" onClick={clearExiva} title="Clear exiva" aria-label="Clear exiva">×</button>
             </div>
             {/* Each cast: its answer (picked here, or by clicking its zone on the map), and a x to drop it. */}
@@ -2548,9 +2559,9 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
             {exivaNext.length > 0 && (
               <div className="tm-exiva-next">
                 <div>Next exiva from:</div>
-                {exivaNext.map(({ stop, left }) => (
-                  <button type="button" key={stop.p.join()} className="tm-btn" onClick={() => startExiva(stop.p)} title={`Go there and exiva: ${stop.p.join(', ')}`}>
-                    {stop.name} <span className="tm-exiva-left">~{Math.max(1, Math.round(left * 100))}% left</span>
+                {exivaNext.map(({ stop, left, rides, gold }) => (
+                  <button type="button" key={stop.p.join()} className="tm-btn" onClick={() => startExiva(stop.p)} title={`Go there and exiva: ${stop.p.join(', ')}${gold ? ` (${gold} gold by boat/carpet)` : ''}`}>
+                    {stop.name} <span className="tm-exiva-left">~{Math.max(1, Math.round(left * 100))}% · {rides == null ? 'no boat' : rides === 0 ? 'walk' : `${rides} ride${rides > 1 ? 's' : ''}`}</span>
                   </button>
                 ))}
               </div>
