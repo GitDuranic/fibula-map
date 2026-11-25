@@ -643,7 +643,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - **Markers** (zoom 16–32):
   - Monsters of one kind in one spawn group, within 3 tiles of each other (chained), are one marker. It shows one outfit with "3x" in the client's outlined font (white) at the tile's bottom right, at the spawn point nearest their middle.
   - The count is all of them together (spawn amounts added up).
-- **One per tile** from zoom 64 (`MONSTERS_SPLIT`): each spawn point's monsters stand on their own tiles, spread from the centre outwards within the spawn's radius.
+- **One per tile** from zoom 64 (`MONSTERS_SPLIT`): each spawn point's monsters stand on their own tiles, spread from the centre outwards within the spawn's radius. The first stands on the spawn's home tile, the others in a formation running anti-clockwise around it, starting on its east side (east, north-east, north, …), ring by ring, as the game places them (2026-11-25; before, the order went north, east, south, west).
   - The server picks random tiles in the radius, so this only shows *about* where they are.
   - It doesn't check whether the tile can be walked on (that would need the 7 MB walk data on the page).
 - **Monster window** (click a monster; NPCs come first, then monsters, then locked doors, then floor changes):

@@ -372,11 +372,15 @@ const monFrame = (m, v, mz, world) => {
   const f = m.p[2] === mz ? npcFrame(m, v.z, v.cut) : null;
   return f && !covered(world, f, mz, v) ? f : null;
 };
+// Where a spawn's monsters stand, in order: the first on its home tile, the others in a formation running
+// anti-clockwise around it, starting on its east side (east, north-east, north, ...), ring by ring, as the
+// game places them (user 2026-11-25).
 const SPIRAL = (() => {
   const out = [];
   for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) out.push([dx, dy]);
-  return out.sort((a, b) => Math.max(Math.abs(a[0]), Math.abs(a[1])) - Math.max(Math.abs(b[0]), Math.abs(b[1]))
-    || Math.hypot(...a) - Math.hypot(...b) || Math.atan2(a[1], a[0]) - Math.atan2(b[1], b[0]));
+  const ring = ([dx, dy]) => Math.max(Math.abs(dx), Math.abs(dy));
+  const turn = ([dx, dy]) => (Math.atan2(-dy, dx) + 2 * Math.PI) % (2 * Math.PI); // 0 east, anti-clockwise (y grows south)
+  return out.sort((a, b) => ring(a) - ring(b) || turn(a) - turn(b));
 })();
 
 // The monsters to draw for view v, back to front: [{ kind, f: [x, y], count, group }].
