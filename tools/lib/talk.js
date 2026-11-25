@@ -1,6 +1,9 @@
 // NPC conversations (slice 13a): a CipSoft .npc behaviour script as what you can say and what the NPC answers.
 //
-// Script format (TVP / CipSoft): one rule per line, `conditions -> actions`, first matching rule wins.
+// Script format (TVP / CipSoft): one rule per line, `conditions -> actions`. The server does NOT take the first
+// matching rule in the file: it tries the rules from the highest priority down (TVP src/npcbehavior.cpp), and rules of
+// equal priority in file order (rulePriority below). User 2026-11-25: Dalbrect's "passage" showed the plain refusal,
+// because an earlier condition-free "passage" hid the friend's offer that the server really picks.
 //   conditions: "keyword" (a trailing $ = whole word), %1 (a number you say), ADDRESS (greeting), VANISH (you walk
 //   away), BUSY, Topic=N (only right after a reply that set Topic=N), Druid/Knight/..., male/female, Premium,
 //   QuestValue(n)=v, Count(Type)>=Amount, CountMoney>=Price, Level>=N, SpellKnown(String)=0, ..., ! (ignored here)
@@ -62,7 +65,23 @@ function scriptLines(file, seen = new Set()) {
   return out;
 }
 
-// Raw rules: [{ left: [token], right: [token] }] in script order (* resolved to the previous right side).
+// A rule's priority as the server computes it (npcbehavior.cpp loadBehaviour/loadConditions): every condition counts
+// 1, a "keyword" and a comparison (QuestValue(..)=.., Topic=.., Count(..)>=.., ...) 1 more each; a "!" doubles the
+// total and adds 1. Plain flags (ADDRESS, Druid, Premium, ...) and %1 count only the 1.
+const FLAGS = /^(ADDRESS|BUSY|VANISH|sorcerer|knight|paladin|druid|premium|pvpenforced|female|male|pzblock|promoted)$/i;
+function rulePriority(left) {
+  let p = 0, bang = false;
+  for (const t of left) {
+    if (t === '') continue;
+    if (t === '!') { p += 1; bang = true; } else if (t.startsWith('"')) p += 2;
+    else if (/^%\d$/.test(t) || FLAGS.test(t)) p += 1;
+    else p += 2;
+  }
+  return bang ? p * 2 + 1 : p;
+}
+
+// Raw rules: [{ left: [token], right: [token], priority }] in the order the server tries them: highest priority first,
+// equal ones in script order (* is resolved to the previous right side in script order first).
 function readRules(lines) {
   const rules = [];
   let prevRight = [];
@@ -75,12 +94,14 @@ function readRules(lines) {
     }
     rules.push({ left: splitTop(line.slice(0, a)), rightText: line.slice(a + 2).trim() });
   }
-  for (const r of rules) {
+  rules.forEach((r, i) => {
     r.right = r.rightText === '*' ? prevRight : splitTop(r.rightText.replace(/"\s+"/g, ' '));
     prevRight = r.right;
     delete r.rightText;
-  }
-  return rules;
+    r.priority = rulePriority(r.left);
+    r.line = i;
+  });
+  return rules.sort((a, b) => b.priority - a.priority || a.line - b.line);
 }
 
 const VOC = { druid: 'druids', sorcerer: 'sorcerers', knight: 'knights', paladin: 'paladins' };
@@ -221,7 +242,8 @@ export function makeTalk({ itemName, townName }) {
   return function parseTalk(file) {
     const rules = readRules(scriptLines(file)).map((r) => ({ ...parseLeft(r.left), ...parseRight(r.right) }))
       .filter((r) => !r.drop);
-    // A rule can't fire if an earlier one with the same topic and words has no conditions left.
+    // A rule can't fire if one tried before it (higher priority, or equal and earlier) with the same topic and words
+    // has no conditions left.
     const shadow = new Set();
     const live = rules.filter((r) => {
       const key = `${r.special}|${r.when}|${r.words.join(' ')}`;
@@ -234,7 +256,9 @@ export function makeTalk({ itemName, townName }) {
     // Entries for a list of rules, merging * aliases (same conditions and reply) into one entry.
     function entries(list, ctx0, path) {
       const out = [];
-      let prev = null;
+      // Merged by what the NPC answers (sig), not only when next to each other: sorting by priority can put a
+      // * alias apart from its line (e.g. "offer" and "do you sell" have different priorities).
+      const bySig = new Map();
       for (const r0 of list) {
         // Data=N / Amount=N against what an earlier answer set (e.g. the town you picked at the Oracle): a rule
         // that can't match on this path is left out, one that always matches loses the condition.
@@ -252,10 +276,14 @@ export function makeTalk({ itemName, townName }) {
         const ctx = { ...ctx0, ...r.vars, teleport: tp ? [+tp[1], +tp[2], +tp[3]] : null };
         const sig = `${r.special}|${r.reply}|${r.acts.join(',')}|${r.topic}|${JSON.stringify(r.vars)}`;
         const c = r.conds.map((t) => cond(t, ctx)).filter(Boolean);
-        if (prev && prev.sig === sig && r.words.length && prev.e.k) {
+        const prev = bySig.get(sig);
+        if (prev && r.words.length && prev.k) {
           // Another way to say the same thing; with other conditions (e.g. "red" if quest 2 is 1, "blue" if it
-          // is 2) each way keeps its own: kc [[text], ...] next to k, and c moves into it.
-          const e = prev.e;
+          // is 2) each way keeps its own: kc [[text], ...] next to k, and c moves into it. The same words with the
+          // same conditions again (e.g. one "yes" per amount the NPC asked about) are kept once.
+          const e = prev, w = r.words.join(' ');
+          const same = e.k.some((k, i) => k.join(' ') === w && (e.kc ? e.kc[i] : e.c || []).join() === c.join());
+          if (same) continue;
           if (!e.kc && (e.c || []).join() !== c.join()) { e.kc = e.k.map(() => e.c || []); delete e.c; }
           e.k.push(r.words);
           if (e.kc) e.kc.push(c);
@@ -273,9 +301,9 @@ export function makeTalk({ itemName, townName }) {
           const next = entries(live.filter((f) => f.when === r.topic && !f.special), ctx, [...path, r.topic]);
           if (next.length) e.n = next;
         }
-        if (!e.r && !e.n && (!e.k || !e.x)) { prev = null; continue; } // nothing to show (e.g. ADDRESS,! -> Idle)
+        if (!e.r && !e.n && (!e.k || !e.x)) continue; // nothing to show (e.g. ADDRESS,! -> Idle)
         out.push(e);
-        prev = { sig, e };
+        if (!bySig.has(sig)) bySig.set(sig, e);
       }
       return out;
     }

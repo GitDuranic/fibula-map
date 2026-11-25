@@ -9,7 +9,13 @@ export function altsFor(entries, chosen, w) {
   const said = sayText(w);
   return entries
     .filter((o) => o !== chosen && (o.k ? o.k.some((ow) => sayText(ow) === said) : !o.s))
-    .map((o) => ({ ...(o.k ? {} : { other: true }), ...(o.c?.length ? { cond: o.c } : {}), ...(o.r ? { reply: o.r } : {}), ...(o.x?.length ? { fx: o.x } : {}) }))
+    .map((o) => {
+      // An entry with per-words conditions (kc) keeps the ones of the words said (user 2026-11-25: Kevin's "dress
+      // pattern" showed the queen's samples reply as if unconditional; its condition, quest 233 is 6, was in kc).
+      const j = o.k && o.kc ? o.k.findIndex((ow) => sayText(ow) === said) : -1;
+      const cond = [...(o.c || []), ...(j >= 0 ? o.kc[j] : [])];
+      return { ...(o.k ? {} : { other: true }), ...(cond.length ? { cond } : {}), ...(o.r ? { reply: o.r } : {}), ...(o.x?.length ? { fx: o.x } : {}) };
+    })
     .filter((a) => a.reply || a.fx);
 }
 
