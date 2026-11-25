@@ -833,6 +833,8 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   };
   const flight = useRef(null); // a fly-to in progress: { fx, fy, tx, ty, t0, dur }
   const exiva = useRef(null); // "Exiva here" (right-click): the tile [x, y, z] the zones are drawn around
+  const [exivaOn, setExivaOn] = useState(false); // shows the close button (top right of the map)
+  const clearExiva = () => { exiva.current = null; setExivaOn(false); redraw(); };
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   const uiScale = Math.max(1, Math.round(dpr)); // whole screen pixels per client pixel in the side panel
 
@@ -2468,6 +2470,13 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
           }}
         />
         {!ready && <div className="tm-loading">Loading map...</div>}
+        {/* Exiva zones on: a close button in the map's top-right corner, at every zoom (user 2026-11-25). */}
+        {exivaOn && (
+          <div className="tm-exiva-bar" style={{ zoom: uiScale / dpr }}>
+            <span>Exiva</span>
+            <button type="button" className="tm-close" onClick={clearExiva} title="Clear exiva" aria-label="Clear exiva">×</button>
+          </div>
+        )}
         {talkNpc && world && <NpcTalk world={world} npc={talkNpc} raw={!!login.editor} elRef={talkEl} zoom={uiScale / dpr} onResize={redraw} onClose={() => openTalk(null)} />}
         {menu && (
           <>
@@ -2500,12 +2509,12 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
                 // Exiva zones (user 2026-11-25): zoomed out so the "to the" squares and a bit of "far" fit.
                 ['Exiva here', () => {
-                  exiva.current = menu.tile;
+                  exiva.current = menu.tile; setExivaOn(true);
                   const c = canvasRef.current, room = Math.min(c.width - coverPx(), c.height) * 0.95;
                   const zoom = [...ZOOMS].reverse().find((zz) => 230 * zz <= room) ?? ZOOMS[0];
                   goTo({ x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] }, { zoom: Math.min(zoom, view.current.zoom) });
                 }],
-                ...(exiva.current ? [['Clear exiva', () => { exiva.current = null; redraw(); }]] : []),
+                ...(exiva.current ? [['Clear exiva', clearExiva]] : []),
                 // Editors (14a): a locked door on the map that just opens is marked "Not locked" for everyone.
                 ...(login.editor && dbCfg && world?.allDoorAt?.has(menu.tile.join(','))
                   ? (tileFixes.has(menu.tile.join(','))
