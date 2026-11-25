@@ -24,6 +24,9 @@ import './tibia-map.css';
 const ZOOMS = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 96, 128, 160];
 const REFRESH_RGBA = [230, 0, 255, 85]; // the refresh tiles' tint (Settings): magenta (orange hid among the roofs), a third opaque
 const SPRITES_FROM = 16; // below this: only the pre-drawn overview images (live drawing is too slow that far out)
+// A sprite chunk canvas fades in over this long the first time it's drawn (WeakMap: canvas -> first shown).
+const CHUNK_FADE_MS = 250;
+const chunkShown = new WeakMap();
 // ?debug=walk: show the router's walk data (red = can't walk, arrows = floor changes) to check it against the game.
 const DEBUG_WALK = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'walk';
 const START = { x: 32369, y: 32221, z: 7, zoom: 32 }; // Thais
@@ -845,6 +848,14 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     // the map is drawn: no new sprite chunks (the overview images, scaled, stand in), no monsters, names or renters.
     // They come back on the frame it lands.
     const flying = !!flight.current;
+    // In the air: build the sprite chunks where it lands, at most one new one a frame (one takes 20-60 ms), so they
+    // are ready when it lands and fade in (below) instead of popping in after.
+    // A chunk whose data is still loading gives null without using the budget: it's tried again next frame.
+    if (flying && fl.pre && performance.now() - fl.t0 > 60) {
+      const pb = { n: 1 };
+      fl.pre.cells = fl.pre.cells.filter(([cx, cy]) => pb.over || !world.chunkCanvas(fl.z1, cx, cy, 'above', fl.pre.ts, pb, fl.cut1));
+      if (!fl.pre.cells.length) fl.pre = null;
+    }
 
     // Zoom animation: ease the shown scale towards the target, keeping the anchor point still.
     if (!fl && a.s !== v.zoom) {
@@ -894,13 +905,21 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
       const C = world.CHUNK, ts = v.zoom >= 32 ? 32 : 16;
       // Flying: only chunks already drawn once. Else new ones for up to ~8 ms a frame (user 2026-11-25: six at once
       // froze the map for up to 1/4 s right after landing).
-      const budget = { n: flying ? 0 : 6, until: performance.now() + 8 };
+      const now = performance.now(), budget = { n: flying ? 0 : 6, until: now + 8 };
       ctx.imageSmoothingEnabled = s < ts;
       // Chunks drawn last can overhang into earlier ones only up-left, so draw top-left to bottom-right.
       for (let cy = Math.floor(top / C); cy <= Math.floor(bottom / C); cy++) {
         for (let cx = Math.floor(left / C); cx <= Math.floor(right / C); cx++) {
           const c = world.chunkCanvas(v.z, cx, cy, 'above', ts, budget, v.cut);
-          if (c) ctx.drawImage(c, ox + cx * C * s, oy + cy * C * s, C * s, C * s);
+          if (!c) continue;
+          // A chunk shown for the first time fades in over the overview image under it (user 2026-11-25: "fade
+          // into that view rather than the harsh transition").
+          let t0 = chunkShown.get(c);
+          if (t0 == null) chunkShown.set(c, (t0 = now));
+          const fade = Math.min(1, (now - t0) / CHUNK_FADE_MS);
+          if (fade < 1) { ctx.globalAlpha = fade; more = true; }
+          ctx.drawImage(c, ox + cx * C * s, oy + cy * C * s, C * s, C * s);
+          ctx.globalAlpha = 1;
         }
       }
       // See-through along the route (5c): the floors above and below where the route goes show through.
@@ -1658,6 +1677,13 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         for (const zz of floorsFor(z1, 'above').filter((f) => f >= cut1))
           for (let cy = Math.floor((ty - hh) / C); cy <= Math.floor((ty + hh) / C); cy++)
             for (let cx = Math.floor((tx - hw) / C); cx <= Math.floor((tx + hw) / C); cx++) world.chunk(zz, cx, cy);
+        // The sprite chunks it lands on, middle first: draw() builds them in the air, one a frame (user 2026-11-25:
+        // "preload the end position while moving and have that ready by the time you come to it").
+        const cells = [];
+        for (let cy = Math.floor((ty - hh) / C); cy <= Math.floor((ty + hh) / C); cy++)
+          for (let cx = Math.floor((tx - hw) / C); cx <= Math.floor((tx + hw) / C); cx++) cells.push([cx, cy]);
+        cells.sort((m, n) => Math.hypot((m[0] + 0.5) * C - tx, (m[1] + 0.5) * C - ty) - Math.hypot((n[0] + 0.5) * C - tx, (n[1] + 0.5) * C - ty));
+        flight.current.pre = { cells, ts: s1 >= 32 ? 32 : 16 };
       }
     }
     viewChanged();
