@@ -502,6 +502,15 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const otherLabel = mapLabel && maps.length === 2 ? maps.find((m) => m.label !== mapLabel).label : null;
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
+  // The quest panel floats over the map's left side (user 2026-11-25: opening it pushed the map right, a jump).
+  // coverPx: how many canvas pixels of the map's left side it covers (0 when closed, or under the map on phones).
+  const leftRef = useRef(null);
+  const coverPx = () => {
+    const el = leftRef.current, c = canvasRef.current;
+    if (!el || !c || getComputedStyle(el).position !== 'absolute') return 0;
+    const cr = c.getBoundingClientRect();
+    return Math.max(0, el.getBoundingClientRect().right - cr.left) * (c.width / cr.width);
+  };
   const miniRef = useRef(null); // the minimap canvas
   const mini = useRef(null); // where the minimap drew the world last: { ox, oy, sm }
   const worldRef = useRef(null);
@@ -1633,7 +1642,8 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     // The frog jump (flyPath), in the target floor's tiles (floors above 7 are drawn shifted, see changeFloor); the
     // floor switches halfway across, when zoomed out.
     const W = canvasRef.current?.width || 1000, H = canvasRef.current?.height || 800;
-    const d = Math.min(v.z, 7) - Math.min(z1, 7), tx = p.x + 0.5, ty = p.y + 0.5;
+    // With the quest panel open the target lands in the middle of the part of the map you can see.
+    const d = Math.min(v.z, 7) - Math.min(z1, 7), tx = p.x + 0.5 - coverPx() / 2 / s1, ty = p.y + 0.5;
     const path = flyPath(v.x + d, v.y + d, W / a.s, tx, ty, W / s1);
     const dur = Math.max(300, Math.min(2400, path.S * FLY_MS));
     flight.current = { path, t0: performance.now(), dur, W, d, z0: v.z, cut0: v.cut, z1, cut1, s1 };
@@ -1696,7 +1706,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     if (!pts.length || !c) { redraw(); return; }
     const xs = pts.map((sp) => sp.p[0]), ys = pts.map((sp) => sp.p[1]);
     const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys), y2 = Math.max(...ys);
-    const fit = [...ZOOMS].reverse().find((zz) => zz <= MAIN_FROM && (x2 - x1 + 10) * zz <= c.width * 0.9 && (y2 - y1 + 10) * zz <= c.height * 0.9) ?? ZOOMS[0];
+    const fit = [...ZOOMS].reverse().find((zz) => zz <= MAIN_FROM && (x2 - x1 + 10) * zz <= (c.width - coverPx()) * 0.9 && (y2 - y1 + 10) * zz <= c.height * 0.9) ?? ZOOMS[0];
     const z = 7;
     jump({ x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2), z }, { zoom: fit, cut: fit >= MAIN_FROM && z <= 7 ? z : 0 });
   };
@@ -1743,7 +1753,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     if (!path?.length || !c) return;
     const xs = path.map((pt) => pt[0]), ys = path.map((pt) => pt[1]);
     const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys), y2 = Math.max(...ys);
-    const fit = [...ZOOMS].reverse().find((z) => z <= FLY_ZOOM && (x2 - x1 + 6) * z <= c.width * 0.9 && (y2 - y1 + 6) * z <= c.height * 0.9) ?? ZOOMS[0];
+    const fit = [...ZOOMS].reverse().find((z) => z <= FLY_ZOOM && (x2 - x1 + 6) * z <= (c.width - coverPx()) * 0.9 && (y2 - y1 + 6) * z <= c.height * 0.9) ?? ZOOMS[0];
     // The floor most of it is on (user 2026-11-21: a quest leg starts on the hole of the step before, so its first
     // tile's floor showed only the hole, not the way to the next step).
     const per = new Map();
@@ -2318,7 +2328,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
           title={questSel ? `Quests: ${questSel.quest.n}` : 'Quests'} aria-label="Fold the quest panel out">Quests ›</button>
       )}
       {questsOpen && (
-        <div className="tm-side tm-left" style={{ zoom: uiScale / dpr }}>
+        <div className="tm-side tm-left" ref={leftRef} style={{ zoom: uiScale / dpr }}>
           {world && ready && !questSel && (
             <QuestList
               world={world} selected={questSel?.quest} done={done} onPick={goToQuest} onClose={closeQuests}
