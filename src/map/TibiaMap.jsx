@@ -2448,7 +2448,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                 <div className="tm-section-title">Show on the map</div>
                 <label className="tm-check" title="Tiles with the map's refresh flag: restored at server save, so items left there are cleared. Items stay on tiles without the colour.">
                   <input type="checkbox" checked={showRefresh} onChange={(e) => setShowRefresh(e.target.checked)} />
-                  <span><span className="tm-refresh-swatch" /> Refresh tiles</span>
+                  <span>Refresh tiles</span>
                 </label>
                 {showRefresh && world && world.refresh === null && <div className="tm-muted">This map version has no refresh data.</div>}
                 <label className="tm-check" title="Who rents each house on Project Fibula, shown in the house (from the Project Fibula stats API, updated once a day)">

@@ -439,8 +439,6 @@
 }
 .tm-fold-out:hover { color: #fff; }
 .tm-fold-out:active { border-color: var(--tm-dark) var(--tm-light) var(--tm-light) var(--tm-dark); }
-/* The refresh tiles' colour in Settings (as REFRESH_RGBA in TibiaMap.jsx) */
-.tm-refresh-swatch { display: inline-block; width: 9px; height: 9px; vertical-align: -1px; background: rgba(230, 0, 255, .6); border: 1px solid var(--tm-slot-dark); }
 /* Settings like the client's options windows (user 2026-11-25, General Options): plain stone body (not the darkened
    window body), each option in a sunken frame, title centred, Ok at the bottom under a groove. */
 .tm-settings .tm-window-title { justify-content: center; }
