@@ -15,7 +15,7 @@ import { createRouter, routeTime } from './engine/router.js';
 import { fetchTileFixes, setTileFix } from './engine/tilefixes.js';
 import { fetchHouseRenters } from './engine/houserenters.js';
 import { drawText, textWidth } from './engine/text.js';
-import { exivaAnswer, exivaText, exivaOverlap, EXIVA_ANSWERS } from './engine/exiva.js';
+import { exivaAnswer, exivaText, exivaOverlap, exivaStops, exivaSuggest, EXIVA_ANSWERS } from './engine/exiva.js';
 import { questDbConfig, questsDone, saveQuestsDone, questDoneKey } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
 import * as qg from './engine/questguide.js';
@@ -839,14 +839,26 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const exiva = useRef([]);
   const exivaMask = useRef(null);
   const [exivas, setExivas] = useState([]);
+  const [exivaNext, setExivaNext] = useState([]); // slice 2: the best stops to exiva from next (exivaSuggest)
   const setExiva = (list) => {
     const answered = list.filter((r) => r.ans);
     exiva.current = list;
     exivaMask.current = answered.length && worldRef.current ? exivaOverlap(worldRef.current.bounds, answered) : null;
+    // Once every cast is answered: where to cast next (the boat and carpet stops; links.json is loaded with the map).
+    const passages = worldRef.current?.links?.passages;
+    setExivaNext(answered.length && answered.length === list.length && passages ? exivaSuggest(exivaMask.current, exivaStops(passages)) : []);
     setExivas(list);
     redraw();
   };
   const clearExiva = () => setExiva([]);
+  // A new cast at tile [x, y, z] (one still waiting for its answer is replaced), zoomed out so its "to the" squares
+  // and a bit of "far" fit.
+  const startExiva = (tile) => {
+    setExiva([...exiva.current.filter((r) => r.ans), { p: tile, ans: null }]);
+    const c = canvasRef.current, room = Math.min(c.width - coverPx(), c.height) * 0.95;
+    const zoom = [...ZOOMS].reverse().find((zz) => 230 * zz <= room) ?? ZOOMS[0];
+    goTo({ x: tile[0], y: tile[1], z: tile[2] }, { zoom: Math.min(zoom, view.current.zoom) });
+  };
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   const uiScale = Math.max(1, Math.round(dpr)); // whole screen pixels per client pixel in the side panel
 
@@ -2532,6 +2544,17 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
             {exivas.some((r) => r.ans) && exivaMask.current?.left === 0 && (
               <div className="tm-exiva-note">No place fits every answer. Did they move?</div>
             )}
+            {/* Slice 2: where to cast next, best first, with the share of the lit area it should leave. */}
+            {exivaNext.length > 0 && (
+              <div className="tm-exiva-next">
+                <div>Next exiva from:</div>
+                {exivaNext.map(({ stop, left }) => (
+                  <button type="button" key={stop.p.join()} className="tm-btn" onClick={() => startExiva(stop.p)} title={`Go there and exiva: ${stop.p.join(', ')}`}>
+                    {stop.name} <span className="tm-exiva-left">~{Math.max(1, Math.round(left * 100))}% left</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         {talkNpc && world && <NpcTalk world={world} npc={talkNpc} raw={!!login.editor} elRef={talkEl} zoom={uiScale / dpr} onResize={redraw} onClose={() => openTalk(null)} />}
@@ -2565,13 +2588,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                 })(),
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
                 // Exiva zones (user 2026-11-25): zoomed out so the "to the" squares and a bit of "far" fit.
-                ['Exiva here', () => {
-                  // A new cast; one still waiting for its answer is replaced.
-                  setExiva([...exiva.current.filter((r) => r.ans), { p: menu.tile, ans: null }]);
-                  const c = canvasRef.current, room = Math.min(c.width - coverPx(), c.height) * 0.95;
-                  const zoom = [...ZOOMS].reverse().find((zz) => 230 * zz <= room) ?? ZOOMS[0];
-                  goTo({ x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] }, { zoom: Math.min(zoom, view.current.zoom) });
-                }],
+                ['Exiva here', () => startExiva(menu.tile)],
                 ...(exivas.length ? [['Clear exiva', clearExiva]] : []),
                 // Editors (14a): a locked door on the map that just opens is marked "Not locked" for everyone.
                 ...(login.editor && dbCfg && world?.allDoorAt?.has(menu.tile.join(','))

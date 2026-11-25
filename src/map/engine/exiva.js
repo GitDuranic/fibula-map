@@ -28,8 +28,10 @@ export const sameAnswer = (a, b) => a.band === b.band && (a.band === 0 || a.dir 
 export const EXIVA_ANSWERS = [{ band: 0, dir: -1 }, ...[1, 2, 3].flatMap((band) => EXIVA_DIRS.map((_, dir) => ({ band, dir })))];
 
 // Where the person can be after the answered casts (readings: [{ p: [x, y, z], ans }]), on a grid of `cell` tiles
-// over the map's bounds (the middle tile of each cell is tested). Returns { canvas, x0, y0, cell, left } where the
-// canvas has one pixel per cell, dark where they can't be, clear where they can; left: how many cells are left.
+// over the map's bounds (the middle tile of each cell is tested). Returns { canvas, x0, y0, cell, left, spots } where
+// the canvas has one pixel per cell, dark where they can't be, clear where they can; left: how many cells are left;
+// spots: the middle tiles of those cells ([x, y, x, y, ...], at most about 60000: evenly thinned out), for
+// exivaSuggest.
 export function exivaOverlap(bounds, readings, cell = 2) {
   const x0 = Math.floor(bounds.x1 / cell) * cell, y0 = Math.floor(bounds.y1 / cell) * cell;
   const w = Math.ceil((bounds.x2 + 1 - x0) / cell), h = Math.ceil((bounds.y2 + 1 - y0) / cell);
@@ -38,6 +40,7 @@ export function exivaOverlap(bounds, readings, cell = 2) {
   const ctx = canvas.getContext('2d'), img = ctx.createImageData(w, h), px = img.data;
   const half = Math.floor(cell / 2);
   let left = 0;
+  const ok8 = new Uint8Array(w * h);
   for (let j = 0; j < h; j++) {
     const ty = y0 + j * cell + half;
     for (let i = 0; i < w; i++) {
@@ -45,10 +48,49 @@ export function exivaOverlap(bounds, readings, cell = 2) {
       let ok = true;
       for (const r of readings) if (!sameAnswer(exivaAnswer(r.p[0], r.p[1], tx, ty), r.ans)) { ok = false; break; }
       const o = (j * w + i) * 4;
-      if (ok) left++;
+      if (ok) { left++; ok8[j * w + i] = 1; }
       else { px[o + 3] = 150; } // black at about 60%
     }
   }
   ctx.putImageData(img, 0, 0);
-  return { canvas, x0, y0, cell, left };
+  const step = Math.max(1, Math.ceil(left / 60000)), spots = [];
+  for (let k = 0, n = 0; k < ok8.length; k++) if (ok8[k] && n++ % step === 0) spots.push(x0 + (k % w) * cell + half, y0 + Math.floor(k / w) * cell + half);
+  return { canvas, x0, y0, cell, left, spots };
+}
+
+// The quick ways to move far (slice 2): where the boats and carpets put you, from the passages in links.json
+// ([NPC, destination, price, min level, x, y, z, tx, ty, tz]). Not the Oracle and the Gatekeeper (Rookgaard, once).
+// [{ name: 'Venore (boat)', p: [x, y, z] }], one per arrival spot.
+const CARPETS = new Set(['Pino', 'Uzon', 'Chemar']), STEAMSHIP = new Set(['Brodrosch', 'Gurbasch']);
+export function exivaStops(passages) {
+  const byPos = new Map();
+  for (const [npc, dest, , , , , , tx, ty, tz] of passages || []) {
+    if (npc === 'The Oracle' || npc === 'The Gatekeeper') continue;
+    const k = `${tx},${ty},${tz}`;
+    const kind = CARPETS.has(npc) ? 'carpet' : STEAMSHIP.has(npc) ? 'steamship' : 'boat';
+    if (!byPos.has(k)) byPos.set(k, { name: `${dest} (${kind})`, p: [tx, ty, tz] });
+  }
+  return [...byPos.values()];
+}
+
+// Which stop to exiva from next (slice 2): for each stop, the place left after its answer, on average over where
+// the person may be (the spots of exivaOverlap, each as likely): the sum over its possible answers of (spots giving
+// that answer)^2 / spots. The smallest is the best next question. Returns the best `max` as
+// [{ stop, left: the share of the area expected to be left (0-1) }], leaving out stops that can't narrow it down.
+export function exivaSuggest(overlap, stops, max = 3) {
+  const sp = overlap?.spots, n = sp ? sp.length / 2 : 0;
+  if (n < 2) return [];
+  const out = [];
+  for (const stop of stops) {
+    const counts = new Map();
+    for (let i = 0; i < sp.length; i += 2) {
+      const a = exivaAnswer(stop.p[0], stop.p[1], sp[i], sp[i + 1]), k = a.band * 8 + a.dir;
+      counts.set(k, (counts.get(k) || 0) + 1);
+    }
+    let e = 0;
+    for (const c of counts.values()) e += c * c;
+    const left = e / n / n;
+    if (left < 0.999) out.push({ stop, left });
+  }
+  return out.sort((a, b) => a.left - b.left).slice(0, max);
 }
