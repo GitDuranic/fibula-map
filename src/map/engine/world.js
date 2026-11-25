@@ -606,7 +606,8 @@ export class World {
   }
 
   // Search results for text q, best first (at most `limit`): names starting with it, then a word starting with
-  // it, then containing it; shorter names first. Coordinates ("32369, 32221, 7") give a position.
+  // it, then containing it; shorter names first. Coordinates ("32369, 32221, 7") give a position. houseEntries:
+  // the house renters while Players in houses is on (17d, set by the map), searched like the rest.
   search(q, limit = 12) {
     q = q.trim().toLowerCase();
     if (!q) return [];
@@ -616,7 +617,7 @@ export class World {
       return [{ kind: 'Position', name: `${n[0]}, ${n[1]}, ${z}`, pos: { x: n[0], y: n[1], z } }];
     }
     const rank = (e) => (e.lower.startsWith(q) ? 0 : e.lower.includes(` ${q}`) || e.lower.includes(`'${q}`) ? 1 : e.lower.includes(q) ? 2 : -1);
-    return this.searchEntries
+    return [...this.searchEntries, ...(this.houseEntries || [])]
       .map((e) => ({ e, r: rank(e) }))
       .filter((x) => x.r >= 0)
       .sort((a, b) => a.r - b.r || a.e.name.length - b.e.name.length || a.e.name.localeCompare(b.e.name))

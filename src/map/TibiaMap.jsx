@@ -1648,6 +1648,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   useEffect(() => {
     const world = worldRef.current;
     housePlayers.current = [];
+    if (world) world.houseEntries = null;
     setHouseNote(null);
     if (!showHouses || !ready || !world) { redraw(); return undefined; }
     let live = true;
@@ -1656,6 +1657,8 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
       if (!live || worldRef.current !== world) return;
       if (!houses) { setHouseNote('This map version has no house list.'); redraw(); return; }
       housePlayers.current = houses.filter(([h]) => renters.has(h)).map((row) => housePose(row, renters.get(row[0])));
+      // Searchable by renter (17d, user 2026-11-25): picking one goes to their house (also a route end).
+      world.houseEntries = housePlayers.current.map((pl) => ({ kind: 'House', name: pl.n, house: pl.house, place: { p: pl.p }, lower: pl.n.toLowerCase() }));
       redraw();
     }, (e) => { if (live) setHouseNote(`Could not load the house renters (${e.message || e}).`); });
     return () => { live = false; };
@@ -2213,7 +2216,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     redraw();
     if (r.kind === 'Position') jump(r.pos);
     else if (r.kind === 'NPC') { jump({ x: r.npc.p[0], y: r.npc.p[1], z: r.npc.p[2] }); selectNpc(r.npc); }
-    else if (r.kind === 'Depot' || r.kind === 'Location') jump({ x: r.place.p[0], y: r.place.p[1], z: r.place.p[2] });
+    else if (r.kind === 'Depot' || r.kind === 'Location' || r.kind === 'House') jump({ x: r.place.p[0], y: r.place.p[1], z: r.place.p[2] });
     else if (r.kind === 'Item') { selectNpc(null); selectDoor(null); setItem(r.item); }
     else {
       // A town or place: an overview with the roofs on, from its temple (the surface, unless it's underground).
@@ -2391,7 +2394,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                   onMouseDown={(e) => { e.preventDefault(); pick(r); }} onMouseEnter={() => setActive(i)}
                 >
                   <span className="tm-offer-name">{r.name}</span>
-                  <span className="tm-result-kind">{r.kind}</span>
+                  <span className="tm-result-kind" title={r.house}>{r.kind}</span>
                 </button>
               ))}
             </div>
