@@ -220,14 +220,13 @@
 .tm-check { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .tm-check input { margin: 0; }
 /* Checkboxes as the client's options windows draw them (user 2026-11-25: not the browser's white box): the dark
-   sunken 12 px box from gui.png, empty (308, 96) or ticked (308, 108). .tm-cb is the same box drawn without an input
-   (the quest list's Done mark). */
-.tm input[type="checkbox"], .tm-cb {
+   sunken 12 px box from gui.png, empty (308, 96) or ticked (308, 108). */
+.tm input[type="checkbox"] {
   -webkit-appearance: none; appearance: none; display: inline-block; flex: none; width: 12px; height: 12px; margin: 0;
   background: var(--tm-gui) -308px -96px no-repeat; border: 0; border-radius: 0; vertical-align: -2px;
 }
 .tm input[type="checkbox"] { cursor: pointer; }
-.tm input[type="checkbox"]:checked, .tm-cb.tm-cb-on { background-position: -308px -108px; }
+.tm input[type="checkbox"]:checked { background-position: -308px -108px; }
 .tm input[type="checkbox"]:focus-visible { outline: 1px solid #c0c0c0; outline-offset: 1px; }
 .tm input[type="checkbox"]:disabled { opacity: .5; cursor: default; }
 .tm-speed { margin-left: auto; color: #8a8a8a; }
@@ -319,7 +318,7 @@
 
 /* quest list and window (slice 13b) */
 .tm-quest-search { flex: none; }
-.tm-quest-tick { flex: none; display: flex; align-items: center; }
+.tm-quest-tick { flex: none; width: 1em; color: #3c3; font-weight: bold; }
 .tm-quest-draft { margin-top: 3px; color: #d8a860; }
 .tm-quest-follow { margin-top: 4px; width: 100%; }
 .tm-quest-follow.tm-pressed, .tm-quest-follow.tm-pressed:active:not(:disabled) {
