@@ -87,9 +87,9 @@ borrows them: add `--refresh-map "<dir>/map72.otbm"` when converting 7.1. Withou
 `node tools/refresh-tiles.js "<dir>/map72.otbm" public/map-data` (and `public/map-data-72`).
 
 The house list for "Players in houses" (7.2 only): add `--houses "<dir>/map-house.xml"` when converting 7.2, or
-`node tools/houses.js "<dir>/map72.otbm" "<dir>/map-house.xml" public/map-data-72`. The renters come from the Project
-Fibula API (`<TibiaMap fibulaApi="...">`, default https://api.projectfibula.org; the dev page uses the `/fibula-api`
-proxy, as the API sends no CORS header yet).
+`node tools/houses.js "<dir>/map72.otbm" "<dir>/map-house.xml" public/map-data-72`. The renters and their outfits come from
+Supabase (table `map_house_renters`, database step 28), which one of Ryndean's servers fills once a day from the
+Project Fibula API (see `docs/house-renters-job.md`).
 
 To put the map inside another React site instead, use the component directly:
 

@@ -13,7 +13,7 @@ import ItemWindow from './ItemWindow.jsx';
 import RoutePanel, { speedOf, climbOf } from './RoutePanel.jsx';
 import { createRouter, routeTime } from './engine/router.js';
 import { fetchTileFixes, setTileFix } from './engine/tilefixes.js';
-import { FIBULA_API, fetchHouseOwners, outfitLoader } from './engine/fibula.js';
+import { fetchHouseRenters } from './engine/houserenters.js';
 import { drawText, textWidth } from './engine/text.js';
 import { questDbConfig, questsDone, saveQuestsDone, questDoneKey } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
@@ -112,10 +112,11 @@ const NPC_ELSEWHERE_ALPHA = 0.45;
 // west on one of its free squares, or on the square outside its front door facing away from it (houses.json row:
 // [name, [[x, y, z], ...] free squares, [x, y, z, direction] front door or null]). Random on every page load (user: 'On ctrl+f5 refresh shouldn't they move to a
 // new random spot?'), then kept while the page is open.
-function housePose(row, renter) {
+// renter: { renter, outfit } from fetchHouseRenters.
+function housePose(row, { renter, outfit }) {
   const [house, spots, door] = row, pick = Math.floor(Math.random() * 4);
-  if (pick === 3 && door) return { n: renter, house, p: door.slice(0, 3), dir: door[3] };
-  return { n: renter, house, p: spots[Math.floor(Math.random() * spots.length)], dir: [2, 1, 3, 2][pick] };
+  if (pick === 3 && door) return { n: renter, o: outfit, house, p: door.slice(0, 3), dir: door[3] };
+  return { n: renter, o: outfit, house, p: spots[Math.floor(Math.random() * spots.length)], dir: [2, 1, 3, 2][pick] };
 }
 
 // Zooming in to MAIN_FROM shows the floor you have set, "this floor only". Ctrl + wheel goes up or down from there;
@@ -466,7 +467,7 @@ function drawMini(mc, world, v, s, box) {
 }
 
 // supabaseUrl + supabaseKey (the public key, as for the house planner): the quest database (slice 13b).
-export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = DEFAULT_MAP, height = '80vh', syncUrl = true, supabaseUrl, supabaseKey, fibulaApi = FIBULA_API }) {
+export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = DEFAULT_MAP, height = '80vh', syncUrl = true, supabaseUrl, supabaseKey }) {
   // The map version (15a): switched in the panel, unless a single dataUrl is given.
   const [mapId, setMapId] = useState(() => (fixedUrl ? null : startMap(maps, defaultMap, syncUrl)));
   const dataUrl = fixedUrl || maps.find((m) => m.id === mapId)?.url || maps[0].url;
@@ -557,13 +558,13 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const [showRefresh, setShowRefreshState] = useState(() => { try { return localStorage.getItem('tm-show-refresh') === '1'; } catch { return false; } });
   const showRefreshRef = useRef(showRefresh);
   showRefreshRef.current = showRefresh;
-  // Players in houses (Settings, slice 17a): each house's renter (Project Fibula API) shown in the house. Kept in the
-  // browser; draw() reads housePlayers: [{ n: renter, p: [x, y, z], house }].
+  // Players in houses (Settings, slice 17): each house's renter shown in the house in their outfit (Supabase, filled
+  // daily by Ryndean's server from the Project Fibula API, 17c). The setting is kept in the browser; draw() reads
+  // housePlayers: [{ n: renter, o: outfit or null, p: [x, y, z], dir, house }].
   const [showHouses, setShowHousesState] = useState(() => { try { return localStorage.getItem('tm-show-houses') === '1'; } catch { return false; } });
   const setShowHouses = (on) => { try { localStorage.setItem('tm-show-houses', on ? '1' : '0'); } catch { /* private mode */ } setShowHousesState(on); };
   const housePlayers = useRef([]);
-  const playerOutfits = useRef(null); // the renters' outfits (17b, engine/fibula.js outfitLoader), while the setting is on
-  const [houseNote, setHouseNote] = useState(null); // why there are none (no house list on this map, API not reachable)
+  const [houseNote, setHouseNote] = useState(null); // why there are none (no house list on this map, database not reachable)
   const setShowRefresh = (on) => { try { localStorage.setItem('tm-show-refresh', on ? '1' : '0'); } catch { /* private mode */ } setShowRefreshState(on); };
   const [locName, setLocName] = useState(''); // the name being typed for "Add location here"
   // The quest panel left of the map (13f-0; the list from 13b, the slice 12 checklist in development): open until
@@ -1104,16 +1105,15 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     // Players in houses (Settings, slices 17a-b): the renter standing on a free square in the house, facing south, at
     // real size (one square, user 2026-11-24: 'drawn in the house real scale on a real square'), with the name above.
     // Like the monsters: only on the floor you're on, and not under a roof that's drawn (so a town zoomed out isn't
-    // crowded with every floor's renters). Only renters whose outfit is known (user: no outfit, no renter); outfits are
-    // asked for only for the renters in view, from NAMES_FROM.
-    if (housePlayers.current.length && playerOutfits.current && world.playerOutfits && v.zoom >= NAMES_FROM) {
+    // crowded with every floor's renters). Only renters whose outfit is known (user: no outfit, no renter).
+    if (housePlayers.current.length && world.playerOutfits && v.zoom >= NAMES_FROM) {
       const fs = Math.max(k, Math.round(s / 32)), sc = s / 32;
       const pz = monsterFloor(world, v, left, top, right, bottom);
       const list = [];
       for (const pl of housePlayers.current) {
         const f = monFrame(pl, v, pz, world);
         if (!f || f[0] < left - 2 || f[0] > right + 2 || f[1] < top - 2 || f[1] > bottom + 2) continue;
-        const o = playerOutfits.current.get(pl.n), po = o && world.playerOutfit(o, pl.dir);
+        const po = pl.o && world.playerOutfit(pl.o, pl.dir);
         if (!po) continue;
         // As npcRect, but always one square per 32 sprite pixels.
         const cx = ox + (f[0] + 0.5) * s, cy = oy + (f[1] + 0.5) * s;
@@ -1624,24 +1624,22 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
   const editorRef = useRef(false);
   editorRef.current = !!login.editor;
   useEffect(() => { if (login.editor && ready) worldRef.current?.loadWalk().then(() => redraw()); }, [login.editor, ready, redraw]);
-  // Players in houses (17a): only fetched while the setting is on; the owners are kept in the browser for a day.
+  // Players in houses (17): only read while the setting is on, once per page load (17c: from Supabase).
   useEffect(() => {
     const world = worldRef.current;
     housePlayers.current = [];
     setHouseNote(null);
-    if (!showHouses || !ready || !world) { playerOutfits.current = null; redraw(); return undefined; }
+    if (!showHouses || !ready || !world) { redraw(); return undefined; }
     let live = true;
-    playerOutfits.current = outfitLoader(fibulaApi, () => { if (live) redraw(); });
     world.loadPlayerOutfits().then(() => { if (live) redraw(); });
-    Promise.all([world.loadHouses(), fetchHouseOwners(fibulaApi)]).then(([houses, { owners, stale }]) => {
+    Promise.all([world.loadHouses(), fetchHouseRenters(dbCfg)]).then(([houses, renters]) => {
       if (!live || worldRef.current !== world) return;
       if (!houses) { setHouseNote('This map version has no house list.'); redraw(); return; }
-      housePlayers.current = houses.filter(([h]) => owners.has(h)).map((row) => housePose(row, owners.get(row[0])));
-      setHouseNote(stale ? 'Could not reach the player API: showing the last owners kept.' : null);
+      housePlayers.current = houses.filter(([h]) => renters.has(h)).map((row) => housePose(row, renters.get(row[0])));
       redraw();
-    }, (e) => { if (live) setHouseNote(`Could not reach the player API (${e.message || e}).`); });
+    }, (e) => { if (live) setHouseNote(`Could not load the house renters (${e.message || e}).`); });
     return () => { live = false; };
-  }, [showHouses, ready, fibulaApi, redraw]);
+  }, [showHouses, ready, dbCfg, redraw]);
   // Refresh tiles (Settings): loaded the first time they're shown (also after a map version switch), then drawn.
   useEffect(() => {
     if (showRefresh && ready) worldRef.current?.loadRefresh().then(() => redraw());
@@ -2454,7 +2452,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                   <span><span className="tm-refresh-swatch" /> Refresh tiles</span>
                 </label>
                 {showRefresh && world && world.refresh === null && <div className="tm-muted">This map version has no refresh data.</div>}
-                <label className="tm-check" title="Who rents each house on Project Fibula, shown in the house (from the Project Fibula stats API; owners are updated once a day)">
+                <label className="tm-check" title="Who rents each house on Project Fibula, shown in the house (from the Project Fibula stats API, updated once a day)">
                   <input type="checkbox" checked={showHouses} onChange={(e) => setShowHouses(e.target.checked)} />
                   <span>Players in houses</span>
                 </label>
