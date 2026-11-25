@@ -15,6 +15,7 @@ import { createRouter, routeTime } from './engine/router.js';
 import { fetchTileFixes, setTileFix } from './engine/tilefixes.js';
 import { fetchHouseRenters } from './engine/houserenters.js';
 import { drawText, textWidth } from './engine/text.js';
+import { exivaAnswer, exivaText, exivaOverlap, EXIVA_ANSWERS } from './engine/exiva.js';
 import { questDbConfig, questsDone, saveQuestsDone, questDoneKey } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
 import * as qg from './engine/questguide.js';
@@ -832,9 +833,20 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     } catch (e) { setLocNote(`Could not save the tile fix: ${e.message || e}`); }
   };
   const flight = useRef(null); // a fly-to in progress: { fx, fy, tx, ty, t0, dur }
-  const exiva = useRef(null); // "Exiva here" (right-click): the tile [x, y, z] the zones are drawn around
-  const [exivaOn, setExivaOn] = useState(false); // shows the close button (top right of the map)
-  const clearExiva = () => { exiva.current = null; setExivaOn(false); redraw(); };
+  // Exiva (right-click "Exiva here"): the casts, [{ p: [x, y, z], ans: { band, dir } or null }]. The last one may still
+  // wait for its answer (its zones are drawn; clicking a zone or picking in the Exiva box answers it). The answered
+  // ones together leave only where the person can be (exivaOverlap, drawn as a mask; made again when they change).
+  const exiva = useRef([]);
+  const exivaMask = useRef(null);
+  const [exivas, setExivas] = useState([]);
+  const setExiva = (list) => {
+    const answered = list.filter((r) => r.ans);
+    exiva.current = list;
+    exivaMask.current = answered.length && worldRef.current ? exivaOverlap(worldRef.current.bounds, answered) : null;
+    setExivas(list);
+    redraw();
+  };
+  const clearExiva = () => setExiva([]);
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   const uiScale = Math.max(1, Math.round(dpr)); // whole screen pixels per client pixel in the side panel
 
@@ -995,7 +1007,26 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     // differences, so the zones are squares: under 5 next to you, up to 100 "to the", up to 249 "far to the", then
     // "very far to the". The direction is one of 8 slices whose edges lie at 22.5 degrees (tangents 0.4142, 2.4142).
     // Drawn around the tile's middle, on every floor (the spell ignores the floor beyond "above/below").
-    const ex = exiva.current;
+    const exs = exiva.current, answered = exs.filter((r) => r.ans);
+    if (answered.length) {
+      // Where the person can be after the answered casts: the rest of the map darkened.
+      const mk = exivaMask.current || (exivaMask.current = exivaOverlap(world.bounds, answered));
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(mk.canvas, ox + mk.x0 * s, oy + mk.y0 * s, mk.canvas.width * mk.cell * s, mk.canvas.height * mk.cell * s);
+    }
+    if (exs.length) {
+      // Each cast spot: a numbered ring.
+      const km = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      exs.forEach((r, i) => {
+        const x = ox + (r.p[0] + 0.5) * s, y = oy + (r.p[1] + 0.5) * s, rad = Math.max(7 * km, s * 0.6);
+        ctx.beginPath(); ctx.arc(x, y, rad, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fill(); ctx.strokeStyle = '#7ad7ff'; ctx.lineWidth = 2 * km; ctx.stroke();
+        const t = String(i + 1), w = textWidth(world.font, t) * km;
+        ctx.save(); ctx.translate(Math.round(x - w / 2), Math.round(y - 6 * km)); ctx.scale(km, km);
+        drawText(ctx, world.font, t, 0, 0, '#ffffff'); ctx.restore();
+      });
+    }
+    const ex = exs.find((r) => !r.ans)?.p;
     if (ex) {
       const km = Math.max(1, Math.round(window.devicePixelRatio || 1));
       const cx = ox + (ex[0] + 0.5) * s, cy = oy + (ex[1] + 0.5) * s;
@@ -2234,6 +2265,13 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     }
     drag.current = null;
     if (d && !d.moved) {
+      // An exiva waiting for its answer: a click picks the zone you clicked in (user 2026-11-25).
+      const waiting = exiva.current.findIndex((r) => !r.ans);
+      if (waiting >= 0) {
+        const t = seenTileAt(toCanvas(e)), p = exiva.current[waiting].p;
+        setExiva(exiva.current.map((r, j) => (j === waiting ? { ...r, ans: exivaAnswer(p[0], p[1], t.x, t.y) } : r)));
+        return;
+      }
       // A click: open the NPC there, else the monster, else the locked door, else go to the floor a hole, stairs or
       // ladder leads to, else close.
       // A guide step marker (13d-2) is on top of everything: it opens the guide's quest.
@@ -2471,10 +2509,29 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
         />
         {!ready && <div className="tm-loading">Loading map...</div>}
         {/* Exiva zones on: a close button in the map's top-right corner, at every zoom (user 2026-11-25). */}
-        {exivaOn && (
+        {exivas.length > 0 && (
           <div className="tm-exiva-bar" style={{ zoom: uiScale / dpr }}>
-            <span>Exiva</span>
-            <button type="button" className="tm-close" onClick={clearExiva} title="Clear exiva" aria-label="Clear exiva">×</button>
+            <div className="tm-exiva-head">
+              <span>Exiva</span>
+              <button type="button" className="tm-close" onClick={clearExiva} title="Clear exiva" aria-label="Clear exiva">×</button>
+            </div>
+            {/* Each cast: its answer (picked here, or by clicking its zone on the map), and a x to drop it. */}
+            {exivas.map((r, i) => (
+              <div key={i} className="tm-exiva-row">
+                <span className="tm-exiva-n">{i + 1}</span>
+                <select
+                  className="tm-input" value={r.ans ? EXIVA_ANSWERS.findIndex((a) => a.band === r.ans.band && a.dir === r.ans.dir) : ''}
+                  onChange={(e) => setExiva(exivas.map((x, j) => (j === i ? { ...x, ans: e.target.value === '' ? null : EXIVA_ANSWERS[+e.target.value] } : x)))}
+                >
+                  {!r.ans && <option value="">Click the zone it said</option>}
+                  {EXIVA_ANSWERS.map((a, k) => <option key={k} value={k}>{exivaText(a)}</option>)}
+                </select>
+                <button type="button" className="tm-close" onClick={() => setExiva(exivas.filter((_, j) => j !== i))} title="Drop this exiva" aria-label="Drop this exiva">×</button>
+              </div>
+            ))}
+            {exivas.some((r) => r.ans) && exivaMask.current?.left === 0 && (
+              <div className="tm-exiva-note">No place fits every answer. Did they move?</div>
+            )}
           </div>
         )}
         {talkNpc && world && <NpcTalk world={world} npc={talkNpc} raw={!!login.editor} elRef={talkEl} zoom={uiScale / dpr} onResize={redraw} onClose={() => openTalk(null)} />}
@@ -2509,12 +2566,13 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                 ...(route.from || route.to ? [['Clear route', clearRoute]] : []),
                 // Exiva zones (user 2026-11-25): zoomed out so the "to the" squares and a bit of "far" fit.
                 ['Exiva here', () => {
-                  exiva.current = menu.tile; setExivaOn(true);
+                  // A new cast; one still waiting for its answer is replaced.
+                  setExiva([...exiva.current.filter((r) => r.ans), { p: menu.tile, ans: null }]);
                   const c = canvasRef.current, room = Math.min(c.width - coverPx(), c.height) * 0.95;
                   const zoom = [...ZOOMS].reverse().find((zz) => 230 * zz <= room) ?? ZOOMS[0];
                   goTo({ x: menu.tile[0], y: menu.tile[1], z: menu.tile[2] }, { zoom: Math.min(zoom, view.current.zoom) });
                 }],
-                ...(exiva.current ? [['Clear exiva', clearExiva]] : []),
+                ...(exivas.length ? [['Clear exiva', clearExiva]] : []),
                 // Editors (14a): a locked door on the map that just opens is marked "Not locked" for everyone.
                 ...(login.editor && dbCfg && world?.allDoorAt?.has(menu.tile.join(','))
                   ? (tileFixes.has(menu.tile.join(','))
