@@ -6,10 +6,10 @@ loot, and quest spots with their rewards. The design and every decision are in [
 
 ## How it fits together
 
-1. **The converter** (`npm run convert`) reads the game files in `assets/` and writes the map data to
-   `public/map-data`: sprite sheets, small JSON chunks of the map, overview pictures for zooming out, NPCs,
+1. **The converter** (`npm run convert`) reads the game files (not in the repo, see "The game files") and writes
+   the map data of one map version to its folder (`public/map-data` for 7.1, `public/map-data-72` for 7.2): sprite sheets, small JSON chunks of the map, overview pictures for zooming out, NPCs,
    monsters, quests. That's about 110 MB. It runs **once**, and again only when the game data or the converter
-   changes. It's not in git: you build it yourself.
+   changes, once per map version. It's not in git: you build it yourself.
 2. **The map** (the React app in `src/`) runs in the browser and only downloads the pieces of map data it shows.
    People using the map never run the converter.
 
@@ -20,6 +20,22 @@ loot, and quest spots with their rewards. The design and every decision are in [
 - **[Node.js](https://nodejs.org) 20 or newer** (`node --version` to check).
 - **[Git](https://git-scm.com)**.
 - **About 8 GB of free memory** for the converter, and about 500 MB of disk space.
+- **The game files** (see below).
+
+### The game files
+
+The converter's input files aren't in the repo: Ryndean makes them. You need:
+
+| What | Files | Option |
+|---|---|---|
+| The client files (7.6 format, 7.1 item data) | `Tibia.dat`, `Tibia.spr`, `Tibia.pic` in one folder | `--assets <folder>` |
+| TVP's server data (the `data` folder of TVP, a GPL-2 fork of [The Forgotten Server](https://github.com/otland/forgottenserver)): items, door and key ids, NPCs, monsters, quest chests, the 7.6 map | `items/items.otb`, `items/items.xml`, `global.lua`, `npc/`, `monster/`, `scripts/`, `world/map.otbm` | `--data <folder>` |
+| Per map version: the map, in TVP item ids | e.g. `Tibia71.otbm`, `map72.otbm` | `--map <file>` |
+| Per map version: its NPC and monster spawns | e.g. `Tibia71-spawn.xml`, `map-spawn.xml` | `--spawn <file>` |
+| Per map version, optional: its house list ("Players in houses") | e.g. `Tibia71-house.xml`, `map-house.xml` | `--houses <file>` |
+
+Keep a map's file name when a new version of it comes: editors' tile fixes are kept per map file name
+(`Tibia71`, `map72`).
 
 ### First time
 
@@ -29,12 +45,13 @@ Open a terminal (on Windows: PowerShell or Git Bash) and run:
 git clone https://github.com/GitDuranic/fibula-map.git
 cd fibula-map
 npm install
-npm run convert
+npm run convert -- --assets "<client>" --data "<tvp>/data" --map "<7.1>/Tibia71.otbm" --spawn "<7.1>/Tibia71-spawn.xml" --out public/map-data
+npm run convert -- --assets "<client>" --data "<tvp>/data" --map "<7.2>/map72.otbm" --spawn "<7.2>/map-spawn.xml" --houses "<7.2>/map-house.xml" --out public/map-data-72
 npm run dev
 ```
 
 - `npm install` downloads the libraries the project uses (once, ~1 minute).
-- `npm run convert` builds the map data. It takes **3 to 5 minutes** and prints what it does; it's done when you're
+- `npm run convert` builds one map version's data (put your own folders in place of `<...>`). It takes **3 to 5 minutes** and prints what it does; it's done when you're
   back at the prompt. The last lines look like `Overview images: 51.5 MB`.
 - `npm run dev` starts the map. Leave this window open while you use it.
 
@@ -54,7 +71,7 @@ and open http://localhost:5180. You don't need to convert again unless something
 ```sh
 git pull
 npm install          # only needed when package.json changed, but harmless
-npm run convert      # only needed when assets/, tools/ or tools/data/ changed
+npm run convert -- ...   # both versions; only needed when the game files, tools/ or tools/data/ changed
 npm run dev
 ```
 
@@ -68,7 +85,7 @@ only serves files that existed when it started, so newly added data files would 
 The map is a static site: no server code, only files. To build it:
 
 ```sh
-npm run convert      # if the map data isn't built yet
+npm run convert -- ...   # both versions, if the map data isn't built yet
 npm run build
 ```
 
@@ -76,18 +93,12 @@ This writes the whole site to `dist/` (the app plus a copy of `public/map-data` 
 the contents of `dist/` to any web host. To try the built site locally first: `npm run preview` and open
 http://localhost:5181.
 
-The 7.2 map data is built with:
+The refresh tiles (Settings → "Refresh tiles") come from the map's own tile flags. A map without them can borrow
+another version's: add `--refresh-map "<other map>.otbm"` (the Settings note then says they're borrowed). Without a
+full convert: `node tools/refresh-tiles.js "<map>.otbm" public/map-data`.
 
-```sh
-node --max-old-space-size=8192 tools/convert-map.js --map "<dir>/map72.otbm" --spawn "<dir>/map-spawn.xml" --houses "<dir>/map-house.xml" --out public/map-data-72
-```
-
-The refresh tiles (Settings → "Refresh tiles") come from the 7.2 map's tile flags; the 7.1 map has none and
-borrows them: add `--refresh-map "<dir>/map72.otbm"` when converting 7.1. Without a full convert:
-`node tools/refresh-tiles.js "<dir>/map72.otbm" public/map-data` (and `public/map-data-72`).
-
-The house list for "Players in houses" (7.2 only): add `--houses "<dir>/map-house.xml"` when converting 7.2, or
-`node tools/houses.js "<dir>/map72.otbm" "<dir>/map-house.xml" public/map-data-72`. The renters and their outfits come from
+The house list for "Players in houses" comes with `--houses`, or without a full convert:
+`node tools/houses.js "<map>.otbm" "<house list>.xml" public/map-data-72`. The renters and their outfits come from
 Supabase (table `map_house_renters`, database step 28), which one of Ryndean's servers fills once a day from the
 Project Fibula API (see `docs/house-renters-job-v2.md`).
 
@@ -144,10 +155,6 @@ map data, so they're also searchable on a built site, where adding and removing 
 | `src/map/` | The map: React components, drawing, the route finder (`engine/router.js`). |
 | `tools/` | The converter (`convert-map.js`) and its parts in `tools/lib/`. |
 | `tools/data/` | `wikiquests.json` (TibiaWiki quests up to 7.1), `custom-places.json` (locations you named on the map) and `scripted-links.json` (holes and such that a lever opens, so they're not on the map; added by hand). |
-| `assets/client/` | `Tibia.dat`, `Tibia.spr`, `Tibia.pic`: the game client's files (7.6 format, 7.1 item data). |
-| `assets/map71/` | `Tibia71.otbm` (the 7.1 map, converted to TVP item ids) and `Tibia71-spawn.xml` (NPC and monster spawns). |
-| `assets/tvp-data/` | The parts of TVP's data the converter reads: items, door and key ids, NPCs, monsters, quest chests, the 7.6 map. TVP is a community fork of [The Forgotten Server](https://github.com/otland/forgottenserver), GPL-2; its licence is in `assets/tvp-data/LICENSE`. |
 | `docs/design.md` | The design: what was decided, why, and what's still open. |
 
-The converter's inputs can be pointed elsewhere:
-`node --max-old-space-size=8192 tools/convert-map.js --assets <dir> --data <dir> --map <file> --spawn <file> --out <dir>`.
+The game files aren't in the repo (see "The game files").

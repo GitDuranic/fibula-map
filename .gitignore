@@ -3,3 +3,5 @@ dist/
 .env*.local
 # Converted map data (public/map-data, plus its .building/.old swap folders and other versions like map-data-72)
 public/map-data*/
+# Game files (the converter's inputs): Ryndean makes them, they stay off GitHub (2026-11-26); a local copy may live here
+assets/

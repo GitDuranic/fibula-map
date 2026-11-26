@@ -2780,7 +2780,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
                   <span>Players in houses</span>
                 </label>
                 {showHouses && houseNote && <div className="tm-muted">{houseNote}</div>}
-                <div className="tm-muted">Coloured tiles are reset at server save; items stay on the others.{mapLabel === '7.1' ? ' The 7.1 map borrows these from the 7.2 map.' : ''}</div>
+                <div className="tm-muted">Coloured tiles are reset at server save; items stay on the others.{world?.map?.refreshBorrowed ? ' This map has none of its own and borrows them from another version.' : ''}</div>
               </div>
             </div>
             <div className="tm-settings-buttons">

@@ -1,14 +1,17 @@
 // Converts Tibia client files + server map into web data for the Tibia map viewer.
 //
-// Usage: node tools/convert-map.js [--assets "<dir>"] [--data "<server data dir>"] [--map "<map.otbm>"] [--spawn "<spawn.xml>"] [--out public/map-data]
+// Usage: node tools/convert-map.js --assets "<dir>" --data "<server data dir>" --map "<map.otbm>" --spawn "<spawn.xml>"
+//          [--houses "<house.xml>"] [--refresh-map "<otbm>"] [--out public/map-data]
 //
-// Inputs (all in the repo by default, see the README):
-//   <assets>/Tibia.dat, Tibia.spr, Tibia.pic         client files (7.6 format, 7.1 item data)     default assets/client
-//   <data>/items/items.otb, items.xml, global.lua,   TVP data: item list, door/key ids, NPCs,        default assets/tvp-data
+// Inputs (none are in the repo: Ryndean makes them, see the README; every map version is converted the same way):
+//   <assets>/Tibia.dat, Tibia.spr, Tibia.pic         client files (7.6 format, 7.1 item data)
+//   <data>/items/items.otb, items.xml, global.lua,   TVP data: item list, door/key ids, NPCs,
 //     npc/, monster/, scripts/actions/map/quests.lua,  monsters, quest chests, the 7.6 map (key numbers, quest spots)
 //     world/map.otbm
-//   <map>                                            the 7.1 map (TVP item ids)                    default assets/map71/Tibia71.otbm
-//   <spawn>                                          7.1 NPC and monster spawns                    default assets/map71/Tibia71-spawn.xml
+//   <map>                                            the map of this version (TVP item ids); its file name is the
+//                                                    map's name (editors' tile fixes are kept per name: keep it)
+//   <spawn>                                          that map's NPC and monster spawns
+//   <houses>                                         that map's house list (optional: "Players in houses")
 //   tools/data/wikiquests.json, custom-places.json   TibiaWiki quests; the user's named locations
 //   tools/data/fibula-quests.json                    the user's Project Fibula quest list (slice 12, edited on the map)
 // Outputs (in <out>/):
@@ -20,7 +23,7 @@
 //   player-outfits.png/json  player outfits (plain + colour mask) for the renters in their houses (17b)
 //   houses.json           [[house name, x, y, z]]: a spot inside each house (only with --houses <map-house.xml>)
 //   refresh.bin           refresh tiles (OTBM flag 0x20), 1 bit per tile, 128 bytes per chunk in map.json chunk order;
-//                         --refresh-map <otbm> takes them from another map (7.1 has none: use the 7.2 map)
+//                         --refresh-map <otbm> takes them from another map (for a map without them; map.json then says so)
 //   walk.bin, links.json  router data: per tile 0 (blocked) or ground speed / 2, in map.json chunk order;
 //                         floor changes [[x,y,z, tx,ty,tz, kind]] (kinds: step, ladder, grate, rope, dig, teleport);
 //                         climbs [[x,y,z, tx,ty,tz, ways]] (exani hur / parcels, ways: 1 = spell, 2 = parcels);
@@ -35,7 +38,8 @@
 //   sprites-N.png         sprite atlases (64x64 cells of 32px)
 //   gui.png, stone.png    client interface graphics from Tibia.pic (skin + tileable stone texture)
 //   font-outlined.png, fonts.json   the client's outlined font (creature names) and its glyph widths
-//   map.json              the map file's name (editors' tile fixes are kept per map, 14a), bounds, chunk size,
+//   map.json              the map file's name (editors' tile fixes are kept per map, 14a), refreshBorrowed (true when
+//                         --refresh-map was used), bounds, chunk size,
 //                         which chunks exist per floor
 //   chunks/<z>/<cx>_<cy>.json   one 32x32 tile chunk, tiles in row order: 0 (none), an item, or [item, item, ...]
 //                         item = client id, or [client id, count] for stack counts / fluid types
@@ -66,13 +70,19 @@ import { buildPlayerOutfits } from './lib/playeroutfits.js';
 import { mergeQuests } from '../src/map/engine/questdata.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? a.concat([[v.slice(2), arr[i + 1]]]) : a), []));
-// The input files are in the repo (assets/, see the README); each can be pointed elsewhere with its option.
-const ASSETS = args.assets || 'assets/client'; // Tibia.dat, Tibia.spr, Tibia.pic
-const DATA = args.data || 'assets/tvp-data'; // the parts of TVP's data folder the converter reads
-const MAP = args.map || 'assets/map71/Tibia71.otbm'; // 7.1 map in TVP item ids
+// The input files aren't in the repo (user 2026-11-26: Ryndean makes them, they don't belong on GitHub), so all four
+// are needed; every map version is converted the same way.
+const missingArgs = ['assets', 'data', 'map', 'spawn'].filter((k) => !args[k]);
+if (missingArgs.length) {
+  console.error(`Missing: ${missingArgs.map((k) => '--' + k).join(', ')}. See the README ("The game files").`);
+  process.exit(1);
+}
+const ASSETS = args.assets; // Tibia.dat, Tibia.spr, Tibia.pic
+const DATA = args.data; // TVP's data folder (only the parts listed above are read)
+const MAP = args.map; // this version's map in TVP item ids
 // The TVP 7.6 map: only for key numbers on locked doors, which the converted 7.1 map mostly lacks.
 const MAP76 = args.map76 || path.join(DATA, 'world/map.otbm');
-const SPAWN = args.spawn || 'assets/map71/Tibia71-spawn.xml'; // 7.1 NPC and monster spawns
+const SPAWN = args.spawn; // this map's NPC and monster spawns
 // The data is built in a separate folder and swapped in at the end, so a running map never sees it half-built
 // (the old way deleted the folder first, and a page opened during a convert showed nothing but grey).
 const FINAL_OUT = args.out || 'public/map-data';
@@ -259,14 +269,15 @@ for (let z = 0; z < 16; z++) {
 }
 fs.writeFileSync(path.join(OUT, 'walk.bin'), Buffer.concat(walkBytes.map((b) => Buffer.from(b))));
 // refresh.bin (user 2026-11-24): the refresh tiles (OTBM flag 0x20, lib/refresh.js), from --refresh-map or the map itself.
-// The 7.1 map has none: convert it with --refresh-map <the 7.2 map> (7.1 borrows 7.2's, user's choice).
+// A map without them can borrow another version's with --refresh-map (the old converted 7.1 map borrowed 7.2's, user's
+// choice); map.json "refreshBorrowed" then tells the Settings note.
 {
   const set = readRefresh(args['refresh-map'] || MAP);
   fs.writeFileSync(path.join(OUT, 'refresh.bin'), refreshBin(set, chunkIndex, CHUNK));
   log(`Refresh tiles: ${set.size}${args['refresh-map'] ? ` (from ${args['refresh-map']})` : ''}`);
 }
 // houses.json (slice 17a): each house's name and a spot inside it, for the renters (Settings "Players in houses").
-// Only with --houses <map-house.xml> (the 7.2 map's; the Fibula API is the live 7.2 server).
+// Only with --houses <house.xml>, for any map version that has a house list.
 if (args.houses) {
   const spots = houseSpots(readHouseList(args.houses), readHouseTiles(MAP), (x, y, z) => walk.speedAt(x, y, z) > 0);
   fs.writeFileSync(path.join(OUT, 'houses.json'), JSON.stringify(spots));
@@ -772,7 +783,7 @@ for (const [set, floorsList, z] of sets) {
 }
 log(`Overview images: ${(overviewBytes / 1e6).toFixed(1)} MB`);
 
-fs.writeFileSync(path.join(OUT, 'map.json'), JSON.stringify({ map: path.basename(MAP, path.extname(MAP)), chunk: CHUNK, bounds, chunks: chunkIndex, overview: { px: OV_PX, levels: OV_LEVELS, sets: overviewIndex }, minimap: { size: MINI, floors: miniIndex } }));
+fs.writeFileSync(path.join(OUT, 'map.json'), JSON.stringify({ map: path.basename(MAP, path.extname(MAP)), ...(args['refresh-map'] ? { refreshBorrowed: true } : {}), chunk: CHUNK, bounds, chunks: chunkIndex, overview: { px: OV_PX, levels: OV_LEVELS, sets: overviewIndex }, minimap: { size: MINI, floors: miniIndex } }));
 // Swap the new data in: old folder aside, new one in place, then remove the old one.
 const OLD = `${FINAL_OUT}.old`;
 fs.rmSync(OLD, { recursive: true, force: true });
