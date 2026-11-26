@@ -24,8 +24,8 @@ export function exivaAnswer(cx, cy, tx, ty) {
 export const exivaText = (ans) => (ans.band === 0 ? EXIVA_BANDS[0] : `${EXIVA_BANDS[ans.band]} ${EXIVA_DIRS[ans.dir]}`);
 export const sameAnswer = (a, b) => a.band === b.band && (a.band === 0 || a.dir === b.dir);
 
-// Every answer the spell can give, for the answer picker: next to you, then each band's 8 directions.
-export const EXIVA_ANSWERS = [{ band: 0, dir: -1 }, ...[1, 2, 3].flatMap((band) => EXIVA_DIRS.map((_, dir) => ({ band, dir })))];
+// The answer picker's first list, one per band ("to the" = near, user 2026-11-26); the directions come second.
+export const EXIVA_DISTANCES = ['Next to you', 'Near', 'Far', 'Very far'];
 
 // Where the person can be after the answered casts (readings: [{ p: [x, y, z], ans }]), on a grid of `cell` tiles
 // over the map's bounds (the middle tile of each cell is tested). Returns { canvas, x0, y0, cell, left, spots } where

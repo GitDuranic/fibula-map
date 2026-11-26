@@ -15,7 +15,7 @@ import { createRouter, routeTime } from './engine/router.js';
 import { fetchTileFixes, setTileFix } from './engine/tilefixes.js';
 import { fetchHouseRenters } from './engine/houserenters.js';
 import { drawText, textWidth } from './engine/text.js';
-import { exivaAnswer, exivaText, exivaOverlap, exivaStops, exivaSuggest, exivaGrid, exivaLand, exivaRides, EXIVA_ANSWERS } from './engine/exiva.js';
+import { exivaAnswer, exivaOverlap, exivaStops, exivaSuggest, exivaGrid, exivaLand, exivaRides, EXIVA_DIRS, EXIVA_DISTANCES } from './engine/exiva.js';
 import { questDbConfig, questsDone, saveQuestsDone, questDoneKey } from './engine/questdb.js';
 import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, deleteQuest } from './engine/questauth.js';
 import * as qg from './engine/questguide.js';
@@ -2539,19 +2539,38 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
               <button type="button" className="tm-close" onClick={clearExiva} title="Clear exiva" aria-label="Clear exiva">×</button>
             </div>
             {/* Each cast: its answer (picked here, or by clicking its zone on the map), and a x to drop it. */}
-            {exivas.map((r, i) => (
+            {/* Two short lists instead of one of 25 (user 2026-11-26): distance first, then the direction. A
+                distance without a direction yet is kept in `band` and the cast still waits for its answer. */}
+            {exivas.map((r, i) => {
+              const band = r.ans ? r.ans.band : r.band ?? '';
+              const set = (patch) => setExiva(exivas.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+              return (
               <div key={i} className="tm-exiva-row">
                 <span className="tm-exiva-n">{i + 1}</span>
                 <select
-                  className="tm-input" value={r.ans ? EXIVA_ANSWERS.findIndex((a) => a.band === r.ans.band && a.dir === r.ans.dir) : ''}
-                  onChange={(e) => setExiva(exivas.map((x, j) => (j === i ? { ...x, ans: e.target.value === '' ? null : EXIVA_ANSWERS[+e.target.value] } : x)))}
+                  className="tm-input" value={band} aria-label="Distance"
+                  onChange={(e) => {
+                    const b = +e.target.value;
+                    if (b === 0) set({ band: 0, ans: { band: 0, dir: -1 } });
+                    else set({ band: b, ans: r.ans && r.ans.dir >= 0 ? { band: b, dir: r.ans.dir } : null });
+                  }}
                 >
-                  {!r.ans && <option value="">Click the zone it said</option>}
-                  {EXIVA_ANSWERS.map((a, k) => <option key={k} value={k}>{exivaText(a)}</option>)}
+                  {band === '' && <option value="">Distance</option>}
+                  {EXIVA_DISTANCES.map((d, k) => <option key={k} value={k}>{d}</option>)}
                 </select>
+                {band !== 0 && (
+                  <select
+                    className="tm-input" value={r.ans ? r.ans.dir : ''} aria-label="Direction" disabled={band === ''}
+                    onChange={(e) => set({ ans: { band, dir: +e.target.value } })}
+                  >
+                    {!r.ans && <option value="">Direction</option>}
+                    {EXIVA_DIRS.map((d, k) => <option key={k} value={k}>{d}</option>)}
+                  </select>
+                )}
                 <button type="button" className="tm-close" onClick={() => setExiva(exivas.filter((_, j) => j !== i))} title="Drop this exiva" aria-label="Drop this exiva">×</button>
               </div>
-            ))}
+              );
+            })}
             {exivas.some((r) => r.ans) && exivaMask.current?.left === 0 && (
               <div className="tm-exiva-note">No place fits every answer. Did they move?</div>
             )}
