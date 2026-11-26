@@ -6,6 +6,9 @@ import { colourOutfit } from './outfit.js';
 
 const loadImage = (src) => new Promise((resolve, reject) => {
   const img = new Image();
+  // The data can be on another domain (on a site, a storage bucket with CORS): asked for with CORS, so canvases that
+  // draw it can still be read back (getImageData on the player outfits) instead of being tainted.
+  img.crossOrigin = 'anonymous';
   img.onload = () => resolve(img);
   img.onerror = () => reject(new Error('Could not load ' + src));
   img.src = src;
