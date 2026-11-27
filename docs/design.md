@@ -637,7 +637,7 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
     - The Back button then simply goes back in the browser's history, so both stay in step.
   - Embedded without the URL (Ryndean's site, `syncUrl` off), only the button works, from its own list.
 - **Home** (added 2026-11-13, user: "its easy to get lost"):
-  - The Home button (next to Back) and the Home key show the whole world: the surface (floor 7) with all layers, centred on the map's bounds, at the closest zoom step where it fits (0.5 on a normal screen).
+  - The Home button (next to Back) and the Home key show the whole world: the surface (floor 7) with all layers, centred on the map's bounds, at the closest zoom step where it fits.
   - It's a jump, so Back returns to where you were.
 - Seen in the browser: troll spawn → wooden shield (loot) → Willard in Edron (flew there) → Back: the troll spawn again, with the troll and wooden shield windows open.
 
@@ -960,6 +960,8 @@ Slices 5 and 6 were added on 2026-11-13; the slices after them moved up by two (
 - **Controls:**
   - drag to pan, with a short glide after a flick
   - mouse wheel: one zoom step per notch, around the cursor
+  - **Smaller, smoother zoom steps (user 2026-11-27, from Slow Vapo: "the zooming is too fast" — each notch doubled the scale).** Steps are now 0.25, 0.375, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 160 (x1.5 / x1.33 per notch, so twice as many). Every threshold (16, 32, 64...) is still a step. The glide between steps is time-based (`ZOOM_TAU` 90 ms, ~1/3 s a step, the same on 60 and 144 Hz screens; was 35% of the way per frame, ~0.15 s). At 24 the 32 px sprites are scaled down (not the 16 px ones blown up); at in-between scales (24, 48) sprites are drawn smoothed, at whole pixels per game pixel sharp as before. Map pieces are drawn with whole-pixel edges (`drawCell`) so there are no hairline seams between them.
+  - **Wheel zoom speeds up (user 2026-11-27: "maybe even smaller? ... if you zoom faster/longer it speeds up so you can still have very fine control slowly").** Rather than 4x more fixed steps (many blurry in-between resting sizes, and lots of turning to cross the map), the wheel zooms by a factor: a slow notch is x1.1; each notch within 200 ms (`WHEEL_FAST_MS`) of the one before, same way, adds 10%, up to x2 a notch. The zoom can rest at any scale; within 3% of a step (above) it lands on that step, so the sharp ones stay easy to hit. Buttons and +/- still go to the next step. The URL keeps the zoom to 2 decimals and a reload snaps to the nearest step.
   - pinch follows the fingers and snaps to the nearest step
   - arrows pan, `+`/`-` zoom, Page Up/Page Down change floor
   - the client's compass rose pans half a screen; the client's zoom and floor buttons (from `Tibia.pic`, as in the planner)

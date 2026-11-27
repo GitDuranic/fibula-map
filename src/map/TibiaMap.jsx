@@ -21,8 +21,20 @@ import { restoreLoginHash, watchLogin, isEditor, logIn, logOut, saveQuest, delet
 import * as qg from './engine/questguide.js';
 import './tibia-map.css';
 
-// Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel from 32 up keep sprites sharp.
-const ZOOMS = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 96, 128, 160];
+// Zoom steps in screen (device) pixels per tile. Whole pixels per game pixel (32, 64, 96...) keep sprites sharp;
+// the in-between steps (x1.5 / x1.33, user 2026-11-27 via Slow Vapo: doubling per wheel notch was too big a jump)
+// are drawn smoothed.
+const ZOOMS = [0.25, 0.375, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 160];
+// Zoom animation: the shown scale closes in on the target with this time constant (ms), so it takes ~1/3 s
+// whatever the screen's refresh rate (was 35% a frame: ~0.15 s at 60 Hz, faster still at 144 Hz).
+const ZOOM_TAU = 90;
+const WHEEL_FAST_MS = 200; // wheel notches closer together than this speed the zoom up
+// Draws a square map piece (chunk, overview image) at (x, y), size n, with whole-pixel edges: at in-between
+// scales the pieces would otherwise show hairline seams.
+const drawCell = (ctx, img, x, y, n) => {
+  const x0 = Math.round(x), y0 = Math.round(y);
+  ctx.drawImage(img, x0, y0, Math.round(x + n) - x0, Math.round(y + n) - y0);
+};
 const REFRESH_RGBA = [230, 0, 255, 85]; // the refresh tiles' tint (Settings): magenta (orange hid among the roofs), a third opaque
 // About this many tiles: two significant digits (12,345 -> 12,000).
 const roundTiles = (n) => { const p = 10 ** Math.max(0, Math.floor(Math.log10(Math.max(1, n))) - 1); return (Math.round(n / p) * p).toLocaleString('en'); };
@@ -279,11 +291,11 @@ function seeBand(ctx, world, v, z, tiles, keep, g, budget, offRef) {
   // That floor on its own, then cut to the band.
   octx.globalCompositeOperation = 'source-over';
   octx.clearRect(0, 0, W, H);
-  octx.imageSmoothingEnabled = s < ts;
+  octx.imageSmoothingEnabled = s < ts || s % ts !== 0;
   for (let cy = Math.floor((top + d) / C); cy <= Math.floor((bottom + d) / C); cy++) {
     for (let cx = Math.floor((left + d) / C); cx <= Math.floor((right + d) / C); cx++) {
       const c = world.chunkCanvas(z, cx, cy, 'floor', ts, budget);
-      if (c) octx.drawImage(c, ox + (cx * C - d) * s, oy + (cy * C - d) * s, C * s, C * s);
+      if (c) drawCell(octx, c, ox + (cx * C - d) * s, oy + (cy * C - d) * s, C * s);
     }
   }
   octx.globalCompositeOperation = 'destination-in';
@@ -917,10 +929,12 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
 
     // Zoom animation: ease the shown scale towards the target, keeping the anchor point still.
     if (!fl && a.s !== v.zoom) {
-      const next = a.s * Math.pow(v.zoom / a.s, 0.35);
-      a.s = Math.abs(Math.log(next / v.zoom)) < 0.02 ? v.zoom : next;
+      const now = performance.now(), dt = a.last ? Math.min(34, now - a.last) : 16;
+      const next = a.s * Math.pow(v.zoom / a.s, 1 - Math.exp(-dt / ZOOM_TAU));
+      a.s = Math.abs(Math.log(next / v.zoom)) < 0.008 ? v.zoom : next;
       if (a.anchor) { v.x = a.anchor.wx - (a.anchor.sx - W / 2) / a.s; v.y = a.anchor.wy - (a.anchor.sy - H / 2) / a.s; }
       more = a.s !== v.zoom;
+      a.last = more ? now : 0;
       if (!more) a.anchor = null;
     }
     const s = a.s;
@@ -946,7 +960,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     for (let by = Math.floor((top - shift) / B); by <= Math.floor((bottom - shift) / B); by++) {
       for (let bx = Math.floor((left - shift) / B); bx <= Math.floor((right - shift) / B); bx++) {
         const img = world.overview(set, level, bx, by);
-        if (img) { ctx.drawImage(img, ox + (bx * B + shift) * s, oy + (by * B + shift) * s, B * s, B * s); continue; }
+        if (img) { drawCell(ctx, img, ox + (bx * B + shift) * s, oy + (by * B + shift) * s, B * s); continue; }
         // Not loaded yet: the same part of a coarser level that is (user 2026-11-25: parts went black while flying).
         for (let li = ov.levels.indexOf(level) - 1; li >= 0; li--) {
           const l2 = ov.levels[li], B2 = ov.px / l2, bx2 = Math.floor((bx * B) / B2), by2 = Math.floor((by * B) / B2);
@@ -960,11 +974,13 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
 
     // Game sprites.
     if (v.zoom >= SPRITES_FROM) {
-      const C = world.CHUNK, ts = v.zoom >= 32 ? 32 : 16;
+      // Above 16 (24 too) the full-size sprites, scaled down smoothly, rather than the 16 px ones blown up blocky.
+      const C = world.CHUNK, ts = v.zoom > 16 ? 32 : 16;
       // Flying: only chunks already drawn once. Else new ones for up to ~8 ms a frame (user 2026-11-25: six at once
       // froze the map for up to 1/4 s right after landing).
       const now = performance.now(), budget = { n: flying ? 0 : 6, until: now + 8 };
-      ctx.imageSmoothingEnabled = s < ts;
+      // Sharp at whole pixels per game pixel; smoothed in between (48: 1.5 px would be uneven, half 1 px, half 2 px).
+      ctx.imageSmoothingEnabled = s < ts || s % ts !== 0;
       // Chunks drawn last can overhang into earlier ones only up-left, so draw top-left to bottom-right.
       for (let cy = Math.floor(top / C); cy <= Math.floor(bottom / C); cy++) {
         for (let cx = Math.floor(left / C); cx <= Math.floor(right / C); cx++) {
@@ -976,7 +992,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
           if (t0 == null) chunkShown.set(c, (t0 = now));
           const fade = Math.min(1, (now - t0) / CHUNK_FADE_MS);
           if (fade < 1) { ctx.globalAlpha = fade; more = true; }
-          ctx.drawImage(c, ox + cx * C * s, oy + cy * C * s, C * s, C * s);
+          drawCell(ctx, c, ox + cx * C * s, oy + cy * C * s, C * s);
           ctx.globalAlpha = 1;
         }
       }
@@ -1020,7 +1036,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
       for (let cy = Math.floor(top / C); cy <= Math.floor(bottom / C); cy++) {
         for (let cx = Math.floor(left / C); cx <= Math.floor(right / C); cx++) {
           const c = world.refreshCanvas(v.z, cx, cy, REFRESH_RGBA);
-          if (c) ctx.drawImage(c, ox + cx * C * s, oy + cy * C * s, C * s, C * s);
+          if (c) drawCell(ctx, c, ox + cx * C * s, oy + cy * C * s, C * s);
         }
       }
     }
@@ -1638,7 +1654,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     if (!syncUrl) return;
     clearTimeout(hashTimer.current);
     hashTimer.current = setTimeout(() => {
-      const h = `#${Math.floor(v.x)},${Math.floor(v.y)},${v.z},${v.zoom}`;
+      const h = `#${Math.floor(v.x)},${Math.floor(v.y)},${v.z},${+v.zoom.toFixed(2)}`;
       if (window.location.hash !== h) window.history.replaceState(window.history.state, '', h); // keeps the Back marker
     }, 250);
   }, [redraw, syncUrl]);
@@ -1711,20 +1727,32 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
 
   // ---------- view changes ----------
   // sx, sy: the screen point zoomed around (default: the centre).
-  const zoomBy = useCallback((steps, sx, sy) => {
+  // To any scale. A scale within 3% of a step lands on it (whole pixels per game pixel stay reachable).
+  const zoomTo = useCallback((target, sx, sy) => {
     const v = view.current, canvas = canvasRef.current;
-    const i = ZOOMS.indexOf(v.zoom), j = Math.max(0, Math.min(ZOOMS.length - 1, i + steps));
-    if (i === j) return;
+    target = Math.max(ZOOMS[0], Math.min(ZOOMS[ZOOMS.length - 1], target));
+    const near = nearestZoom(target);
+    if (Math.abs(Math.log(near / target)) < Math.log(1.03)) target = near;
+    if (target === v.zoom) return;
     sx ??= canvas.width / 2; sy ??= canvas.height / 2;
     const s = anim.current.s;
     const wx = v.x + (sx - canvas.width / 2) / s, wy = v.y + (sy - canvas.height / 2) / s;
     anim.current.anchor = { sx, sy, wx, wy };
     const before = v.zoom;
     flight.current = null;
-    v.zoom = ZOOMS[j];
+    v.zoom = target;
     mainLevel(before);
     viewChanged();
   }, [viewChanged]);
+
+  // Buttons and keys: to the next zoom step (the zoom can be in between after the wheel).
+  const zoomBy = useCallback((steps, sx, sy) => {
+    const z = view.current.zoom;
+    let j = steps > 0 ? ZOOMS.findIndex((zz) => zz > z * 1.001) : ZOOMS.findLastIndex((zz) => zz < z / 1.001);
+    if (j < 0) return;
+    j = Math.max(0, Math.min(ZOOMS.length - 1, j + steps - Math.sign(steps)));
+    zoomTo(ZOOMS[j], sx, sy);
+  }, [zoomTo]);
 
   // Changes the floor without moving what's on screen: a surface floor zz is drawn (v.z - zz) tiles up-left
   // (as in the client), so the view centre moves along by the difference (user 2026-11-19: Ctrl + wheel up
@@ -2361,7 +2389,7 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
     }
   };
 
-  // Wheel: one zoom step per notch (trackpads add up small deltas); Ctrl + wheel: one floor per notch
+  // Wheel: x1.1 a notch, faster when spun (trackpads add up small deltas); Ctrl + wheel: one floor per notch
   // (forward = down). Not passive, so the page neither scrolls nor zooms.
   const wheelAcc = useRef({ v: 0, ctrl: false });
   useEffect(() => {
@@ -2375,12 +2403,19 @@ export default function TibiaMap({ dataUrl: fixedUrl, maps = MAPS, defaultMap = 
       if (Math.abs(acc.v) < 50) return;
       const dir = acc.v < 0 ? 1 : -1;
       acc.v = 0;
-      if (e.ctrlKey) layerBy(dir);
-      else { const p = toCanvas(e); zoomBy(dir, p.x, p.y); }
+      if (e.ctrlKey) { layerBy(dir); return; }
+      // Zoom speeds up with the wheel (user 2026-11-27): a slow notch is a fine x1.1; each notch within
+      // WHEEL_FAST_MS of the one before (same way) adds 10%, up to x2 a notch.
+      const now = performance.now();
+      acc.run = acc.dir === dir && now - (acc.t || 0) < WHEEL_FAST_MS ? acc.run + 1 : 0;
+      acc.dir = dir; acc.t = now;
+      const f = Math.min(2, 1.1 * 1.1 ** acc.run);
+      const p = toCanvas(e);
+      zoomTo(view.current.zoom * f ** dir, p.x, p.y);
     };
     c.addEventListener('wheel', onWheel, { passive: false });
     return () => c.removeEventListener('wheel', onWheel);
-  }, [zoomBy, layerBy, ready]);
+  }, [zoomTo, layerBy, ready]);
 
   const onKeyDown = (e) => {
     if (e.target.tagName === 'INPUT') return;
